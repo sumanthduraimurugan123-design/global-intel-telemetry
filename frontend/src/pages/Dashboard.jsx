@@ -324,22 +324,36 @@ export default function Dashboard() {
     }
   };
 
-  // Handle Persona Change
+  // Handle Persona Change — maps new persona IDs to impact profiles
   const handlePersonaChange = (newPersona) => {
     setPersona(newPersona);
-    if (newPersona === 'Casual user') {
-      setImpactProfileId('commuter');
-    } else if (newPersona === 'Accessibility mode') {
-      setImpactProfileId('household');
+    const pLower = (newPersona || '').toLowerCase();
+
+    if (pLower.includes('student')) {
+      setImpactProfileId('student');
+    } else if (pLower.includes('farmer') || pLower.includes('kisan')) {
+      setImpactProfileId('farmer');
+    } else if (pLower.includes('business')) {
+      setImpactProfileId('business');
+    } else if (pLower.includes('common') || pLower.includes('casual')) {
+      setImpactProfileId('common_person');
+    } else if (pLower.includes('accessibility')) {
+      setImpactProfileId('common_person');
       setIsHighContrast(true);
       setIsLargeText(true);
       setIsCognitiveSimple(true);
       setIsEasyMode(true);
     } else {
-      setImpactProfileId('tech');
-      if (isEasyMode && persona === 'Accessibility mode') {
-        setIsEasyMode(false);
-      }
+      // Analyst / default
+      setImpactProfileId('analyst');
+    }
+
+    // Exit easy mode when switching away from Accessibility
+    if (!pLower.includes('accessibility') && isEasyMode && (persona || '').toLowerCase().includes('accessibility')) {
+      setIsEasyMode(false);
+      setIsHighContrast(false);
+      setIsLargeText(false);
+      setIsCognitiveSimple(false);
     }
     logTelemetryAction(`Persona switched to: ${newPersona}`, newPersona);
   };
@@ -454,6 +468,7 @@ export default function Dashboard() {
                   alerts={alerts}
                   selectedCountry={selectedCountry}
                   onSelectCountry={handleSelectCountry}
+                  persona={persona}
                 />
               </div>
 

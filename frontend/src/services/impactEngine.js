@@ -2,19 +2,20 @@
  * AI Personal Impact Engine
  * 
  * Computes how planetary and local telemetry directly affects the user's daily life
- * across 4 core vectors:
+ * across 4 core vectors tailored to the active Persona:
  * 1. Commute & Transit (Fuel, Transit, Regional Mobility)
- * 2. Household Budget (Food, Grocery, Energy, Inflation)
+ * 2. Household Budget (Food, Grocery, Energy, Inflation, Crop Mandi)
  * 3. Tech & Devices (Gadgets, Semiconductor Chips, Hardware Supply Chains)
  * 4. Digital Safety (Cyber Threats, Phishing, Telecom & Network Reliability)
  */
 
 export const IMPACT_PROFILES = [
-  { id: 'commuter', label: 'Daily Commuter', icon: '🚗', desc: 'Prioritizes fuel prices, transit disruptions, and regional weather' },
-  { id: 'tech', label: 'Tech Professional', icon: '💻', desc: 'Focuses on chip supply chains, cloud/cyber stability, and hardware prices' },
-  { id: 'household', label: 'Household & Budget', icon: '🛒', desc: 'Monitors food inflation, energy bills, and essential goods' },
-  { id: 'student', label: 'Student / Scholar', icon: '🎓', desc: 'Tracks digital connectivity, educational transit, and device access' },
-  { id: 'analyst', label: 'Strategic Analyst', icon: '📊', desc: 'Holistic geopolitical ripple effects across all sectors' }
+  { id: 'common_person', label: 'Common Person', icon: '👥', desc: 'Family grocery budget, daily commute, fuel, and domestic utilities' },
+  { id: 'student', label: 'Student / Scholar', icon: '🎓', desc: 'Exams, campus commute, gadget prices, digital connectivity, and study tools' },
+  { id: 'farmer', label: 'Farmer / Kisan', icon: '🌾', desc: 'Rainfall/monsoon, mandi crop prices, fertilizer, diesel, and water reservoirs' },
+  { id: 'business', label: 'Business & Trade', icon: '💼', desc: 'Supply chains, freight shipping, forex, tariffs, inflation, and corporate risks' },
+  { id: 'analyst', label: 'Strategic Analyst', icon: '📊', desc: 'Holistic geopolitical ripple effects, systemic defence, and sovereign risks' },
+  { id: 'tech', label: 'Tech Professional', icon: '💻', desc: 'Chip supply chains, cloud stability, hardware prices, and cyber defence' }
 ];
 
 // Hotspot specific personal impact annotations
@@ -27,26 +28,26 @@ export const HOTSPOT_PERSONAL_IMPACTS = {
   },
   ukraine: {
     title: 'Ukraine & Black Sea',
-    personalImpact: 'Crucial grain and neon gas corridor. Tensions create grocery wheat/oil inflation and industrial supply ripples.',
-    primaryVector: 'Household Budget',
+    personalImpact: 'Crucial grain and fertilizer corridor. Tensions create grocery wheat/cooking oil inflation and fertilizer cost hikes.',
+    primaryVector: 'Household Budget & Agri',
     severity: 'CRITICAL'
   },
   israel: {
     title: 'Levant & Red Sea',
-    personalImpact: 'Red Sea maritime shipping chokepoint. Route diversions add 10-14 days to imported electronics and raise shipping freight costs.',
+    personalImpact: 'Red Sea maritime shipping chokepoint. Route diversions add 10-14 days to imported goods and raise cargo freight costs.',
     primaryVector: 'Commute & Freight',
     severity: 'CRITICAL'
   },
   iran: {
     title: 'Strait of Hormuz',
     personalImpact: '20% of global petroleum passes here. Escalations cause direct surges in petrol, diesel, and cooking LPG prices.',
-    primaryVector: 'Commute & Fuel',
+    primaryVector: 'Fuel & Commute',
     severity: 'HIGH'
   },
   russia: {
     title: 'Eurasian Energy Corridor',
-    personalImpact: 'Global fertilizer, wheat, and oil exporter. Instability ripples into cooking oil and energy tariff fluctuations.',
-    primaryVector: 'Household Budget',
+    personalImpact: 'Global potash fertilizer and crude exporter. Instability ripples into cooking oil, crop inputs, and domestic energy bills.',
+    primaryVector: 'Budget & Fertilizer',
     severity: 'HIGH'
   },
   'south korea': {
@@ -58,37 +59,37 @@ export const HOTSPOT_PERSONAL_IMPACTS = {
   china: {
     title: 'Manufacturing Epicenter',
     personalImpact: 'Supplies 60%+ of consumer electronics and daily household goods. Production or export halts create immediate retail shortages.',
-    primaryVector: 'Household & Tech',
+    primaryVector: 'Retail & Hardware',
     severity: 'ELEVATED'
   },
   us: {
     title: 'Global Financial & Cloud Core',
     personalImpact: 'Hosts major cloud infrastructure (AWS/Azure/GCP). Policy shifts sway global tech hiring and interest rates on loans.',
-    primaryVector: 'Tech & Budget',
+    primaryVector: 'Business & Cloud',
     severity: 'ELEVATED'
   },
   india: {
     title: 'Domestic Sector',
-    personalImpact: 'Local transit, monsoon reservoir levels, vegetable inflation, and power grid status impacting your daily routine directly.',
-    primaryVector: 'Commute & Budget',
+    personalImpact: 'Local transit, monsoon reservoir levels, mandi vegetable inflation, and power grid status impacting your daily routine directly.',
+    primaryVector: 'Domestic Routine',
     severity: 'MONITORED'
   },
   sudan: {
     title: 'Nile Basin Corridor',
     personalImpact: 'Gum arabic and agricultural supply chain disruptions impacting packaged food and pharmaceutical stabilizers.',
-    primaryVector: 'Household Budget',
+    primaryVector: 'Agri Supply Chain',
     severity: 'HIGH'
   }
 };
 
 /**
- * Calculate personal impact based on live news, active alerts, selected location, and profile
+ * Calculate personal impact based on live news, active alerts, selected location, and persona profile
  */
 export function calculatePersonalImpact({
   news = [],
   alerts = [],
   selectedCountry = 'global',
-  profileId = 'tech',
+  profileId = 'common_person',
   language = 'en'
 }) {
   let commuteScore = 15;
@@ -104,16 +105,16 @@ export function calculatePersonalImpact({
     const text = ((alert.message || '') + ' ' + (alert.severity || '')).toLowerCase();
     const weight = alert.severity === 'CRITICAL' ? 18 : (alert.severity === 'HIGH' ? 10 : 5);
 
-    if (text.includes('cyber') || text.includes('hack') || text.includes('telecom') || text.includes('outage') || text.includes('network')) {
+    if (text.includes('cyber') || text.includes('hack') || text.includes('telecom') || text.includes('outage') || text.includes('network') || text.includes('scam')) {
       cyberScore += weight;
     }
-    if (text.includes('oil') || text.includes('fuel') || text.includes('transit') || text.includes('flight') || text.includes('airspace') || text.includes('sea') || text.includes('ship')) {
+    if (text.includes('oil') || text.includes('fuel') || text.includes('transit') || text.includes('flight') || text.includes('airspace') || text.includes('sea') || text.includes('ship') || text.includes('metro') || text.includes('traffic')) {
       commuteScore += weight;
     }
-    if (text.includes('inflation') || text.includes('food') || text.includes('wheat') || text.includes('grain') || text.includes('price') || text.includes('energy')) {
+    if (text.includes('inflation') || text.includes('food') || text.includes('wheat') || text.includes('grain') || text.includes('price') || text.includes('energy') || text.includes('rain') || text.includes('flood') || text.includes('cyclone') || text.includes('monsoon')) {
       budgetScore += weight;
     }
-    if (text.includes('chip') || text.includes('semiconductor') || text.includes('hardware') || text.includes('tech') || text.includes('taiwan')) {
+    if (text.includes('chip') || text.includes('semiconductor') || text.includes('hardware') || text.includes('tech') || text.includes('taiwan') || text.includes('device') || text.includes('ai')) {
       techScore += weight;
     }
   }
@@ -122,12 +123,12 @@ export function calculatePersonalImpact({
   for (const item of newsItems) {
     const text = ((item.title || '') + ' ' + (item.description || '') + ' ' + (item.topic || '')).toLowerCase();
     
-    // Commute & Fuel
+    // Commute & Transit
     if (text.includes('petrol') || text.includes('diesel') || text.includes('fuel') || text.includes('traffic') || text.includes('metro') || text.includes('flight') || text.includes('transit') || text.includes('crude')) {
       commuteScore += 4;
     }
-    // Budget & Food
-    if (text.includes('inflation') || text.includes('grocery') || text.includes('vegetable') || text.includes('food') || text.includes('tariff') || text.includes('economy') || text.includes('market') || text.includes('interest rate')) {
+    // Budget & Food / Agriculture
+    if (text.includes('inflation') || text.includes('grocery') || text.includes('vegetable') || text.includes('food') || text.includes('tariff') || text.includes('economy') || text.includes('market') || text.includes('rain') || text.includes('crop') || text.includes('farmer') || text.includes('fertilizer') || text.includes('monsoon')) {
       budgetScore += 4;
     }
     // Tech & Supply Chain
@@ -149,17 +150,26 @@ export function calculatePersonalImpact({
   // Profile-weighted overall impact score
   let overallScore = 25;
   switch (profileId) {
-    case 'commuter':
-      overallScore = Math.round(commuteScore * 0.45 + budgetScore * 0.25 + cyberScore * 0.15 + techScore * 0.15);
-      break;
-    case 'tech':
-      overallScore = Math.round(techScore * 0.40 + cyberScore * 0.30 + budgetScore * 0.15 + commuteScore * 0.15);
-      break;
-    case 'household':
-      overallScore = Math.round(budgetScore * 0.45 + commuteScore * 0.25 + cyberScore * 0.15 + techScore * 0.15);
+    case 'farmer':
+      // Heavily weights budget (crop/rain/fertilizer) and commute (diesel/transport)
+      overallScore = Math.round(budgetScore * 0.55 + commuteScore * 0.30 + cyberScore * 0.05 + techScore * 0.10);
       break;
     case 'student':
-      overallScore = Math.round(techScore * 0.35 + budgetScore * 0.25 + commuteScore * 0.20 + cyberScore * 0.20);
+      // Focuses on tech/devices, digital safety/cyber, and campus commute
+      overallScore = Math.round(techScore * 0.40 + cyberScore * 0.25 + commuteScore * 0.25 + budgetScore * 0.10);
+      break;
+    case 'business':
+      // High supply chain, market/budget, and cyber stability
+      overallScore = Math.round(budgetScore * 0.35 + techScore * 0.30 + cyberScore * 0.20 + commuteScore * 0.15);
+      break;
+    case 'common_person':
+    case 'commuter':
+    case 'household':
+      // Balanced everyday household budget and commute
+      overallScore = Math.round(budgetScore * 0.40 + commuteScore * 0.40 + cyberScore * 0.10 + techScore * 0.10);
+      break;
+    case 'tech':
+      overallScore = Math.round(techScore * 0.45 + cyberScore * 0.30 + budgetScore * 0.15 + commuteScore * 0.10);
       break;
     case 'analyst':
     default:
@@ -186,53 +196,141 @@ export function calculatePersonalImpact({
     bgBadge = 'bg-amber-950/40 border-amber-500/30 text-amber-300';
   }
 
-  // Find Primary Driving Vector
+  // Rename and customize vectors based on persona
+  let vectorNames = {
+    commute: 'Commute & Travel',
+    budget: 'Household Budget',
+    tech: 'Tech & Hardware',
+    cyber: 'Digital & Cyber Safety'
+  };
+
+  if (profileId === 'farmer') {
+    vectorNames = {
+      commute: 'Diesel & Tractor Fuel',
+      budget: 'Crop Prices & Monsoon Rain',
+      tech: 'Agri Machinery & Tools',
+      cyber: 'Direct DBT & Bank SMS'
+    };
+  } else if (profileId === 'business') {
+    vectorNames = {
+      commute: 'Freight Logistics & Transit',
+      budget: 'Trade Costs & Currency Inflation',
+      tech: 'Supply Chain & Hardware',
+      cyber: 'Corporate Cyber Infrastructure'
+    };
+  } else if (profileId === 'student') {
+    vectorNames = {
+      commute: 'Campus & Metro Transit',
+      budget: 'Living & Food Expenses',
+      tech: 'Gadgets & Laptop Costs',
+      cyber: 'Campus Network & Accounts'
+    };
+  }
+
   const vectors = [
-    { id: 'commute', name: 'Commute & Travel', score: commuteScore, icon: '🚗', color: '#00f3ff' },
-    { id: 'budget', name: 'Household Budget', score: budgetScore, icon: '🛒', color: '#ffb800' },
-    { id: 'tech', name: 'Tech & Hardware', score: techScore, icon: '💻', color: '#a855f7' },
-    { id: 'cyber', name: 'Digital & Cyber Safety', score: cyberScore, icon: '🔒', color: '#00ff9d' }
+    { id: 'commute', name: vectorNames.commute, score: commuteScore, icon: profileId === 'farmer' ? '🚜' : '🚗', color: '#00f3ff' },
+    { id: 'budget', name: vectorNames.budget, score: budgetScore, icon: profileId === 'farmer' ? '🌾' : '🛒', color: '#ffb800' },
+    { id: 'tech', name: vectorNames.tech, score: techScore, icon: '💻', color: '#a855f7' },
+    { id: 'cyber', name: vectorNames.cyber, score: cyberScore, icon: '🔒', color: '#00ff9d' }
   ];
   vectors.sort((a, b) => b.score - a.score);
   const primaryVector = vectors[0];
 
-  // Dynamic concise summary
+  // Dynamic persona-tailored concise summary and advice
   let conciseSummary = '';
   let actionableAdvice = '';
 
-  if (overallScore >= 70) {
-    conciseSummary = `High vulnerability in ${primaryVector.name}. Geopolitical & supply chain disruptions pose near-term price and access friction.`;
-    actionableAdvice = `Postpone non-essential hardware purchases, verify two-factor authentication on financial accounts, and check route fuel/transit updates before travel.`;
-  } else if (overallScore >= 45) {
-    conciseSummary = `Notable ripple in ${primaryVector.name}. Moderate consumer inflation and component lead-time variances detected.`;
-    actionableAdvice = `Monitor monthly utility/grocery budgets and keep essential software and device backups updated.`;
+  if (profileId === 'farmer') {
+    if (overallScore >= 70) {
+      conciseSummary = `High alert for agriculture. Weather changes and diesel/fertilizer tariffs indicate critical crop protection needed.`;
+      actionableAdvice = `Check field drainage, secure harvested produce in storage sheds, and monitor local Mandi rates before selling.`;
+    } else if (overallScore >= 45) {
+      conciseSummary = `Moderate agrarian ripple. Rainfall variability and agricultural fuel costs may shift this week.`;
+      actionableAdvice = `Track daily weather forecasts and schedule irrigation according to rain advisories.`;
+    } else {
+      conciseSummary = `Normal weather and mandi price conditions. Agricultural routines can proceed smoothly.`;
+      actionableAdvice = `Continue routine farming and irrigation as planned.`;
+    }
+  } else if (profileId === 'business') {
+    if (overallScore >= 70) {
+      conciseSummary = `Severe commercial friction detected in ${primaryVector.name}. Supply chain bottlenecks and currency rates require immediate review.`;
+      actionableAdvice = `Increase inventory buffer, hedge currency exposure, and evaluate alternative maritime shipping routes.`;
+    } else if (overallScore >= 45) {
+      conciseSummary = `Moderate business volatility. Expect slight freight delays and wholesale input price variations.`;
+      actionableAdvice = `Communicate with key vendors and monitor freight lead times for critical components.`;
+    } else {
+      conciseSummary = `Commercial and supply chain indicators stable. Standard operational flow maintained.`;
+      actionableAdvice = `Maintain normal procurement and enterprise workflows.`;
+    }
+  } else if (profileId === 'student') {
+    if (overallScore >= 70) {
+      conciseSummary = `Elevated impact on student transit and device hardware costs. Possible metro delays or gadget price increases.`;
+      actionableAdvice = `Leave early for campus exams, postpone non-critical electronics purchases, and verify digital student portals.`;
+    } else if (overallScore >= 45) {
+      conciseSummary = `Moderate ripple in ${primaryVector.name}. Daily travel or online study connectivity may see brief variance.`;
+      actionableAdvice = `Keep offline notes ready and charge devices ahead of regional power or transit advisories.`;
+    } else {
+      conciseSummary = `Smooth conditions for academic routines and campus transit. No disruptions expected.`;
+      actionableAdvice = `Focus on study and regular campus schedules.`;
+    }
   } else {
-    conciseSummary = `Stable personal telemetry across all life vectors. Normal daily operations recommended.`;
-    actionableAdvice = `Routine monitoring. No immediate defensive adjustments needed for your daily schedule.`;
+    // Common Person / Default
+    if (overallScore >= 70) {
+      conciseSummary = `High vulnerability in ${primaryVector.name}. Everyday fuel, grocery budget, or transit routes face noticeable pressure.`;
+      actionableAdvice = `Plan extra time for daily commute, check fuel prices, and postpone discretionary household purchases.`;
+    } else if (overallScore >= 45) {
+      conciseSummary = `Moderate ripple in ${primaryVector.name}. Kitchen groceries or local travel times may experience small shifts.`;
+      actionableAdvice = `Keep household essentials stocked and check route traffic before leaving home.`;
+    } else {
+      conciseSummary = `Stable personal telemetry across all life vectors. Normal daily routine recommended.`;
+      actionableAdvice = `Routine operations. No special defensive precautions required today.`;
+    }
   }
 
   // Multilingual translations
   if (language === 'ta') {
-    if (overallScore >= 70) {
-      conciseSummary = `${primaryVector.name} துறையில் அதிக தாக்கம். உலகளாவிய மாற்றங்கள் உங்கள் அன்றாட செலவு மற்றும் பயணத்தை நேரடியாக பாதிக்கலாம்.`;
-      actionableAdvice = `அத்தியாவசியமில்லாத பெரிய வாங்குதல்களை தள்ளிப்போடவும், வங்கி பாதுகாப்பு சோதனைகளை உறுதிப்படுத்தவும்.`;
-    } else if (overallScore >= 45) {
-      conciseSummary = `${primaryVector.name} பிரிவில் மிதமான தாக்கம் பதிவாகியுள்ளது. மளிகை மற்றும் பயணச் செலவுகளை கவனிக்கவும்.`;
-      actionableAdvice = `மாதாந்திர பட்ஜெட்டை சீராக பராமரித்து, அன்றாட பயண விவரங்களை முன்கூட்டியே திட்டமிடவும்.`;
+    if (profileId === 'farmer') {
+      conciseSummary = overallScore >= 50 
+        ? `விவசாயத்திற்கான முக்கிய எச்சரிக்கை. பருவமழை மற்றும் உரம்/டீசல் விலையில் மாற்றம் ஏற்படலாம்.`
+        : `விவசாய சூழல் இயல்பாக உள்ளது. அறுவடை மற்றும் பாசன பணிகளை வழக்கம்போல தொடரலாம்.`;
+      actionableAdvice = `விளைபொருட்களை பாதுகாப்பான கிடங்கில் வைக்கவும்; வானிலை அறிக்கையை தினமும் கவனிக்கவும்.`;
+    } else if (profileId === 'student') {
+      conciseSummary = overallScore >= 50 
+        ? `மாணவர்களுக்கான எச்சரிக்கை: கல்லூரி பயணம் மற்றும் இணைய வசதிகளில் சிறு மாற்றங்கள் இருக்கலாம்.`
+        : `படிப்பு மற்றும் கல்லூரி பயணத்தில் எந்த தடங்கலும் இல்லை. இயல்பான சூழல் நீடிக்கிறது.`;
+      actionableAdvice = `தேர்வுகளுக்கு முன்னதாக கிளம்பவும், முக்கியமான பாட குறிப்புகளை கணினியில் சேமித்து வைக்கவும்.`;
+    } else if (profileId === 'business') {
+      conciseSummary = overallScore >= 50 
+        ? `வணிகம் மற்றும் சரக்கு போக்குவரத்தில் தாமதங்கள் ஏற்பட வாய்ப்புள்ளது.`
+        : `வணிகச் சூழல் மற்றும் சந்தை நிலவரம் சீராக உள்ளது.`;
+      actionableAdvice = `சரக்கு இருப்பை முன்கூட்டியே திட்டமிட்டு, மாற்று விநியோக வழிகளை ஆராயவும்.`;
     } else {
-      conciseSummary = `உங்கள் அன்றாட வாழ்க்கைக்கு நேரடி அச்சுறுத்தல் இல்லை. இயல்பான சூழல் நீடிக்கிறது.`;
-      actionableAdvice = `எப்போதும் போல வழமையான பணிகளைத் தொடரலாம்.`;
+      conciseSummary = overallScore >= 50 
+        ? `உங்கள் அன்றாட குடும்ப செலவு மற்றும் பயணத்தில் சிறு மாற்றம் இருக்கலாம்.`
+        : `உங்கள் அன்றாட வாழ்க்கைக்கு நேரடி அச்சுறுத்தல் இல்லை. இயல்பான சூழல் நீடிக்கிறது.`;
+      actionableAdvice = `பயணத்தை முன்கூட்டியே திட்டமிட்டு, மாதாந்திர பட்ஜெட்டை கவனிக்கவும்.`;
     }
   } else if (language === 'hi') {
-    if (overallScore >= 70) {
-      conciseSummary = `${primaryVector.name} में उच्च असर। वैश्विक घटनाक्रम आपके दैनिक खर्च और यात्रा पर सीधा असर डाल सकते हैं।`;
-      actionableAdvice = `अनावश्यक बड़े खर्च टालें और डिजिटल खातों की सुरक्षा सुनिश्चित करें।`;
-    } else if (overallScore >= 45) {
-      conciseSummary = `${primaryVector.name} में मध्यम प्रभाव देखा गया है। बजट और यात्रा योजनाओं पर नजर रखें।`;
-      actionableAdvice = `मासिक खर्चों को संतुलित रखें और आवश्यक बैकअप तैयार रखें।`;
+    if (profileId === 'farmer') {
+      conciseSummary = overallScore >= 50 
+        ? `किसानों के लिए जरूरी सूचना: मौसम में बदलाव और खाद/डीजल की कीमतों पर असर संभव है।`
+        : `खेती-किसानी के लिए स्थिति सामान्य है। नियमित कार्य जारी रख सकते हैं।`;
+      actionableAdvice = `फसल को सुरक्षित स्थान पर रखें और मौसम की ताजा जानकारी लेते रहें।`;
+    } else if (profileId === 'student') {
+      conciseSummary = overallScore >= 50 
+        ? `छात्रों के लिए सूचना: आवागमन और डिजिटल सेवाओं में थोड़ा असर दिख सकता है।`
+        : `पढ़ाई और कॉलेज यात्रा के लिए स्थिति बिल्कुल सामान्य है।`;
+      actionableAdvice = `परीक्षाओं के लिए समय से निकलें और जरूरी नोट्स का बैकअप रखें।`;
+    } else if (profileId === 'business') {
+      conciseSummary = overallScore >= 50 
+        ? `व्यापार और सप्लाई चेन में थोड़ी देरी या लागत वृद्धि की संभावना है।`
+        : `व्यापारिक माहौल और बाजार स्थिर हैं।`;
+      actionableAdvice = `सप्लाई की अग्रिम योजना बनाएं और वैकल्पिक रास्तों पर विचार करें।`;
     } else {
-      conciseSummary = `आपकी दिनचर्या पर कोई सीधा खतरा नहीं है। सामान्य स्थिति बनी हुई है।`;
-      actionableAdvice = `दैनिक कार्य सामान्य रूप से जारी रख सकते हैं।`;
+      conciseSummary = overallScore >= 50 
+        ? `दैनिक खर्च और यात्रा पर थोड़ा असर पड़ सकता है।`
+        : `आपकी दिनचर्या पर कोई सीधा असर नहीं है। स्थिति सामान्य है।`;
+      actionableAdvice = `दैनिक यात्रा के लिए अतिरिक्त समय रखें और बजट संतुलित रखें।`;
     }
   }
 
@@ -250,7 +348,7 @@ export function calculatePersonalImpact({
     actionableAdvice,
     vectors,
     hotspotInfo,
-    profile: IMPACT_PROFILES.find(p => p.id === profileId) || IMPACT_PROFILES[1],
-    speechText: `AI Personal Impact Assessment: ${levelBadge}. Overall personal impact score is ${overallScore} out of 100. Primary driving area is ${primaryVector.name}. ${conciseSummary} Actionable guidance: ${actionableAdvice}`
+    profile: IMPACT_PROFILES.find(p => p.id === profileId) || IMPACT_PROFILES[0],
+    speechText: `${IMPACT_PROFILES.find(p => p.id === profileId)?.label || 'Personal'} Impact Assessment: ${levelBadge}. Overall score is ${overallScore} out of 100. Primary driving area is ${primaryVector.name}. ${conciseSummary} Actionable guidance: ${actionableAdvice}`
   };
 }

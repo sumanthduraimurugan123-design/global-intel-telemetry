@@ -22,10 +22,14 @@ export default function TelemetryStats({
 
   // Map persona to default profile if not explicitly set
   let effectiveProfileId = profileId;
-  if (!effectiveProfileId) {
-    if (persona === 'Casual user') effectiveProfileId = 'commuter';
-    else if (persona === 'Accessibility mode') effectiveProfileId = 'household';
-    else effectiveProfileId = 'tech';
+  if (!effectiveProfileId || effectiveProfileId === 'tech') {
+    const pLower = (persona || '').toLowerCase();
+    if (pLower.includes('student')) effectiveProfileId = 'student';
+    else if (pLower.includes('farmer') || pLower.includes('kisan')) effectiveProfileId = 'farmer';
+    else if (pLower.includes('business')) effectiveProfileId = 'business';
+    else if (pLower.includes('common') || pLower.includes('casual')) effectiveProfileId = 'common_person';
+    else if (pLower.includes('accessibility')) effectiveProfileId = 'common_person';
+    else effectiveProfileId = 'analyst';
   }
 
   // Calculate AI Personal Impact
