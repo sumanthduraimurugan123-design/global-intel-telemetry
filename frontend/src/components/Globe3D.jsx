@@ -345,27 +345,41 @@ export default function Globe3D({
     camera.position.set(0, 35, 290);
     cameraRef.current = camera;
 
-    // 3. WebGL Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
-    container.innerHTML = '';
-    container.appendChild(renderer.domElement);
-    rendererRef.current = renderer;
+    let renderer = null;
+    let controls = null;
 
-    // 4. OrbitControls
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.rotateSpeed = 0.6;
-    controls.zoomSpeed = 0.8;
-    controls.minDistance = 120;
-    controls.maxDistance = 500;
-    controls.autoRotate = autoRotate;
-    controls.autoRotateSpeed = 0.55;
-    controlsRef.current = controls;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.15;
+      container.innerHTML = '';
+      container.appendChild(renderer.domElement);
+      rendererRef.current = renderer;
+
+      // 4. OrbitControls
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.rotateSpeed = 0.6;
+      controls.zoomSpeed = 0.8;
+      controls.minDistance = 120;
+      controls.maxDistance = 500;
+      controls.autoRotate = autoRotate;
+      controls.autoRotateSpeed = 0.55;
+      controlsRef.current = controls;
+    } catch (webglErr) {
+      console.warn('WebGL initialization failed or disabled, displaying canvas fallback:', webglErr);
+      container.innerHTML = `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#C9A24A;font-family:monospace;text-align:center;padding:20px;">
+          <div style="font-size:32px;margin-bottom:8px;">🌐</div>
+          <div style="font-weight:bold;margin-bottom:4px;">Orbital Telemetry Stream</div>
+          <div style="color:#8C8580;font-size:12px;">Hardware acceleration or WebGL unavailable. Orbital nodes active via telemetry table.</div>
+        </div>
+      `;
+      return;
+    }
 
     // 5. Lighting
     const ambientLight = new THREE.AmbientLight(0x445577, 1.5);

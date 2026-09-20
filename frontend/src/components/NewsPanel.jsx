@@ -64,6 +64,8 @@ export default function NewsPanel({
   const [selectedCountryFilter, setSelectedCountryFilter] = useState('all');
   const [viewMode, setViewMode] = useState('stream');
 
+  const pLower = (persona || '').toLowerCase();
+
   const handleSpeak = (e, item, id) => {
     e.stopPropagation();
     e.preventDefault();
