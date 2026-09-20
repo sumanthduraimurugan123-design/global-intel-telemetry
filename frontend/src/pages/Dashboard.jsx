@@ -10,6 +10,8 @@ import LogsViewer from '../components/LogsViewer';
 import VoiceAssistantModal from '../components/VoiceAssistantModal';
 import RadioPlayerBar from '../components/RadioPlayerBar';
 import EasyModeView from '../components/EasyModeView';
+import PersonalImpactModal from '../components/PersonalImpactModal';
+import { calculatePersonalImpact } from '../services/impactEngine';
 import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
 import { 
@@ -78,6 +80,10 @@ export default function Dashboard() {
   const [persona, setPersona] = useState('Analyst'); // Analyst, Casual user, Accessibility mode
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+
+  // AI Personal Impact Engine State
+  const [isImpactModalOpen, setIsImpactModalOpen] = useState(false);
+  const [impactProfileId, setImpactProfileId] = useState('tech');
 
   // Visual Accessibility States
   const [isHighContrast, setIsHighContrast] = useState(false);
@@ -321,12 +327,16 @@ export default function Dashboard() {
   // Handle Persona Change
   const handlePersonaChange = (newPersona) => {
     setPersona(newPersona);
-    if (newPersona === 'Accessibility mode') {
+    if (newPersona === 'Casual user') {
+      setImpactProfileId('commuter');
+    } else if (newPersona === 'Accessibility mode') {
+      setImpactProfileId('household');
       setIsHighContrast(true);
       setIsLargeText(true);
       setIsCognitiveSimple(true);
       setIsEasyMode(true);
     } else {
+      setImpactProfileId('tech');
       if (isEasyMode && persona === 'Accessibility mode') {
         setIsEasyMode(false);
       }
@@ -413,7 +423,7 @@ export default function Dashboard() {
           {/* Main Dashboard Grid */}
           <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-5 space-y-4">
             
-            {/* Row 1: Key Indicators */}
+            {/* Row 1: Key Indicators (AI Personal Impact Engine) */}
             <TelemetryStats
               selectedCountry={selectedCountry}
               newsCount={news.length}
@@ -421,16 +431,20 @@ export default function Dashboard() {
               news={news}
               alerts={alerts}
               persona={persona}
+              profileId={impactProfileId}
+              onOpenImpactModal={() => setIsImpactModalOpen(true)}
+              currentLanguage={currentLanguage}
             />
 
-            {/* Row 2: 3D Planetary Globe & Real-time Alert System */}
+            {/* Row 2: 3D Planetary Smart Globe & Real-time Alert System */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
-              {/* 3D Globe: 7 columns on desktop */}
+              {/* 3D Smart Globe: 7 columns on desktop */}
               <div className="lg:col-span-7 flex flex-col">
                 <Globe3D
                   selectedCountry={selectedCountry}
                   onSelectCountry={handleSelectCountry}
+                  onOpenImpactModal={() => setIsImpactModalOpen(true)}
                 />
               </div>
 
@@ -664,6 +678,25 @@ export default function Dashboard() {
       <LogsViewer
         isOpen={isDbModalOpen}
         onClose={() => setIsDbModalOpen(false)}
+      />
+
+      {/* AI Personal Impact Engine Deep-Dive Modal */}
+      <PersonalImpactModal
+        isOpen={isImpactModalOpen}
+        onClose={() => setIsImpactModalOpen(false)}
+        impactData={calculatePersonalImpact({
+          news,
+          alerts,
+          selectedCountry,
+          profileId: impactProfileId,
+          language: currentLanguage
+        })}
+        activeProfileId={impactProfileId}
+        onChangeProfile={setImpactProfileId}
+        selectedCountry={selectedCountry}
+        currentLanguage={currentLanguage}
+        isSpeaking={isSpeaking}
+        setIsSpeaking={setIsSpeaking}
       />
 
     </div>
