@@ -10,7 +10,8 @@ import {
   Briefcase,
   Users,
   LineChart,
-  Sparkles
+  Sparkles,
+  Bell
 } from 'lucide-react';
 
 export default function AlertSystem({ 
@@ -24,31 +25,31 @@ export default function AlertSystem({
     switch (sev?.toUpperCase()) {
       case 'CRITICAL':
         return {
-          bar: 'bg-wire-red',
-          badge: 'text-wire-red border-wire-red/50 bg-wire-red/10',
-          icon: <Flame className="w-3.5 h-3.5 text-wire-red shrink-0" />,
-          rowBg: 'bg-wire-red/5 border-wire-red/20',
+          bar: 'border-l-rose-500 bg-rose-500/10 shadow-rose-950/30',
+          badge: 'text-rose-300 border-rose-500/50 bg-rose-500/20 font-bold',
+          icon: <Flame className="w-4 h-4 text-rose-400 shrink-0 animate-bounce" />,
+          glow: 'shadow-[inset_0_0_12px_rgba(244,63,94,0.15)]',
         };
       case 'HIGH':
         return {
-          bar: 'bg-wire-amber',
-          badge: 'text-wire-amber border-wire-amber/50 bg-wire-amber/10',
-          icon: <ShieldAlert className="w-3.5 h-3.5 text-wire-amber shrink-0" />,
-          rowBg: 'bg-wire-amber/5 border-wire-amber/20',
+          bar: 'border-l-amber-400 bg-amber-500/10 shadow-amber-950/30',
+          badge: 'text-amber-300 border-amber-500/50 bg-amber-500/20 font-semibold',
+          icon: <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />,
+          glow: 'shadow-[inset_0_0_12px_rgba(245,158,11,0.1)]',
         };
       case 'MEDIUM':
         return {
-          bar: 'bg-wire-blue',
-          badge: 'text-wire-blue border-wire-blue/50 bg-wire-blue/10',
-          icon: <Radio className="w-3.5 h-3.5 text-wire-blue shrink-0" />,
-          rowBg: 'bg-wire-surface border-wire-border',
+          bar: 'border-l-cyan-400 bg-cyan-500/5 shadow-cyan-950/30',
+          badge: 'text-cyan-300 border-cyan-500/50 bg-cyan-500/15',
+          icon: <Radio className="w-4 h-4 text-cyan-400 shrink-0" />,
+          glow: '',
         };
       default:
         return {
-          bar: 'bg-wire-muted',
-          badge: 'text-wire-subtle border-wire-border',
-          icon: <AlertTriangle className="w-3.5 h-3.5 text-wire-subtle shrink-0" />,
-          rowBg: 'bg-wire-surface border-wire-border',
+          bar: 'border-l-slate-600 bg-slate-800/30',
+          badge: 'text-slate-400 border-slate-700 bg-slate-800/50',
+          icon: <AlertTriangle className="w-4 h-4 text-slate-400 shrink-0" />,
+          glow: '',
         };
     }
   };
@@ -114,48 +115,53 @@ export default function AlertSystem({
 
   const getPersonaBadge = () => {
     if (pLower.includes('farmer')) {
-      return { icon: <Wheat className="w-3.5 h-3.5 text-emerald-400" />, label: 'Agrarian Filter', color: 'text-emerald-400 border-emerald-500/40 bg-emerald-950/30' };
+      return { icon: <Wheat className="w-3.5 h-3.5 text-emerald-400" />, label: 'Agrarian Filter', color: 'text-emerald-300 border-emerald-500/40 bg-emerald-950/40' };
     } else if (pLower.includes('student')) {
-      return { icon: <GraduationCap className="w-3.5 h-3.5 text-sky-400" />, label: 'Student Filter', color: 'text-sky-400 border-sky-500/40 bg-sky-950/30' };
+      return { icon: <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />, label: 'Student Filter', color: 'text-cyan-300 border-cyan-500/40 bg-cyan-950/40' };
     } else if (pLower.includes('business')) {
-      return { icon: <Briefcase className="w-3.5 h-3.5 text-purple-400" />, label: 'Enterprise Filter', color: 'text-purple-400 border-purple-500/40 bg-purple-950/30' };
+      return { icon: <Briefcase className="w-3.5 h-3.5 text-purple-400" />, label: 'Enterprise Filter', color: 'text-purple-300 border-purple-500/40 bg-purple-950/40' };
     } else if (pLower.includes('analyst')) {
-      return { icon: <LineChart className="w-3.5 h-3.5 text-wire-amber" />, label: 'Tactical Intel', color: 'text-wire-amber border-wire-amber/40 bg-wire-base' };
+      return { icon: <LineChart className="w-3.5 h-3.5 text-pink-400" />, label: 'Tactical Intel', color: 'text-pink-300 border-pink-500/40 bg-pink-950/40' };
     }
-    return { icon: <Users className="w-3.5 h-3.5 text-amber-400" />, label: 'Everyday Filter', color: 'text-amber-400 border-amber-500/40 bg-amber-950/20' };
+    return { icon: <Users className="w-3.5 h-3.5 text-amber-400" />, label: 'Everyday Filter', color: 'text-amber-300 border-amber-500/40 bg-amber-950/40' };
   };
 
   const pBadge = getPersonaBadge();
 
   return (
-    <div className="bg-wire-surface border border-wire-border flex flex-col h-full shadow-sm">
+    <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden shadow-xl">
       
       {/* Header */}
-      <div className="px-4 py-3 border-b border-wire-border flex items-center justify-between bg-wire-base/40">
-        <div className="flex items-center gap-2">
-          <h2 className="font-serif text-wire-fg text-sm font-semibold">Alerts</h2>
-          <span className={`font-mono text-[9px] px-1.5 py-0.5 border rounded flex items-center gap-1 ${pBadge.color}`}>
+      <div className="px-4 py-3.5 border-b border-purple-500/20 flex items-center justify-between bg-slate-900/60 backdrop-blur-md">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-md bg-rose-500/20 border border-rose-500/30 flex items-center justify-center">
+            <Bell className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+          </div>
+          <h2 className="font-display text-white text-sm font-bold tracking-tight">Active Alerts</h2>
+          <span className={`font-mono text-[10px] px-2 py-0.5 border rounded-full flex items-center gap-1.5 ${pBadge.color}`}>
             {pBadge.icon}
             <span>{pBadge.label}</span>
           </span>
           {criticalCount > 0 && (
-            <span className="font-mono text-[10px] text-wire-red border border-wire-red/50 bg-wire-red/10 px-1.5 py-0.2">
+            <span className="font-mono text-[10px] text-rose-300 border border-rose-500/60 bg-rose-500/20 px-2 py-0.5 rounded-full font-bold animate-pulse shadow-sm shadow-rose-500/30">
               {criticalCount} CRITICAL
             </span>
           )}
         </div>
-        <span className="font-mono text-[10px] text-wire-subtle tabular-nums">
-          {alerts.length} active
+        <span className="font-mono text-[11px] text-purple-300 font-semibold px-2 py-0.5 rounded-md bg-purple-950/40 border border-purple-500/30 tabular-nums">
+          {alerts.length} live
         </span>
       </div>
 
       {/* Alert rows */}
-      <div className="flex-1 overflow-y-auto divide-y divide-wire-border/50 max-h-[360px]">
+      <div className="flex-1 overflow-y-auto divide-y divide-purple-500/10 max-h-[380px] p-2 space-y-2">
         {processedAlerts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-14 text-center">
-            <Radio className="w-6 h-6 text-wire-muted mb-2 animate-pulse" />
-            <p className="font-mono text-[11px] text-wire-subtle">
-              No alerts active for {selectedCountry?.toUpperCase() || 'GLOBAL'} sector
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center border border-slate-700/60 mb-3">
+              <Radio className="w-6 h-6 text-slate-500 animate-pulse" />
+            </div>
+            <p className="font-mono text-xs text-slate-400">
+              No active warnings for <strong className="text-purple-300">{selectedCountry?.toUpperCase() || 'GLOBAL'}</strong> sector
             </p>
           </div>
         ) : (
@@ -164,35 +170,35 @@ export default function AlertSystem({
             return (
               <div
                 key={alert.id || `alert-${index}`}
-                className={`px-4 py-3 border-l-[3px] ${cfg.bar} transition-colors hover:bg-wire-raised/70`}
+                className={`p-3.5 rounded-lg border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110`}
               >
                 <div className="flex items-center gap-2 mb-1.5">
                   {cfg.icon}
-                  <span className={`font-mono text-[10px] border px-1.5 py-0.2 ${cfg.badge}`}>
+                  <span className={`font-mono text-[10px] border px-2 py-0.5 rounded-md tracking-wider ${cfg.badge}`}>
                     {alert.severity}
                   </span>
                   <button
                     onClick={() => onSelectCountry && onSelectCountry(alert.country)}
-                    className="font-mono text-[10px] text-wire-amber hover:underline capitalize ml-auto flex items-center gap-1"
+                    className="font-mono text-[10px] text-cyan-300 hover:text-cyan-200 hover:underline capitalize ml-auto flex items-center gap-1 font-medium"
                   >
-                    <span>{alert.country || 'Global'}</span>
+                    <span>📍 {alert.country || 'Global'}</span>
                   </button>
                   {alert.created_at && (
-                    <span className="font-mono text-[10px] text-wire-subtle tabular-nums">
+                    <span className="font-mono text-[10px] text-slate-400 tabular-nums">
                       {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   )}
                 </div>
 
-                <p className="font-serif text-xs text-wire-fg leading-snug">
+                <p className="font-sans text-xs text-slate-100 font-medium leading-relaxed">
                   {alert.message}
                 </p>
 
                 {/* Persona-Adaptive Advice Tag */}
                 {alert._adviceTag && (
-                  <div className="mt-2 text-[11px] font-sans px-2.5 py-1 bg-wire-base border border-wire-border/80 text-wire-fg/90 flex items-center gap-1.5 rounded-sm">
-                    <Sparkles className="w-3 h-3 text-wire-amber shrink-0" />
-                    <span>{alert._adviceTag}</span>
+                  <div className="mt-2.5 text-[11px] font-sans px-3 py-1.5 bg-slate-900/80 border border-purple-500/30 text-purple-200 flex items-center gap-2 rounded-lg shadow-inner">
+                    <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                    <span className="leading-snug">{alert._adviceTag}</span>
                   </div>
                 )}
 
@@ -201,9 +207,9 @@ export default function AlertSystem({
                     href={alert.source_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 mt-1.5 font-mono text-[10px] text-wire-subtle hover:text-wire-amber transition-colors"
+                    className="inline-flex items-center gap-1 mt-2 font-mono text-[10px] text-slate-400 hover:text-pink-300 transition-colors"
                   >
-                    <span>Verified Wire</span>
+                    <span>Verified Source Wire</span>
                     <ExternalLink className="w-2.5 h-2.5" />
                   </a>
                 )}

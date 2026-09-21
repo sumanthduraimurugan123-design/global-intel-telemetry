@@ -6,11 +6,11 @@ import { fetchNewsExplanation, fetchPersonalizedOpinion } from '../services/news
 const TOPICS = ['all', 'Geopolitics', 'Defense', 'Economy', 'Cyber', 'Energy'];
 
 const SENTIMENT_LABEL = {
-  'Hostile / Risk': { cls: 'text-wire-red border-wire-red/40 bg-red-950/20', label: 'Risk / Critical' },
-  'Tense':          { cls: 'text-wire-amber border-wire-amber/40 bg-amber-950/20', label: 'Tense / Watch' },
-  'Positive / Stable': { cls: 'text-wire-green border-wire-green/40 bg-emerald-950/20', label: 'Stable' },
-  'Constructive':   { cls: 'text-wire-green border-wire-green/40 bg-emerald-950/20', label: 'Constructive' },
-  'Neutral':        { cls: 'text-wire-subtle border-wire-border bg-slate-900/30', label: 'Neutral' },
+  'Hostile / Risk': { cls: 'text-rose-300 border-rose-500/50 bg-rose-500/20 font-bold shadow-sm shadow-rose-500/20', label: 'Risk / Critical' },
+  'Tense':          { cls: 'text-amber-300 border-amber-500/50 bg-amber-500/20 font-semibold shadow-sm shadow-amber-500/20', label: 'Tense / Watch' },
+  'Positive / Stable': { cls: 'text-emerald-300 border-emerald-500/50 bg-emerald-500/20 font-semibold shadow-sm shadow-emerald-500/20', label: 'Stable' },
+  'Constructive':   { cls: 'text-emerald-300 border-emerald-500/50 bg-emerald-500/20 font-semibold shadow-sm shadow-emerald-500/20', label: 'Constructive' },
+  'Neutral':        { cls: 'text-cyan-300 border-cyan-500/50 bg-cyan-500/15', label: 'Neutral' },
 };
 
 function cleanDescription(desc, title) {
@@ -820,24 +820,24 @@ export default function NewsPanel({
   };
 
   return (
-    <div className="bg-wire-surface border border-wire-border flex flex-col shadow-xl">
+    <div className="glass-card rounded-xl flex flex-col shadow-2xl overflow-hidden my-4 border border-purple-500/20">
       
       {/* 1. Prominent Active Persona Status & 1-Click Persona Tabs */}
-      <div className="bg-wire-base border-b border-wire-border px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="bg-slate-900/80 border-b border-purple-500/20 px-4 py-3 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
-          <span className="font-mono text-[10px] text-wire-subtle uppercase tracking-wider">Active Persona:</span>
-          <span className={`px-2.5 py-0.5 text-xs font-mono font-bold rounded-sm border flex items-center gap-1.5 ${
+          <span className="font-mono text-[10px] text-purple-300 uppercase tracking-widest font-semibold">Active Persona:</span>
+          <span className={`px-3 py-1 text-xs font-mono font-bold rounded-lg border flex items-center gap-1.5 shadow-sm ${
             pLower.includes('analyst')
-              ? 'bg-amber-950/40 text-wire-amber border-wire-amber'
+              ? 'bg-purple-950/60 text-purple-200 border-purple-500/50 shadow-purple-500/20'
               : pLower.includes('accessibility')
-              ? 'bg-emerald-950/40 text-wire-green border-wire-green'
+              ? 'bg-emerald-950/60 text-emerald-200 border-emerald-500/50 shadow-emerald-500/20'
               : pLower.includes('student')
-              ? 'bg-sky-950/40 text-sky-400 border-sky-500'
+              ? 'bg-sky-950/60 text-sky-200 border-sky-500/50 shadow-sky-500/20'
               : pLower.includes('farmer') || pLower.includes('kisan')
-              ? 'bg-emerald-950/40 text-emerald-400 border-emerald-500'
+              ? 'bg-emerald-950/60 text-emerald-200 border-emerald-500/50 shadow-emerald-500/20'
               : pLower.includes('business')
-              ? 'bg-purple-950/40 text-purple-400 border-purple-500'
-              : 'bg-amber-950/40 text-amber-400 border-amber-500'
+              ? 'bg-pink-950/60 text-pink-200 border-pink-500/50 shadow-pink-500/20'
+              : 'bg-amber-950/60 text-amber-200 border-amber-500/50 shadow-amber-500/20'
           }`}>
             {pLower.includes('analyst') && <LineChart className="w-3.5 h-3.5" />}
             {pLower.includes('student') && <GraduationCap className="w-3.5 h-3.5" />}
@@ -847,7 +847,7 @@ export default function NewsPanel({
             {pLower.includes('accessibility') && <Accessibility className="w-3.5 h-3.5" />}
             {persona}
           </span>
-          <span className="hidden md:inline font-sans text-xs text-wire-subtle">
+          <span className="hidden md:inline font-sans text-xs text-slate-400">
             {pLower.includes('analyst') && '— Deep telemetry, threat assessments, raw dispatches'}
             {pLower.includes('student') && '— Campus commute, gadget prices, digital safety digest'}
             {(pLower.includes('farmer') || pLower.includes('kisan')) && '— Weather alerts, mandi prices, crop advisories'}
@@ -859,24 +859,24 @@ export default function NewsPanel({
 
         {/* Persona Quick-Switch Tabs — All 6 personas */}
         {onSelectPersona && (
-          <div className="flex items-center gap-0.5 bg-wire-surface p-1 border border-wire-border flex-wrap">
+          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-purple-500/20 flex-wrap">
             {[
-              { id: 'Analyst', icon: <LineChart className="w-3 h-3" />, label: 'Analyst', activeClass: 'bg-wire-amber text-wire-base' },
-              { id: 'Common person', icon: <Users className="w-3 h-3" />, label: 'Common', activeClass: 'bg-amber-600 text-white' },
-              { id: 'Student', icon: <GraduationCap className="w-3 h-3" />, label: 'Student', activeClass: 'bg-sky-600 text-white' },
-              { id: 'Farmer', icon: <Wheat className="w-3 h-3" />, label: 'Farmer', activeClass: 'bg-emerald-600 text-white' },
-              { id: 'Business', icon: <Briefcase className="w-3 h-3" />, label: 'Business', activeClass: 'bg-purple-600 text-white' },
-              { id: 'Accessibility mode', icon: <Accessibility className="w-3 h-3" />, label: 'Access.', activeClass: 'bg-green-600 text-white' },
+              { id: 'Analyst', icon: <LineChart className="w-3 h-3" />, label: 'Analyst', activeClass: 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-purple-500/30' },
+              { id: 'Common person', icon: <Users className="w-3 h-3" />, label: 'Common', activeClass: 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-amber-500/30' },
+              { id: 'Student', icon: <GraduationCap className="w-3 h-3" />, label: 'Student', activeClass: 'bg-gradient-to-r from-sky-500 to-cyan-500 text-white shadow-sky-500/30' },
+              { id: 'Farmer', icon: <Wheat className="w-3 h-3" />, label: 'Farmer', activeClass: 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-emerald-500/30' },
+              { id: 'Business', icon: <Briefcase className="w-3 h-3" />, label: 'Business', activeClass: 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-pink-500/30' },
+              { id: 'Accessibility mode', icon: <Accessibility className="w-3 h-3" />, label: 'Access.', activeClass: 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-green-500/30' },
             ].map((p) => {
               const isActive = persona === p.id || (persona || '').toLowerCase() === p.id.toLowerCase();
               return (
                 <button
                   key={p.id}
                   onClick={() => onSelectPersona(p.id)}
-                  className={`px-2 py-1 text-xs font-mono border transition-all flex items-center gap-1 ${
+                  className={`px-2.5 py-1 text-xs font-mono rounded-lg transition-all duration-200 flex items-center gap-1.5 ${
                     isActive
-                      ? `${p.activeClass} border-transparent font-bold shadow-sm`
-                      : 'text-wire-subtle border-transparent hover:text-white'
+                      ? `${p.activeClass} font-bold shadow-md scale-105`
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
                   }`}
                 >
                   {p.icon}
@@ -889,68 +889,73 @@ export default function NewsPanel({
       </div>
 
       {/* 2. Sub-Header: Feed Stats, Breadcrumbs & Controls */}
-      <div className="px-4 py-3 border-b border-wire-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-wire-surface">
+      <div className="px-4 py-3 border-b border-purple-500/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900/40">
         <div className="flex items-center gap-3 flex-wrap">
-          <h2 className="font-serif text-wire-fg text-sm font-semibold flex items-center gap-2">
-            Live Telemetry Feed
+          <h2 className="font-display text-white text-sm font-bold flex items-center gap-2">
+            <span className="gradient-text">Live Telemetry Feed</span>
           </h2>
           
           {/* Hierarchical Location Breadcrumbs */}
-          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-sm">
-            <MapPin className="w-3 h-3 text-wire-amber" />
-            <span className="text-slate-400">
+          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-slate-950/70 border border-purple-500/25 px-2.5 py-1 rounded-full shadow-inner">
+            <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-slate-300">
               {geoInfo?.country || (selectedCountry === 'global' ? 'Planetary' : selectedCountry.toUpperCase())}
             </span>
             {geoInfo?.state && (
               <>
-                <span className="text-slate-600">/</span>
-                <span className="text-slate-300 font-semibold">{geoInfo.state}</span>
+                <span className="text-purple-400/50">/</span>
+                <span className="text-slate-200 font-semibold">{geoInfo.state}</span>
               </>
             )}
             {geoInfo?.city && (
               <>
-                <span className="text-slate-600">/</span>
-                <span className="text-wire-amber font-bold">{geoInfo.city}</span>
+                <span className="text-purple-400/50">/</span>
+                <span className="text-pink-300 font-bold">{geoInfo.city}</span>
               </>
             )}
           </div>
 
-          <span className="font-mono text-[10px] text-wire-subtle">{filteredNews.length} verified dispatches</span>
+          <span className="font-mono text-[11px] text-slate-400 px-2 py-0.5 rounded-md bg-purple-950/20 border border-purple-500/20">
+            {filteredNews.length} verified dispatches
+          </span>
         </div>
 
-        <div className="flex items-center gap-3 font-mono text-[10px]">
+        <div className="flex items-center gap-3 font-mono text-xs">
           {/* View toggle */}
-          <div className="flex items-center border border-wire-border">
+          <div className="flex items-center rounded-lg border border-purple-500/20 overflow-hidden bg-slate-950/60 p-0.5">
             <button
               onClick={() => setViewMode('stream')}
-              className={`px-2.5 py-1 transition-colors ${
-                viewMode === 'stream' ? 'bg-wire-raised text-wire-fg' : 'text-wire-subtle hover:text-wire-fg'
+              className={`px-3 py-1 rounded-md transition-all ${
+                viewMode === 'stream' ? 'bg-purple-600/40 text-purple-200 font-bold' : 'text-slate-400 hover:text-white'
               }`}
             >Stream</button>
             <button
               onClick={() => setViewMode('grouped')}
-              className={`px-2.5 py-1 transition-colors border-l border-wire-border ${
-                viewMode === 'grouped' ? 'bg-wire-raised text-wire-fg' : 'text-wire-subtle hover:text-wire-fg'
+              className={`px-3 py-1 rounded-md transition-all ${
+                viewMode === 'grouped' ? 'bg-purple-600/40 text-purple-200 font-bold' : 'text-slate-400 hover:text-white'
               }`}
             >Grouped</button>
           </div>
           
-          <span className={`tabular-nums ${countdown <= 5 ? 'text-wire-amber' : 'text-wire-subtle'}`}>
-            Sync in {countdown}s
+          <span className={`tabular-nums px-2 py-0.5 rounded-md border text-[11px] ${
+            countdown <= 5 ? 'text-pink-400 border-pink-500/40 bg-pink-500/10 animate-pulse font-bold' : 'text-slate-400 border-slate-800'
+          }`}>
+            Sync {countdown}s
           </span>
         </div>
       </div>
 
       {/* 3. Topic filter strip */}
-      <div className="px-4 py-2 border-b border-wire-border/60 flex flex-wrap gap-1.5 bg-wire-base/50">
+      <div className="px-4 py-2.5 border-b border-purple-500/10 flex flex-wrap gap-2 bg-slate-950/40 items-center">
+        <span className="font-mono text-[10px] text-purple-300 font-semibold uppercase tracking-wider mr-1">TOPIC:</span>
         {TOPICS.map(t => (
           <button
             key={t}
             onClick={() => onSelectTopic(t)}
-            className={`font-mono text-[10px] px-2.5 py-1 transition-colors border ${
+            className={`font-mono text-xs px-3 py-1 rounded-full transition-all duration-200 border ${
               activeTopic === t
-                ? 'bg-wire-amber text-wire-base border-wire-amber font-medium'
-                : 'text-wire-subtle border-wire-border hover:text-wire-fg hover:border-wire-muted'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-transparent shadow-md shadow-purple-500/25 font-bold scale-105'
+                : 'text-slate-400 border-purple-500/20 hover:text-white hover:border-purple-500/40 hover:bg-slate-900/60'
             }`}
           >
             {t}
@@ -960,10 +965,10 @@ export default function NewsPanel({
 
       {/* Smart Fallback Warning Banner */}
       {fallbackDetails && fallbackDetails.fallbackMessage && (
-        <div className="px-4 py-2.5 bg-amber-950/40 border-b border-amber-800/60 flex items-center gap-2 text-xs font-mono text-amber-300">
-          <Sparkles className="w-4 h-4 text-wire-amber shrink-0 animate-pulse" />
+        <div className="px-4 py-2.5 bg-amber-950/30 border-b border-amber-500/30 flex items-center gap-2 text-xs font-mono text-amber-200">
+          <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
           <div className="flex-1">
-            <span className="font-bold uppercase tracking-wider text-[10px] block text-wire-amber">Smart Regional Fallback Active:</span>
+            <span className="font-bold uppercase tracking-wider text-[10px] block text-amber-400">Smart Regional Fallback Active:</span>
             <span>{fallbackDetails.fallbackMessage}</span>
           </div>
         </div>
@@ -971,13 +976,13 @@ export default function NewsPanel({
 
       {/* 4. Country / Region Filter */}
       {availableCountries.length > 1 && (
-        <div className="px-4 py-2 border-b border-wire-border/40 flex flex-wrap gap-1.5 bg-wire-base/30">
+        <div className="px-4 py-2 border-b border-purple-500/10 flex flex-wrap gap-1.5 bg-slate-950/20">
           <button
             onClick={() => setSelectedCountryFilter('all')}
-            className={`font-mono text-[10px] px-2.5 py-1 border transition-colors ${
+            className={`font-mono text-[11px] px-3 py-1 rounded-lg border transition-all ${
               selectedCountryFilter === 'all'
-                ? 'text-wire-fg border-wire-muted bg-wire-raised'
-                : 'text-wire-subtle border-wire-border hover:text-wire-fg'
+                ? 'text-purple-200 border-purple-500/50 bg-purple-900/30 font-semibold'
+                : 'text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
             }`}
           >
             All Sectors ({news.length})
@@ -986,41 +991,44 @@ export default function NewsPanel({
             <button
               key={c.id}
               onClick={() => setSelectedCountryFilter(c.id)}
-              className={`font-mono text-[10px] px-2.5 py-1 border transition-colors flex items-center gap-1 ${
+              className={`font-mono text-[11px] px-3 py-1 rounded-lg border transition-all flex items-center gap-1.5 ${
                 selectedCountryFilter === c.id
-                  ? 'text-wire-fg border-wire-muted bg-wire-raised font-medium'
-                  : 'text-wire-subtle border-wire-border hover:text-wire-fg'
+                  ? 'text-cyan-200 border-cyan-500/50 bg-cyan-950/40 font-semibold shadow-sm shadow-cyan-500/20'
+                  : 'text-slate-400 border-slate-800 hover:text-slate-200 hover:border-slate-700'
               }`}
             >
               <span>{c.flag}</span>
               <span className="capitalize">{c.name}</span>
-              <span className="text-wire-subtle text-[9px]">({c.count})</span>
+              <span className="text-slate-400 text-[10px]">({c.count})</span>
             </button>
           ))}
         </div>
       )}
 
       {/* 5. Articles List */}
-      <div className="divide-y divide-wire-border/40">
+      <div className="divide-y divide-purple-500/10">
         {isLoading ? (
-          <div className="p-8 text-center font-mono text-xs text-wire-subtle">
+          <div className="p-12 text-center font-mono text-xs text-purple-300">
+            <div className="w-10 h-10 border-2 border-purple-500 border-t-pink-500 rounded-full animate-spin mx-auto mb-3" />
             <span className="animate-pulse">Loading live verified telemetry stream...</span>
           </div>
         ) : filteredNews.length === 0 ? (
-          <div className="p-8 text-center font-mono text-xs text-wire-subtle">
+          <div className="p-12 text-center font-mono text-xs text-slate-400">
             No dispatches for this filter. Try selecting 'All' or a different sector.
           </div>
         ) : viewMode === 'stream' ? (
           filteredNews.map(renderNewsRow)
         ) : (
           groupedByCountry.map(group => (
-            <div key={group.id} className="border-b border-wire-border last:border-0">
-              <div className="px-4 py-2 bg-wire-base flex items-center gap-2 border-b border-wire-border/30">
-                <span>{group.flag}</span>
-                <span className="font-serif text-xs font-semibold text-wire-fg capitalize">{group.name}</span>
-                <span className="font-mono text-[10px] text-wire-subtle">({group.articles.length})</span>
+            <div key={group.id} className="border-b border-purple-500/10 last:border-0">
+              <div className="px-4 py-2.5 bg-slate-900/70 flex items-center gap-2 border-b border-purple-500/10">
+                <span className="text-base">{group.flag}</span>
+                <span className="font-display text-xs font-bold text-slate-200 capitalize">{group.name}</span>
+                <span className="font-mono text-[10px] text-purple-300 px-2 py-0.5 rounded-full bg-purple-950/40 border border-purple-500/30">
+                  {group.articles.length}
+                </span>
               </div>
-              <div className="divide-y divide-wire-border/30">
+              <div className="divide-y divide-purple-500/10">
                 {group.articles.map(renderNewsRow)}
               </div>
             </div>

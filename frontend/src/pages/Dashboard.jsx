@@ -518,29 +518,29 @@ export default function Dashboard() {
             </div>
 
             {/* Row 3: Planetary Hierarchical Geo Navigation & Neighborhood Telemetry Strip */}
-            <div className="bg-wire-surface border border-wire-border p-4 shadow-md space-y-3">
+            <div className="glass-card rounded-xl p-5 shadow-2xl border border-purple-500/20 space-y-4">
               {/* Header with Breadcrumb and GPS */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-wire-border/60">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span className="font-mono text-xs font-bold text-wire-fg tracking-wide uppercase flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-wire-amber" />
-                    Hierarchical Geo Navigation (Planetary Coverage)
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-purple-500/15">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                  <span className="font-display text-xs font-bold text-white tracking-wide flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-purple-400" />
+                    <span className="gradient-text">Planetary Hierarchical Geo Navigation</span>
                   </span>
 
                   {/* Active Breadcrumb Badge */}
-                  <div className="flex items-center gap-1 font-mono text-[11px] bg-slate-900 border border-slate-700 px-2.5 py-0.5 rounded-sm">
-                    <span className="text-wire-amber font-semibold uppercase">{selectedCountry}</span>
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] bg-slate-950/80 border border-purple-500/30 px-3 py-1 rounded-full shadow-inner">
+                    <span className="text-cyan-300 font-bold uppercase">{selectedCountry}</span>
                     {selectedState && (
                       <>
-                        <ChevronRight className="w-3 h-3 text-slate-500" />
+                        <ChevronRight className="w-3 h-3 text-purple-400/50" />
                         <span className="text-white font-semibold">{selectedState}</span>
                       </>
                     )}
                     {selectedLocation && (
                       <>
-                        <ChevronRight className="w-3 h-3 text-slate-500" />
-                        <span className="text-emerald-400 font-bold">{selectedLocation}</span>
+                        <ChevronRight className="w-3 h-3 text-purple-400/50" />
+                        <span className="text-pink-400 font-bold">{selectedLocation}</span>
                       </>
                     )}
                   </div>
@@ -550,38 +550,38 @@ export default function Dashboard() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleDetectLocation}
-                    className="px-3 py-1.5 bg-slate-900 border border-slate-700 hover:border-wire-amber text-slate-200 hover:text-wire-amber font-mono text-xs font-semibold rounded-sm transition-all flex items-center gap-1.5"
+                    className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs rounded-lg shadow-md shadow-cyan-500/25 transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
                     title="Detect precise GPS neighborhood"
                   >
-                    <Navigation className="w-3.5 h-3.5 text-emerald-400" />
+                    <Navigation className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
                     <span>GPS Auto-Locate</span>
-                    <span className="text-[10px] text-wire-subtle">({detectedLocationLabel})</span>
+                    <span className="text-[10px] text-cyan-200/80 font-mono">({detectedLocationLabel})</span>
                   </button>
 
                   {(selectedLocation || selectedState || selectedCountry !== 'global') && (
                     <button
                       onClick={() => handleSelectCountry('global')}
-                      className="px-2.5 py-1.5 text-xs font-mono text-wire-subtle hover:text-wire-red border border-wire-border hover:border-wire-red/40 rounded-sm transition-colors flex items-center gap-1"
+                      className="px-3 py-1.5 text-xs font-mono text-slate-400 hover:text-rose-300 border border-slate-700/80 hover:border-rose-500/50 rounded-lg transition-all flex items-center gap-1.5 hover:bg-rose-500/10"
                       title="Reset to global view"
                     >
                       <X className="w-3 h-3" />
-                      <span>Reset to Global</span>
+                      <span>Reset Global</span>
                     </button>
                   )}
                 </div>
               </div>
 
               {/* 3-Level Hierarchical Selectors: Country -> State/Province -> City/District */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
                 {/* Level 1: Country Selector */}
                 <div>
-                  <label className="block font-mono text-[10px] text-wire-subtle uppercase mb-1">
+                  <label className="block font-mono text-[10px] text-purple-300 font-semibold uppercase tracking-wider mb-1.5">
                     Level 1: Sovereign Nation
                   </label>
                   <select
                     value={selectedCountry}
                     onChange={(e) => handleSelectCountry(e.target.value)}
-                    className="w-full bg-slate-950 border border-wire-border px-2.5 py-1.5 text-xs font-mono text-wire-fg focus:outline-none focus:border-wire-amber rounded-sm"
+                    className="w-full bg-slate-900/90 border border-slate-700/80 hover:border-purple-500/50 px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 rounded-xl transition-all"
                   >
                     <option value="global">🌐 Worldwide (Planetary Wire)</option>
                     <option value="india">🇮🇳 India</option>
@@ -609,7 +609,7 @@ export default function Dashboard() {
 
                 {/* Level 2: State / Province Selector */}
                 <div>
-                  <label className="block font-mono text-[10px] text-wire-subtle uppercase mb-1">
+                  <label className="block font-mono text-[10px] text-purple-300 font-semibold uppercase tracking-wider mb-1.5">
                     Level 2: State / Province
                   </label>
                   <select
@@ -622,7 +622,7 @@ export default function Dashboard() {
                         handleSelectState(e.target.value);
                       }
                     }}
-                    className="w-full bg-slate-950 border border-wire-border px-2.5 py-1.5 text-xs font-mono text-wire-fg focus:outline-none focus:border-wire-amber rounded-sm"
+                    className="w-full bg-slate-900/90 border border-slate-700/80 hover:border-purple-500/50 px-3 py-2 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/50 rounded-xl transition-all"
                   >
                     <option value="">All States / Whole Country</option>
                     {selectedCountry === 'india' && geoDirectory?.indiaStates?.map(s => (
@@ -639,22 +639,22 @@ export default function Dashboard() {
 
                 {/* Level 3: City / District / Micro-Region Quick Drill-down */}
                 <div>
-                  <label className="block font-mono text-[10px] text-wire-subtle uppercase mb-1">
+                  <label className="block font-mono text-[10px] text-purple-300 font-semibold uppercase tracking-wider mb-1.5">
                     Level 3: City / Micro-Area
                   </label>
-                  <form onSubmit={handleCustomLocSubmit} className="flex items-center gap-1">
+                  <form onSubmit={handleCustomLocSubmit} className="flex items-center gap-1.5">
                     <input
                       type="text"
                       value={customLocationInput}
                       onChange={(e) => setCustomLocationInput(e.target.value)}
                       placeholder="e.g. Velachery, Dallas, Munich..."
-                      className="w-full bg-slate-950 border border-wire-border px-2.5 py-1.5 text-xs font-mono text-wire-fg placeholder:text-wire-subtle focus:outline-none focus:border-wire-amber rounded-sm"
+                      className="w-full bg-slate-900/90 border border-slate-700/80 hover:border-purple-500/50 px-3 py-2 text-xs font-mono text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500/50 rounded-xl transition-all"
                     />
                     <button
                       type="submit"
-                      className="px-3 py-1.5 bg-wire-raised hover:bg-wire-amber hover:text-wire-base border border-wire-border text-wire-fg font-mono text-xs font-semibold rounded-sm transition-all shrink-0 flex items-center gap-1"
+                      className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-purple-500/25 transition-all shrink-0 flex items-center gap-1 hover:scale-105 active:scale-95"
                     >
-                      <Search className="w-3 h-3" />
+                      <Search className="w-3.5 h-3.5 text-pink-200" />
                       <span>Drill</span>
                     </button>
                   </form>
@@ -662,8 +662,8 @@ export default function Dashboard() {
               </div>
 
               {/* Quick Neighborhood & City Chips */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-wire-border/40">
-                <span className="font-mono text-[11px] text-wire-subtle mr-1">Direct Chips:</span>
+              <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-purple-500/10">
+                <span className="font-mono text-[11px] text-purple-300 font-semibold mr-1">Direct Chips:</span>
 
                 {selectedCountry === 'india' ? (
                   CHENNAI_NEIGHBORHOODS.map(hood => {
@@ -672,10 +672,10 @@ export default function Dashboard() {
                       <button
                         key={hood.id}
                         onClick={() => handleSelectLocation(hood.loc, 'india', 'tamil nadu')}
-                        className={`px-2 py-0.5 text-xs font-mono rounded-sm border transition-all flex items-center gap-1 ${
+                        className={`px-3 py-1 text-xs font-mono rounded-lg border transition-all flex items-center gap-1.5 ${
                           isSelected
-                            ? 'bg-wire-amber text-wire-base font-bold border-wire-amber shadow-sm scale-105'
-                            : 'bg-wire-base text-wire-subtle border-wire-border hover:text-white hover:border-slate-600'
+                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold border-transparent shadow-md shadow-purple-500/30 scale-105'
+                            : 'bg-slate-900/80 text-slate-300 border-slate-800 hover:text-white hover:border-purple-500/40 hover:bg-slate-800/80'
                         }`}
                       >
                         <span>{hood.icon}</span>
@@ -692,7 +692,7 @@ export default function Dashboard() {
                     <button
                       key={c.id}
                       onClick={() => handleSelectLocation(c.loc)}
-                      className="px-2 py-0.5 text-xs font-mono rounded-sm border bg-wire-base text-wire-subtle border-wire-border hover:text-white hover:border-slate-600"
+                      className="px-3 py-1 text-xs font-mono rounded-lg border bg-slate-900/80 text-slate-300 border-slate-800 hover:text-white hover:border-purple-500/40 hover:bg-slate-800/80 transition-all"
                     >
                       {c.label}
                     </button>
