@@ -6,6 +6,8 @@
  * political leaders, key institutions, and geographic terminology.
  */
 
+import { GLOBAL_COUNTRIES, INDIA_STATES, US_STATES } from './geoHierarchy.js';
+
 export const COUNTRY_LEXICON = [
   // Europe
   {
@@ -277,13 +279,40 @@ export function classifyCountry(title = '', description = '', hintedCountry = 'g
 
   // If a specific hint was provided, try mapping it
   if (hintedCountry && hintedCountry !== 'global') {
-    const matchedHint = COUNTRY_LEXICON.find(c => c.id === hintedCountry.toLowerCase());
+    const matchedHint = COUNTRY_LEXICON.find(c => c.id === hintedCountry.toLowerCase())
+      || GLOBAL_COUNTRIES.find(c => c.id === hintedCountry.toLowerCase());
     if (matchedHint) {
       return {
         id: matchedHint.id,
         name: matchedHint.name,
-        flag: matchedHint.flag,
-        region: matchedHint.region,
+        flag: matchedHint.flag || '🌐',
+        region: matchedHint.region || 'International',
+        confidence: 1
+      };
+    }
+
+    // Check if hinted country is an Indian State
+    const matchedState = INDIA_STATES.find(s => s.id === hintedCountry.toLowerCase() || s.name.toLowerCase() === hintedCountry.toLowerCase());
+    if (matchedState) {
+      return {
+        id: 'india',
+        state: matchedState.name,
+        name: `${matchedState.name} (India)`,
+        flag: '🇮🇳',
+        region: 'Asia-Pacific',
+        confidence: 1
+      };
+    }
+
+    // Check if hinted country is a US State
+    const matchedUsState = US_STATES.find(s => s.id === hintedCountry.toLowerCase() || s.name.toLowerCase() === hintedCountry.toLowerCase());
+    if (matchedUsState) {
+      return {
+        id: 'us',
+        state: matchedUsState.name,
+        name: `${matchedUsState.name} (USA)`,
+        flag: '🇺🇸',
+        region: 'Americas',
         confidence: 1
       };
     }

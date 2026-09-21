@@ -300,7 +300,8 @@ function createProceduralEarthTexture(isNight = false) {
 export default function Globe3D({ 
   selectedCountry = 'global', 
   onSelectCountry,
-  onOpenImpactModal 
+  onOpenImpactModal,
+  news = []
 }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -768,6 +769,90 @@ export default function Globe3D({
     };
   }, [globeMode, showSupplyArcs, showCyberCables, showHeatmaps]);
 
+  const newsMarkersRef = useRef([]);
+
+  // Render clickable news markers dynamically on the globe when news updates
+  useEffect(() => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    // Remove old news markers
+    newsMarkersRef.current.forEach(m => scene.remove(m));
+    newsMarkersRef.current = [];
+
+    if (!Array.isArray(news) || news.length === 0) return;
+
+    const newMarkers = [];
+    const CATEGORY_COLORS = {
+      risk: 0xff0055,
+      defense: 0xff5500,
+      economy: 0xffb800,
+      supply: 0xa855f7,
+      climate: 0x00f3ff,
+      cyber: 0x38bdf8,
+      geopolitics: 0x00ff9d
+    };
+
+    news.slice(0, 30).forEach((item, idx) => {
+      const lat = item.geo?.lat;
+      const lng = item.geo?.lng;
+      if (lat === undefined || lng === undefined) return;
+
+      const catColor = CATEGORY_COLORS[item.category] || 0x00f3ff;
+      const pos = latLngToVector3(lat, lng, GLOBE_RADIUS, 1.2);
+      const normal = pos.clone().normalize();
+
+      const markerGroup = new THREE.Group();
+      markerGroup.position.copy(pos);
+      markerGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
+
+      // Marker sphere pin
+      const sphereGeo = new THREE.SphereGeometry(1.6, 12, 12);
+      const sphereMat = new THREE.MeshBasicMaterial({ 
+        color: catColor,
+        blending: THREE.AdditiveBlending 
+      });
+      const sphereMesh = new THREE.Mesh(sphereGeo, sphereMat);
+      sphereMesh.userData = {
+        id: item.country || 'global',
+        name: item.title,
+        lat,
+        lng,
+        category: item.category,
+        source: item.source,
+        url: item.url,
+        threat: item.sentiment === 'Hostile / Risk' ? 'CRITICAL' : 'MONITORED',
+        colorHex: `#${catColor.toString(16).padStart(6, '0')}`,
+        personalVector: `${item.source}: ${item.title}`,
+        primarySector: `${item.category ? item.category.toUpperCase() : 'INTEL'} [${item.country_name || item.country}]`
+      };
+      markerGroup.add(sphereMesh);
+
+      // Small pulse halo
+      const haloGeo = new THREE.RingGeometry(1.2, 2.8, 16);
+      const haloMat = new THREE.MeshBasicMaterial({ 
+        color: catColor, 
+        side: THREE.DoubleSide, 
+        transparent: true, 
+        opacity: 0.7 
+      });
+      const haloMesh = new THREE.Mesh(haloGeo, haloMat);
+      haloMesh.position.y = 0.2;
+      haloMesh.rotation.x = Math.PI / 2;
+      markerGroup.add(haloMesh);
+
+      scene.add(markerGroup);
+      newMarkers.push(markerGroup);
+
+      // Add to beacon list for click raycasting
+      if (beaconMeshesRef.current) {
+        beaconMeshesRef.current.push(sphereMesh);
+      }
+    });
+
+    newsMarkersRef.current = newMarkers;
+  }, [news]);
+
   // Handle selectedCountry change to trigger camera flight
   useEffect(() => {
     if (!selectedCountry) return;
@@ -776,10 +861,13 @@ export default function Globe3D({
       const pos = latLngToVector3(target.lat, target.lng, GLOBE_RADIUS, 140);
       targetCamPos.current = pos;
       setSmartTarget(target);
+    } else if (news && news.length > 0 && cameraRef.current && news[0].geo?.lat !== undefined) {
+      const pos = latLngToVector3(news[0].geo.lat, news[0].geo.lng, GLOBE_RADIUS, 140);
+      targetCamPos.current = pos;
     } else if (selectedCountry === 'global' && cameraRef.current) {
       targetCamPos.current = new THREE.Vector3(0, 35, 290);
     }
-  }, [selectedCountry]);
+  }, [selectedCountry, news]);
 
   // Toggle Auto-rotation
   const toggleAutoRotate = () => {

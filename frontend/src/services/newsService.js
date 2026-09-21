@@ -10,16 +10,19 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api
  * Fetch real news stream directly from Express backend (which aggregates verified deep-links)
  * with multi-tier failovers to Supabase or direct RSS stream.
  */
-export async function fetchNewsStream(country = 'global', topic = 'all', forceRefresh = false, location = null, language = 'en') {
+export async function fetchNewsStream(country = 'global', topic = 'all', forceRefresh = false, location = null, language = 'en', state = null, city = null) {
   const timestamp = Date.now();
   const locParam = location ? `&location=${encodeURIComponent(location)}` : '';
+  const stateParam = state ? `&state=${encodeURIComponent(state)}` : '';
+  const cityParam = city ? `&city=${encodeURIComponent(city)}` : '';
   const langParam = language ? `&language=${encodeURIComponent(language)}` : '';
+  const queryParams = `country=${encodeURIComponent(country)}&topic=${encodeURIComponent(topic)}&refresh=${forceRefresh}${locParam}${stateParam}${cityParam}${langParam}&_t=${timestamp}`;
 
-  // 1. Primary: Direct Backend API on localhost:5000
+  // 1. Primary: Direct Backend API on localhost:5000 or production base
   const candidateUrls = [
-    `${API_BASE}/news?country=${encodeURIComponent(country)}&topic=${encodeURIComponent(topic)}&refresh=${forceRefresh}${locParam}${langParam}&_t=${timestamp}`,
-    `http://localhost:5000/api/news?country=${encodeURIComponent(country)}&topic=${encodeURIComponent(topic)}&refresh=${forceRefresh}${locParam}${langParam}&_t=${timestamp}`,
-    `/api/news?country=${encodeURIComponent(country)}&topic=${encodeURIComponent(topic)}&refresh=${forceRefresh}${locParam}${langParam}&_t=${timestamp}`
+    `${API_BASE}/news?${queryParams}`,
+    `http://localhost:5000/api/news?${queryParams}`,
+    `/api/news?${queryParams}`
   ];
 
   for (const endpoint of candidateUrls) {
@@ -39,7 +42,12 @@ export async function fetchNewsStream(country = 'global', topic = 'all', forceRe
           // Verify that items have valid URLs
           const validArticles = data.news.filter(n => n.url && n.url.startsWith('http'));
           if (validArticles.length > 0) {
-            return validArticles;
+            // Attach top-level fallback metadata if present
+            return {
+              news: validArticles,
+              geoInfo: data.geoInfo || null,
+              fallbackDetails: data.fallbackDetails || null
+            };
           }
         }
       }
@@ -63,7 +71,7 @@ export async function fetchNewsStream(country = 'global', topic = 'all', forceRe
 
       const { data, error } = await query;
       if (!error && data && data.length > 0) {
-        return data;
+        return { news: data, geoInfo: null, fallbackDetails: null };
       }
     } catch (e) {
       console.warn('Supabase direct query failed:', e);
@@ -120,13 +128,37 @@ export async function fetchNewsStream(country = 'global', topic = 'all', forceRe
     }
 
     if (items.length > 0) {
-      return items;
+      return { news: items, geoInfo: null, fallbackDetails: null };
     }
   } catch (directErr) {
     console.warn('Tertiary RSS fallback exception:', directErr);
   }
 
-  return [];
+  return { news: [], geoInfo: null, fallbackDetails: null };
+}
+
+/**
+ * Fetch complete geographic hierarchy directory for UI dropdowns and search
+ */
+export async function fetchGeoDirectory() {
+  const endpoints = [
+    `${API_BASE}/news/geo-hierarchy`,
+    'http://localhost:5000/api/news/geo-hierarchy',
+    '/api/news/geo-hierarchy'
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, { cache: 'default' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success) return data;
+      }
+    } catch (e) {
+      // try next
+    }
+  }
+  return null;
 }
 
 /**

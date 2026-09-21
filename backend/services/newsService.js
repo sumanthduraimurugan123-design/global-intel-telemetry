@@ -2,6 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { supabase, isSupabaseConfigured } from './supabaseClient.js';
 import { evaluateNewsForAlerts, persistAlert } from './alertEngine.js';
 import { classifyCountry, COUNTRY_LEXICON } from './countryClassifier.js';
+import { resolveGeoHierarchy, GLOBAL_COUNTRIES, INDIA_STATES, US_STATES, INTL_REGIONS, CHENNAI_MICRO_AREAS } from './geoHierarchy.js';
 
 const xmlParser = new XMLParser({
   ignoreAttributes: false,
@@ -9,58 +10,21 @@ const xmlParser = new XMLParser({
   attributeNamePrefix: '@_'
 });
 
-// In-memory cache to store freshly aggregated authentic dispatches
+// In-memory cache with TTL to store freshly aggregated authentic dispatches and prevent rate-limiting
 let memoryNewsCache = [];
-let lastSyncTimestamp = new Date().toISOString();
+const cacheByRegion = new Map(); // key -> { timestamp: number, data: [] }
+const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutes TTL for fresh dispatches
 
-// Human-readable country mapping for localized real-time intelligence queries
-const COUNTRY_NAME_MAP = {
-  'global': 'World Geopolitics',
-  'us': 'United States',
-  'uk': 'United Kingdom',
-  'ukraine': 'Ukraine',
-  'russia': 'Russia',
-  'germany': 'Germany',
-  'france': 'France',
-  'italy': 'Italy',
-  'poland': 'Poland',
-  'china': 'China',
-  'taiwan': 'Taiwan',
-  'india': 'India',
-  'chennai': 'Chennai',
-  'delhi': 'New Delhi',
-  'mumbai': 'Mumbai',
-  'bengaluru': 'Bengaluru',
-  'japan': 'Japan',
-  'south korea': 'South Korea',
-  'australia': 'Australia',
-  'philippines': 'Philippines',
-  'israel': 'Israel',
-  'iran': 'Iran',
-  'syria': 'Syria',
-  'saudi arabia': 'Saudi Arabia',
-  'turkey': 'Turkey',
-  'egypt': 'Egypt',
-  'canada': 'Canada',
-  'brazil': 'Brazil',
-  'mexico': 'Mexico',
-  'congo': 'DR Congo',
-  'somalia': 'Somalia',
-  'sudan': 'Sudan',
-  'nigeria': 'Nigeria',
-  'south africa': 'South Africa'
-};
+let lastSyncTimestamp = new Date().toISOString();
 
 // Direct authoritative publisher RSS feeds
 const FEED_REGISTRY = {
-  // Global & Multi-Region Wire Streams
   'global': [
     { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', source: 'BBC News' },
     { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', source: 'The New York Times' },
     { url: 'https://www.theguardian.com/world/rss', source: 'The Guardian' },
     { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' }
   ],
-  // Americas
   'us': [
     { url: 'https://rss.nytimes.com/services/xml/rss/nyt/US.xml', source: 'The New York Times' },
     { url: 'https://feeds.bbci.co.uk/news/world/us_and_canada/rss.xml', source: 'BBC News' },
@@ -74,7 +38,6 @@ const FEED_REGISTRY = {
     { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Americas.xml', source: 'The New York Times' },
     { url: 'https://www.theguardian.com/world/americas/rss', source: 'The Guardian' }
   ],
-  // Europe
   'uk': [
     { url: 'https://feeds.bbci.co.uk/news/uk/rss.xml', source: 'BBC News' },
     { url: 'https://www.theguardian.com/uk/rss', source: 'The Guardian' }
@@ -97,7 +60,6 @@ const FEED_REGISTRY = {
     { url: 'https://www.france24.com/en/rss', source: 'France 24' },
     { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Europe.xml', source: 'The New York Times' }
   ],
-  // Asia-Pacific
   'china': [
     { url: 'https://feeds.bbci.co.uk/news/world/asia/rss.xml', source: 'BBC News' },
     { url: 'https://www.theguardian.com/world/asia/rss', source: 'The Guardian' },
@@ -120,7 +82,6 @@ const FEED_REGISTRY = {
     { url: 'https://www.theguardian.com/australia-news/rss', source: 'The Guardian Australia' },
     { url: 'https://feeds.bbci.co.uk/news/world/asia/rss.xml', source: 'BBC News' }
   ],
-  // Middle East
   'israel': [
     { url: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml', source: 'BBC News' },
     { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
@@ -135,13 +96,11 @@ const FEED_REGISTRY = {
     { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
     { url: 'https://feeds.bbci.co.uk/news/world/middle_east/rss.xml', source: 'BBC News' }
   ],
-  // Africa
   'africa': [
     { url: 'https://feeds.bbci.co.uk/news/world/africa/rss.xml', source: 'BBC News Africa' },
     { url: 'https://www.theguardian.com/world/africa/rss', source: 'The Guardian' },
     { url: 'https://rss.nytimes.com/services/xml/rss/nyt/Africa.xml', source: 'The New York Times' }
   ],
-  // Topic-specific streams
   'cyber': [
     { url: 'https://feeds.arstechnica.com/arstechnica/index', source: 'Ars Technica' },
     { url: 'https://www.wired.com/feed/category/security/latest/rss', source: 'Wired Security' },
@@ -153,9 +112,6 @@ const FEED_REGISTRY = {
   ]
 };
 
-/**
- * Decode HTML entities in text
- */
 function decodeHtmlEntities(str) {
   if (!str) return '';
   return str
@@ -169,58 +125,46 @@ function decodeHtmlEntities(str) {
     .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(code));
 }
 
-export const CHENNAI_AREAS = [
-  'velachery', 'tnagar', 't nagar', 't. nagar', 'adyar', 'anna nagar', 'tambaram', 
-  'mylapore', 'guindy', 'porur', 'alwarpet', 'omr', 'chromepet', 'triplicane', 
-  'royapettah', 'kodambakkam', 'egmore', 'nungambakkam', 'madipakkam', 
-  'sholinganallur', 'perambur', 'avadi', 'pallavaram', 'thiruvanmiyur', 
-  'saidapet', 'besant nagar', 'chennai central', 'chennai', 'madras',
-  'ambattur', 'ambattur taluk', 'kolathur', 'mogappair', 'medavakkam',
-  'pallikaranai', 'tharamani', 'kotturpuram', 'vadapalani', 'poonamallee',
-  'thiruvallur', 'tiruvallur', 'kanchipuram', 'kancheepuram', 'chengalpattu',
-  'ashok nagar', 'villivakkam', 'redhills', 'tiruvottiyur', 'manali', 'ennore'
-];
+function cleanArticleUrl(rawUrl) {
+  if (!rawUrl) return '';
+  try {
+    return rawUrl.split('?')[0];
+  } catch (e) {
+    return rawUrl;
+  }
+}
 
-export const INDIAN_CITIES = [
-  'chennai', 'mumbai', 'delhi', 'new delhi', 'bengaluru', 'bangalore', 'hyderabad', 
-  'kolkata', 'pune', 'ahmedabad', 'jaipur', 'coimbatore', 'madurai', 'tiruchirappalli', 
-  'salem', 'india', 'tamil nadu', 'kerala', 'karnataka', 'andhra pradesh', ...CHENNAI_AREAS
-];
+function isDiscreteHeadlineArticle(url, title) {
+  if (!url || typeof url !== 'string') return false;
+  const u = url.toLowerCase().split('?')[0];
+  const t = (title || '').toLowerCase();
+
+  if (u.endsWith('.com') || u.endsWith('.org') || u.endsWith('.co.uk') || u.endsWith('.net') || u.endsWith('/')) return false;
+  if (u.endsWith('/news') || u.endsWith('/world') || u.endsWith('/politics') || u.endsWith('/business') || u.endsWith('/technology') || u.endsWith('/sport')) return false;
+  if (u.endsWith('/all.xml') || u.endsWith('/rss.xml') || u.endsWith('/rss')) return false;
+
+  if (u.includes('/live/') || u.includes('/liveblog/') || u.includes('/gallery/') || u.includes('/interactive/')) return false;
+  if (t.startsWith('live:') || t.startsWith('live updates:') || t.includes(' - live') || t.includes('rolling coverage')) return false;
+
+  const isBbc = u.includes('bbc.co.uk/news/articles/') || u.includes('bbc.com/news/articles/');
+  const isNyt = u.includes('nytimes.com/') && u.endsWith('.html');
+  const isGuardian = u.includes('theguardian.com/') && u.split('/').length >= 6;
+  const isAlJazeera = u.includes('aljazeera.com/news/') || u.includes('aljazeera.com/opinions/') || u.includes('aljazeera.com/features/');
+  const isNpr = u.includes('npr.org/') && /\/\d{4}\/\d{2}\/\d{2}\//.test(u);
+  const isGoogleNews = u.includes('news.google.com/rss/articles/') || u.includes('news.google.com/articles/');
+  const isFrance24 = u.includes('france24.com/en/');
+  const hasSlug = u.split('/').pop().includes('-');
+
+  return isBbc || isNyt || isGuardian || isAlJazeera || isNpr || isGoogleNews || isFrance24 || hasSlug;
+}
 
 /**
- * Generate real-time Google News RSS search URL for any country, topic, city, or language
+ * Build dynamic Google News RSS URL with high precision for countries, states, and cities
  */
-function buildGoogleNewsFeedUrl(country, topic, location = null, language = 'en') {
-  const targetLoc = (location || country || '').toLowerCase().trim();
-  const isChennaiArea = CHENNAI_AREAS.some(a => targetLoc.includes(a));
-  const isIndianRegion = isChennaiArea || INDIAN_CITIES.some(c => targetLoc.includes(c)) || language !== 'en';
-
-  let query = '';
-  if (location) {
-    if (isChennaiArea && targetLoc !== 'chennai' && targetLoc !== 'madras') {
-      query = (language === 'ta') ? `${location} சென்னை செய்திகள்` : `${location} chennai news`;
-    } else if (targetLoc === 'chennai' || targetLoc === 'madras') {
-      query = (language === 'ta') ? 'சென்னை செய்திகள்' : 'chennai news';
-    } else {
-      query = (isIndianRegion && !targetLoc.includes('india')) ? `${location} chennai news` : `${location} news`;
-    }
-  } else {
-    if (isChennaiArea && targetLoc !== 'chennai') {
-      query = `${country} chennai news`;
-    } else {
-      const countryName = COUNTRY_NAME_MAP[country.toLowerCase()] || country;
-      query = countryName;
-      if (topic && topic !== 'all') {
-        query += ` ${topic}`;
-      } else {
-        query += ' news';
-      }
-    }
-  }
-
+function buildGoogleNewsFeedUrl({ queryText, countryIso = 'US', language = 'en', timeWindow = '7d' }) {
   let hl = 'en-US';
-  let gl = 'US';
-  let ceid = 'US:en';
+  let gl = countryIso || 'US';
+  let ceid = `${countryIso}:en`;
 
   if (language === 'ta') {
     hl = 'ta';
@@ -242,67 +186,65 @@ function buildGoogleNewsFeedUrl(country, topic, location = null, language = 'en'
     hl = 'mr';
     gl = 'IN';
     ceid = 'IN:mr';
-  } else if (isIndianRegion || country === 'india') {
+  } else if (countryIso === 'IN') {
     hl = 'en-IN';
     gl = 'IN';
     ceid = 'IN:en';
+  } else if (countryIso === 'GB') {
+    hl = 'en-GB';
+    gl = 'GB';
+    ceid = 'GB:en';
+  } else if (countryIso === 'AU') {
+    hl = 'en-AU';
+    gl = 'AU';
+    ceid = 'AU:en';
+  } else if (countryIso === 'CA') {
+    hl = 'en-CA';
+    gl = 'CA';
+    ceid = 'CA:en';
   }
 
-  // Use 7d window for Indian neighborhoods and micro-areas to capture rich localized dispatches
-  const timeParam = isIndianRegion ? '+when:7d' : '+when:2d';
-
+  const encodedQuery = encodeURIComponent(queryText.trim());
   return {
-    url: `https://news.google.com/rss/search?q=${encodeURIComponent(query)}${timeParam}&hl=${hl}&gl=${gl}&ceid=${ceid}`,
-    source: location ? `Local News (${location.toUpperCase()})` : (isChennaiArea ? `Chennai Local (${country.toUpperCase()})` : 'Google News Live')
+    url: `https://news.google.com/rss/search?q=${encodedQuery}+when:${timeWindow}&hl=${hl}&gl=${gl}&ceid=${ceid}`,
+    source: 'Google News Live'
   };
 }
 
 /**
- * Clean URL and remove tracking queries
+ * Determine category (economy, risk, supply, climate, cyber, defense, geopolitics)
  */
-function cleanArticleUrl(rawUrl) {
-  if (!rawUrl) return '';
-  try {
-    return rawUrl.split('?')[0];
-  } catch (e) {
-    return rawUrl;
-  }
+function determineCategory(text) {
+  const t = text.toLowerCase();
+  if (t.includes('cyclone') || t.includes('flood') || t.includes('rain') || t.includes('monsoon') || t.includes('earthquake') || t.includes('climate') || t.includes('heatwave') || t.includes('storm') || t.includes('pollution') || t.includes('air quality')) return 'climate';
+  if (t.includes('chip') || t.includes('semiconductor') || t.includes('supply chain') || t.includes('port') || t.includes('cargo') || t.includes('freight') || t.includes('logistics') || t.includes('shortage') || t.includes('shipping') || t.includes('tsmc')) return 'supply';
+  if (t.includes('economy') || t.includes('inflation') || t.includes('market') || t.includes('tariff') || t.includes('trade') || t.includes('gdp') || t.includes('bank') || t.includes('stock') || t.includes('rupee') || t.includes('dollar') || t.includes('interest rate')) return 'economy';
+  if (t.includes('cyber') || t.includes('hacked') || t.includes('malware') || t.includes('ransomware') || t.includes('data breach') || t.includes('telecom') || t.includes('outage')) return 'cyber';
+  if (t.includes('military') || t.includes('missile') || t.includes('defense') || t.includes('army') || t.includes('navy') || t.includes('strike') || t.includes('weapon') || t.includes('warfare')) return 'defense';
+  if (t.includes('crisis') || t.includes('threat') || t.includes('attack') || t.includes('alert') || t.includes('explosion') || t.includes('conflict') || t.includes('sanctions')) return 'risk';
+  return 'geopolitics';
+}
+
+function analyzeSentiment(text) {
+  const lower = text.toLowerCase();
+  const negativeWords = ['crisis', 'war', 'attack', 'conflict', 'decline', 'drop', 'inflation', 'sanctions', 'casualty', 'disaster', 'threat', 'tensions', 'blast', 'strikes', 'panic', 'flood', 'warning'];
+  const positiveWords = ['growth', 'peace', 'agreement', 'recovery', 'treaty', 'breakthrough', 'gains', 'alliance', 'stability', 'surplus', 'accord', 'relief'];
+
+  let score = 0;
+  for (const w of negativeWords) if (lower.includes(w)) score -= 1;
+  for (const w of positiveWords) if (lower.includes(w)) score += 1;
+
+  if (score < -1) return 'Hostile / Risk';
+  if (score < 0) return 'Tense';
+  if (score > 1) return 'Positive / Stable';
+  if (score > 0) return 'Constructive';
+  return 'Neutral';
 }
 
 /**
- * Validates that a link is a discrete, individual headline news article
+ * Fetch and parse a single RSS feed safely
  */
-function isDiscreteHeadlineArticle(url, title) {
-  if (!url || typeof url !== 'string') return false;
-  const u = url.toLowerCase().split('?')[0];
-  const t = (title || '').toLowerCase();
-
-  // Exclude root domains, category landing pages, and XML feeds
-  if (u.endsWith('.com') || u.endsWith('.org') || u.endsWith('.co.uk') || u.endsWith('.net') || u.endsWith('/')) return false;
-  if (u.endsWith('/news') || u.endsWith('/world') || u.endsWith('/politics') || u.endsWith('/business') || u.endsWith('/technology') || u.endsWith('/sport')) return false;
-  if (u.endsWith('/all.xml') || u.endsWith('/rss.xml') || u.endsWith('/rss')) return false;
-
-  // Exclude rolling live coverage, match liveblogs, photo galleries
-  if (u.includes('/live/') || u.includes('/liveblog/') || u.includes('/gallery/') || u.includes('/interactive/')) return false;
-  if (t.startsWith('live:') || t.startsWith('live updates:') || t.includes(' - live') || t.includes('rolling coverage')) return false;
-
-  // Discrete headline formats
-  const isBbcArticle = u.includes('bbc.co.uk/news/articles/') || u.includes('bbc.com/news/articles/');
-  const isNytArticle = u.includes('nytimes.com/') && u.endsWith('.html');
-  const isGuardianArticle = u.includes('theguardian.com/') && u.split('/').length >= 6;
-  const isAlJazeeraArticle = u.includes('aljazeera.com/news/') || u.includes('aljazeera.com/opinions/') || u.includes('aljazeera.com/features/');
-  const isNprArticle = u.includes('npr.org/') && /\/\d{4}\/\d{2}\/\d{2}\//.test(u);
-  const isGoogleNewsArticle = u.includes('news.google.com/rss/articles/') || u.includes('news.google.com/articles/');
-  const isFrance24Article = u.includes('france24.com/en/');
-  const hasSlug = u.split('/').pop().includes('-');
-
-  return isBbcArticle || isNytArticle || isGuardianArticle || isAlJazeeraArticle || isNprArticle || isGoogleNewsArticle || isFrance24Article || hasSlug;
-}
-
-/**
- * Parse an individual RSS feed URL safely
- */
-async function fetchSingleFeed(feedMeta, hintedCountry, topic) {
+async function fetchSingleFeed(feedMeta, geoContext) {
   try {
     const res = await fetch(feedMeta.url, {
       headers: {
@@ -322,8 +264,8 @@ async function fetchSingleFeed(feedMeta, hintedCountry, topic) {
     for (const item of itemsArray.slice(0, 15)) {
       if (!item.title) continue;
 
-      let rawLink = typeof item.link === 'string' 
-        ? item.link 
+      let rawLink = typeof item.link === 'string'
+        ? item.link
         : item.guid?.['#text'] || item.guid || '';
 
       if (!rawLink || rawLink.startsWith('urn:')) {
@@ -335,15 +277,11 @@ async function fetchSingleFeed(feedMeta, hintedCountry, topic) {
       if (!rawLink || !rawLink.startsWith('http')) continue;
 
       const directUrl = cleanArticleUrl(rawLink);
-
-      // Validate article format
       if (!isDiscreteHeadlineArticle(directUrl, item.title)) continue;
 
-      // Extract and clean title
       let articleTitle = decodeHtmlEntities(String(item.title).trim());
-      let articleSource = feedMeta.source;
+      let articleSource = feedMeta.source || 'Verified Source';
 
-      // For feeds with source tags or suffix, extract source and clean title
       if (item.source) {
         if (typeof item.source === 'string') {
           articleSource = decodeHtmlEntities(item.source.trim());
@@ -361,7 +299,6 @@ async function fetchSingleFeed(feedMeta, hintedCountry, topic) {
         }
       }
 
-      // Thoroughly clean HTML tags, entities, and google link remnants from description
       let cleanDesc = item.description || '';
       if (typeof cleanDesc !== 'string') {
         cleanDesc = cleanDesc['#text'] || cleanDesc.a?.['#text'] || '';
@@ -378,34 +315,39 @@ async function fetchSingleFeed(feedMeta, hintedCountry, topic) {
         .replace(/\s+/g, ' ')
         .trim();
 
-      // If description contains raw Google News URL artifacts or tags, wipe it
       if (cleanDesc.includes('news.google.com') || cleanDesc.includes('target="_blank"') || cleanDesc.includes('<a href=')) {
         cleanDesc = '';
       }
 
-      // If description merely repeats the headline, clear it
-      const normTitle = articleTitle.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const normDesc = cleanDesc.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (normDesc === normTitle || normTitle.startsWith(normDesc) || normDesc.startsWith(normTitle)) {
-        cleanDesc = '';
-      }
-
       const pubDate = item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString();
+      const combinedText = `${articleTitle} ${cleanDesc}`;
+      const category = determineCategory(combinedText);
+      const sentiment = analyzeSentiment(combinedText);
 
-      // Automatically classify and resolve country from headline and description
-      const classified = classifyCountry(articleTitle, cleanDesc, hintedCountry);
+      // Resolve country metadata
+      const classified = classifyCountry(articleTitle, cleanDesc, geoContext?.countryId || 'global');
 
       const newsEntity = {
         title: articleTitle,
         description: cleanDesc,
         url: directUrl,
-        country: classified.id,
-        country_name: classified.name,
-        country_flag: classified.flag,
-        region: classified.region,
-        topic: topic === 'all' ? determineTopic(articleTitle + ' ' + cleanDesc) : topic,
+        country: geoContext?.countryId || classified.id,
+        country_name: geoContext?.country || classified.name,
+        country_flag: geoContext?.countryFlag || classified.flag,
+        region: geoContext?.state || geoContext?.city || classified.region,
+        location: geoContext?.city || geoContext?.state || null,
+        geo: {
+          lat: geoContext?.lat || (classified.id === 'india' ? 20.5937 : 20.0),
+          lng: geoContext?.lng || (classified.id === 'india' ? 78.9629 : 0.0),
+          level: geoContext?.level || 'country',
+          country: geoContext?.country || classified.name,
+          state: geoContext?.state || null,
+          city: geoContext?.city || null
+        },
+        topic: category.charAt(0).toUpperCase() + category.slice(1),
+        category,
         source: articleSource,
-        sentiment: analyzeSentiment(articleTitle + ' ' + cleanDesc),
+        sentiment,
         created_at: pubDate
       };
 
@@ -420,199 +362,267 @@ async function fetchSingleFeed(feedMeta, hintedCountry, topic) {
 
     return results;
   } catch (err) {
-    console.warn(`⚠️ [Feed Registry] Could not parse feed ${feedMeta.url}: ${err.message}`);
     return [];
   }
 }
 
 /**
- * Determine likely topic tag
+ * Optional GNews API fetcher if key provided in process.env
  */
-function determineTopic(text) {
-  const t = text.toLowerCase();
-  if (t.includes('cyber') || t.includes('tech') || t.includes('ai') || t.includes('chip') || t.includes('hacked') || t.includes('malware')) return 'Cyber';
-  if (t.includes('economy') || t.includes('inflation') || t.includes('tariff') || t.includes('trade') || t.includes('market') || t.includes('bank') || t.includes('gdp')) return 'Economy';
-  if (t.includes('military') || t.includes('defense') || t.includes('weapon') || t.includes('missile') || t.includes('strike') || t.includes('army') || t.includes('navy')) return 'Defense';
-  if (t.includes('oil') || t.includes('gas') || t.includes('nuclear') || t.includes('pipeline') || t.includes('energy') || t.includes('power grid')) return 'Energy';
-  return 'Geopolitics';
-}
-
-/**
- * Sentiment analysis helper
- */
-function analyzeSentiment(text) {
-  const lower = text.toLowerCase();
-  const negativeWords = ['crisis', 'war', 'attack', 'conflict', 'decline', 'drop', 'inflation', 'sanctions', 'casualty', 'disaster', 'threat', 'tensions', 'blast', 'strikes', 'panic'];
-  const positiveWords = ['growth', 'peace', 'agreement', 'recovery', 'treaty', 'breakthrough', 'gains', 'alliance', 'stability', 'surplus', 'accord'];
-
-  let score = 0;
-  for (const w of negativeWords) if (lower.includes(w)) score -= 1;
-  for (const w of positiveWords) if (lower.includes(w)) score += 1;
-
-  if (score < -1) return 'Hostile / Risk';
-  if (score < 0) return 'Tense';
-  if (score > 1) return 'Positive / Stable';
-  if (score > 0) return 'Constructive';
-  return 'Neutral';
-}
-
-/**
- * Fetch real news from multi-source direct feeds with dynamic Google News search augmentation
- */
-export async function fetchLiveNews(country = 'global', topic = 'all', location = null, language = 'en') {
-  const normLoc = (location || country || 'global').toLowerCase().trim();
-  const isChennaiArea = CHENNAI_AREAS.some(a => normLoc.includes(a));
-  const isLocalRequest = Boolean(location) || isChennaiArea || (normLoc !== 'global' && !FEED_REGISTRY[normLoc] && !COUNTRY_NAME_MAP[normLoc]);
-  
-  let targetFeeds = [];
-
-  if (isLocalRequest) {
-    // 1. Primary localized feed for the micro-area
-    targetFeeds.push(buildGoogleNewsFeedUrl(country, topic, location || country, language));
-
-    // 2. If it's a specific neighborhood or town, also query city-wide Chennai news as guaranteed supplementary
-    if (normLoc !== 'chennai' && normLoc !== 'madras') {
-      targetFeeds.push(buildGoogleNewsFeedUrl('chennai', topic, 'chennai', language));
-    }
-
-    // 3. Include Indian national feeds for regional coverage
-    if (FEED_REGISTRY['india']) {
-      targetFeeds = targetFeeds.concat(FEED_REGISTRY['india']);
-    }
-  } else {
-    // Normal international sovereign country or global feeds
-    targetFeeds = [...(FEED_REGISTRY[normLoc] || FEED_REGISTRY['global'])];
-    targetFeeds.push(buildGoogleNewsFeedUrl(normLoc, topic, location, language));
-  }
-
-  // If topic is Cyber or Economy, add topic-specific feeds
-  const lowerTopic = (topic || '').toLowerCase();
-  if (lowerTopic === 'cyber' && FEED_REGISTRY['cyber']) {
-    targetFeeds = [...FEED_REGISTRY['cyber'], ...targetFeeds];
-  } else if (lowerTopic === 'economy' && FEED_REGISTRY['economy']) {
-    targetFeeds = [...FEED_REGISTRY['economy'], ...targetFeeds];
-  }
-
+async function fetchFromGNewsApi(query, language = 'en') {
+  const apiKey = process.env.GNEWS_API_KEY;
+  if (!apiKey) return [];
   try {
-    // Ingest all target feeds concurrently
-    const feedPromises = targetFeeds.map(f => fetchSingleFeed(f, normLoc, topic));
-    const feedResults = await Promise.allSettled(feedPromises);
+    const url = `https://gnews.io/api/v4/search?q=${encodeURIComponent(query)}&lang=${language}&token=${apiKey}&max=10`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data.articles)) return [];
+    return data.articles.map(a => ({
+      title: a.title,
+      description: a.description || '',
+      url: a.url,
+      source: a.source?.name || 'GNews Provider',
+      created_at: a.publishedAt || new Date().toISOString()
+    }));
+  } catch (e) {
+    return [];
+  }
+}
 
-    let aggregated = [];
+/**
+ * Optional NewsAPI fetcher if key provided in process.env
+ */
+async function fetchFromNewsApi(query, countryCode = null) {
+  const apiKey = process.env.NEWS_API_KEY;
+  if (!apiKey) return [];
+  try {
+    const queryParam = query ? `q=${encodeURIComponent(query)}&` : '';
+    const countryParam = countryCode && countryCode.length === 2 ? `country=${countryCode}&` : '';
+    const url = `https://newsapi.org/v2/top-headlines?${queryParam}${countryParam}apiKey=${apiKey}&pageSize=10`;
+    const res = await fetch(url);
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!Array.isArray(data.articles)) return [];
+    return data.articles.map(a => ({
+      title: a.title,
+      description: a.description || '',
+      url: a.url,
+      source: a.source?.name || 'NewsAPI Provider',
+      created_at: a.publishedAt || new Date().toISOString()
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Multi-Source Live News Ingestion with Smart Geographic Fallback
+ * 
+ * Hierarchy:
+ * Level 1: Micro-location / City (e.g., Velachery, Dallas, Munich)
+ * Level 2: State / Province (e.g., Tamil Nadu, Texas, Bavaria)
+ * Level 3: Country (e.g., India, US, Germany)
+ * Level 4: Global
+ */
+export async function fetchLiveNews(country = 'global', topic = 'all', location = null, language = 'en', state = null, city = null) {
+  const rawTarget = (city || location || state || country || 'global').trim();
+  const geoResolved = resolveGeoHierarchy(rawTarget, country);
+
+  const cacheKey = `${geoResolved.countryId}_${geoResolved.state || ''}_${geoResolved.city || ''}_${topic}_${language}`;
+
+  // Check TTL cache
+  const cached = cacheByRegion.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS) && cached.data.length > 0) {
+    return cached.data;
+  }
+
+  let finalArticles = [];
+  let fallbackMeta = {
+    fallbackLevel: 'direct',
+    fallbackMessage: null,
+    targetLocation: geoResolved.displayName,
+    resolvedHierarchy: geoResolved
+  };
+
+  // STEP 1: Direct Fetch for Target Micro-Location / City
+  if (geoResolved.level === 'city') {
+    const cityQuery = `${geoResolved.city} ${geoResolved.state || ''} ${geoResolved.country}`;
+    const targetFeeds = [
+      buildGoogleNewsFeedUrl({ queryText: cityQuery, countryIso: geoResolved.countryId === 'india' ? 'IN' : 'US', language, timeWindow: '7d' })
+    ];
+
+    const feedResults = await Promise.allSettled(targetFeeds.map(f => fetchSingleFeed(f, geoResolved)));
     for (const res of feedResults) {
       if (res.status === 'fulfilled' && Array.isArray(res.value)) {
-        aggregated = aggregated.concat(res.value);
+        finalArticles = finalArticles.concat(res.value);
       }
     }
 
-    // Deduplicate by URL and Title
-    const seenUrls = new Set();
-    const seenTitles = new Set();
-    const uniqueNews = [];
+    // If 0 direct articles found, initiate Smart Fallback to State / Metro
+    if (finalArticles.length === 0 && geoResolved.state) {
+      fallbackMeta.fallbackLevel = 'state_fallback';
+      fallbackMeta.fallbackMessage = `No direct news for ${geoResolved.city} → Showing nearest regional intelligence from ${geoResolved.state} & ${geoResolved.country}`;
 
-    for (const item of aggregated) {
-      const normTitle = item.title.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (!seenUrls.has(item.url) && !seenTitles.has(normTitle)) {
-        seenUrls.add(item.url);
-        seenTitles.add(normTitle);
-        uniqueNews.push(item);
-      }
-    }
+      const stateQuery = `${geoResolved.state} news`;
+      const stateFeeds = [
+        buildGoogleNewsFeedUrl({ queryText: stateQuery, countryIso: geoResolved.countryId === 'india' ? 'IN' : 'US', language, timeWindow: '5d' })
+      ];
 
-    // Sort: If local request, prioritize articles directly mentioning the locality
-    if (isLocalRequest) {
-      const matchKeyword = (location || country).toLowerCase().replace(/[^a-z0-9]/g, '');
-      uniqueNews.sort((a, b) => {
-        const aText = (a.title + ' ' + (a.description || '')).toLowerCase().replace(/[^a-z0-9]/g, '');
-        const bText = (b.title + ' ' + (b.description || '')).toLowerCase().replace(/[^a-z0-9]/g, '');
-        const aMatches = matchKeyword.length > 2 && aText.includes(matchKeyword) ? 1 : 0;
-        const bMatches = matchKeyword.length > 2 && bText.includes(matchKeyword) ? 1 : 0;
-        if (aMatches !== bMatches) return bMatches - aMatches;
-        return new Date(b.created_at) - new Date(a.created_at);
-      });
+      const stateResults = await Promise.allSettled(stateFeeds.map(f => fetchSingleFeed(f, {
+        ...geoResolved,
+        level: 'state',
+        displayName: `${geoResolved.state}, ${geoResolved.country}`
+      })));
 
-      // Enhance country tag for local readability
-      for (const item of uniqueNews) {
-        const itemText = (item.title + ' ' + (item.description || '')).toLowerCase();
-        if (itemText.includes(matchKeyword) || isChennaiArea || isIndianRegion) {
-          item.country = 'india';
-          item.country_name = location ? `${location.toUpperCase()} (Chennai)` : (isChennaiArea ? `${country.toUpperCase()} (Chennai)` : 'Chennai Metro');
-          item.country_flag = '📍';
-          item.region = 'Local Intel';
+      for (const res of stateResults) {
+        if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+          finalArticles = finalArticles.concat(res.value);
         }
       }
-    } else {
-      uniqueNews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     }
-
-    const finalArticles = uniqueNews.slice(0, 40);
-    lastSyncTimestamp = new Date().toISOString();
-
-    // Persist batch to Supabase if configured
-    if (isSupabaseConfigured && supabase && finalArticles.length > 0) {
-      try {
-        await supabase
-          .from('news')
-          .upsert(
-            finalArticles.map(n => ({
-              title: n.title,
-              description: n.description,
-              url: n.url,
-              country: n.country,
-              topic: n.topic,
-              source: n.source,
-              sentiment: n.sentiment,
-              created_at: n.created_at
-            })),
-            { onConflict: 'url', ignoreDuplicates: true }
-          );
-      } catch (err) {
-        console.error('⚠️ [News Service] Supabase batch upsert error:', err.message);
-      }
-    }
-
-    // Update in-memory fallback cache
-    for (const item of finalArticles) {
-      if (!memoryNewsCache.some(m => m.url === item.url)) {
-        memoryNewsCache.unshift(item);
-      }
-    }
-    if (memoryNewsCache.length > 400) memoryNewsCache = memoryNewsCache.slice(0, 400);
-
-    // If a specific country/location filter was requested (and not 'global'), return articles
-    if (normLoc !== 'global') {
-      if (finalArticles.length > 0) return finalArticles;
-      const countryMatched = memoryNewsCache.filter(n => 
-        n.country === normLoc || (['chennai', 'delhi', 'mumbai', 'bengaluru'].includes(normLoc) && n.country === 'india')
-      );
-      return countryMatched.length > 0 ? countryMatched : finalArticles;
-    }
-
-    return finalArticles.length > 0 ? finalArticles : memoryNewsCache.slice(0, 30);
-  } catch (err) {
-    console.error(`⚠️ [News Service] Error in live ingestion for ${country}:`, err.message);
-    const filtered = memoryNewsCache.filter(n => 
-      normLoc === 'global' || n.country === normLoc
-    );
-    return filtered.length > 0 ? filtered : memoryNewsCache.slice(0, 25);
   }
+
+  // STEP 2: State / Province Level Fetch (e.g. Tamil Nadu, California, Bavaria)
+  if (geoResolved.level === 'state' || (geoResolved.level === 'city' && finalArticles.length === 0)) {
+    const stateName = geoResolved.state || rawTarget;
+    const query = `${stateName} news`;
+    const stateFeeds = [
+      buildGoogleNewsFeedUrl({ queryText: query, countryIso: geoResolved.countryId === 'india' ? 'IN' : 'US', language, timeWindow: '5d' })
+    ];
+
+    const feedResults = await Promise.allSettled(stateFeeds.map(f => fetchSingleFeed(f, geoResolved)));
+    for (const res of feedResults) {
+      if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+        finalArticles = finalArticles.concat(res.value);
+      }
+    }
+
+    // Check optional external APIs for the state
+    const [gnewsArticles, newsApiArticles] = await Promise.all([
+      fetchFromGNewsApi(query, language),
+      fetchFromNewsApi(query, geoResolved.countryId === 'india' ? 'in' : 'us')
+    ]);
+
+    for (const item of [...gnewsArticles, ...newsApiArticles]) {
+      if (!finalArticles.some(a => a.url === item.url)) {
+        const cat = determineCategory(item.title + ' ' + item.description);
+        finalArticles.push({
+          ...item,
+          country: geoResolved.countryId,
+          country_name: geoResolved.country,
+          country_flag: geoResolved.countryFlag || '🌐',
+          region: geoResolved.state,
+          location: geoResolved.state,
+          geo: {
+            lat: geoResolved.lat,
+            lng: geoResolved.lng,
+            level: 'state',
+            country: geoResolved.country,
+            state: geoResolved.state
+          },
+          topic: cat.charAt(0).toUpperCase() + cat.slice(1),
+          category: cat,
+          sentiment: analyzeSentiment(item.title + ' ' + item.description)
+        });
+      }
+    }
+  }
+
+  // STEP 3: Country Level or Fallback to Country
+  if (finalArticles.length === 0 || geoResolved.level === 'country' || geoResolved.level === 'global') {
+    if (geoResolved.level !== 'country' && geoResolved.level !== 'global') {
+      fallbackMeta.fallbackLevel = 'country_fallback';
+      fallbackMeta.fallbackMessage = `No direct news for ${rawTarget} → Showing sovereign intelligence from ${geoResolved.country}`;
+    }
+
+    const cId = geoResolved.countryId || 'global';
+    let countryFeeds = [...(FEED_REGISTRY[cId] || FEED_REGISTRY['global'])];
+
+    const cQuery = geoResolved.country && geoResolved.country !== 'Global' ? `${geoResolved.country} news` : 'world geopolitics';
+    countryFeeds.push(buildGoogleNewsFeedUrl({ queryText: cQuery, countryIso: cId === 'india' ? 'IN' : 'US', language, timeWindow: '3d' }));
+
+    const feedResults = await Promise.allSettled(countryFeeds.map(f => fetchSingleFeed(f, geoResolved)));
+    for (const res of feedResults) {
+      if (res.status === 'fulfilled' && Array.isArray(res.value)) {
+        finalArticles = finalArticles.concat(res.value);
+      }
+    }
+  }
+
+  // Deduplicate articles by URL and Title
+  const seenUrls = new Set();
+  const seenTitles = new Set();
+  const uniqueArticles = [];
+
+  for (const item of finalArticles) {
+    const normTitle = item.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (!seenUrls.has(item.url) && !seenTitles.has(normTitle)) {
+      seenUrls.add(item.url);
+      seenTitles.add(normTitle);
+      uniqueArticles.push({
+        ...item,
+        fallbackMeta: fallbackMeta.fallbackLevel !== 'direct' ? fallbackMeta : null
+      });
+    }
+  }
+
+  // Sort by publication date descending
+  uniqueArticles.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const output = uniqueArticles.slice(0, 40);
+
+  lastSyncTimestamp = new Date().toISOString();
+
+  // Save in TTL cache
+  cacheByRegion.set(cacheKey, { timestamp: Date.now(), data: output });
+
+  // Update global memory cache
+  for (const item of output) {
+    if (!memoryNewsCache.some(m => m.url === item.url)) {
+      memoryNewsCache.unshift(item);
+    }
+  }
+  if (memoryNewsCache.length > 500) memoryNewsCache = memoryNewsCache.slice(0, 500);
+
+  // Persist to Supabase if configured
+  if (isSupabaseConfigured && supabase && output.length > 0) {
+    try {
+      await supabase
+        .from('news')
+        .upsert(
+          output.map(n => ({
+            title: n.title,
+            description: n.description,
+            url: n.url,
+            country: n.country,
+            topic: n.topic,
+            source: n.source,
+            sentiment: n.sentiment,
+            created_at: n.created_at
+          })),
+          { onConflict: 'url', ignoreDuplicates: true }
+        );
+    } catch (e) {
+      // Non-blocking
+    }
+  }
+
+  return output.length > 0 ? output : memoryNewsCache.slice(0, 30);
 }
 
 /**
- * Fetch and categorize news from all over the world into country-based collections
+ * Categorize worldwide news into sovereign countries
  */
 export async function fetchWorldwideNewsCategorized() {
-  // Ensure we have a rich worldwide cache by ingesting key international sectors
   if (memoryNewsCache.length < 25) {
     await fetchLiveNews('global', 'all');
   }
 
-  // Group all currently aggregated news by country
   const groups = {};
   for (const item of memoryNewsCache) {
     const cId = item.country || 'global';
     if (!groups[cId]) {
-      const cMeta = COUNTRY_LEXICON.find(c => c.id === cId);
+      const cMeta = GLOBAL_COUNTRIES.find(c => c.id === cId) || COUNTRY_LEXICON.find(c => c.id === cId);
       groups[cId] = {
         id: cId,
         name: cMeta?.name || item.country_name || cId.toUpperCase(),
@@ -626,7 +636,6 @@ export async function fetchWorldwideNewsCategorized() {
     groups[cId].articles.push(item);
   }
 
-  // Sort countries array by article volume descending
   const countriesArray = Object.values(groups).sort((a, b) => b.count - a.count);
 
   return {
@@ -641,4 +650,4 @@ export function getLastSyncTimestamp() {
   return lastSyncTimestamp;
 }
 
-export { COUNTRY_LEXICON };
+export { COUNTRY_LEXICON, GLOBAL_COUNTRIES, INDIA_STATES, US_STATES, INTL_REGIONS, CHENNAI_MICRO_AREAS };

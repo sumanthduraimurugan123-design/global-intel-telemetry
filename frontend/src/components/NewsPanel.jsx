@@ -47,6 +47,8 @@ export default function NewsPanel({
   isLoading = false, 
   selectedCountry,
   selectedLocation = null,
+  geoInfo = null,
+  fallbackDetails = null,
   onSelectTopic, 
   activeTopic,
   persona = 'Casual user',
@@ -886,18 +888,34 @@ export default function NewsPanel({
         )}
       </div>
 
-      {/* 2. Sub-Header: Feed Stats & Controls */}
+      {/* 2. Sub-Header: Feed Stats, Breadcrumbs & Controls */}
       <div className="px-4 py-3 border-b border-wire-border flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-wire-surface">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <h2 className="font-serif text-wire-fg text-sm font-semibold flex items-center gap-2">
-            News Feed
-            {selectedLocation && (
-              <span className="font-mono text-xs text-wire-amber font-normal">
-                (Focused on: <span className="font-bold uppercase">{selectedLocation}</span>)
-              </span>
-            )}
+            Live Telemetry Feed
           </h2>
-          <span className="font-mono text-[10px] text-wire-subtle">{filteredNews.length} dispatches</span>
+          
+          {/* Hierarchical Location Breadcrumbs */}
+          <div className="flex items-center gap-1.5 font-mono text-[11px] bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-sm">
+            <MapPin className="w-3 h-3 text-wire-amber" />
+            <span className="text-slate-400">
+              {geoInfo?.country || (selectedCountry === 'global' ? 'Planetary' : selectedCountry.toUpperCase())}
+            </span>
+            {geoInfo?.state && (
+              <>
+                <span className="text-slate-600">/</span>
+                <span className="text-slate-300 font-semibold">{geoInfo.state}</span>
+              </>
+            )}
+            {geoInfo?.city && (
+              <>
+                <span className="text-slate-600">/</span>
+                <span className="text-wire-amber font-bold">{geoInfo.city}</span>
+              </>
+            )}
+          </div>
+
+          <span className="font-mono text-[10px] text-wire-subtle">{filteredNews.length} verified dispatches</span>
         </div>
 
         <div className="flex items-center gap-3 font-mono text-[10px]">
@@ -939,6 +957,17 @@ export default function NewsPanel({
           </button>
         ))}
       </div>
+
+      {/* Smart Fallback Warning Banner */}
+      {fallbackDetails && fallbackDetails.fallbackMessage && (
+        <div className="px-4 py-2.5 bg-amber-950/40 border-b border-amber-800/60 flex items-center gap-2 text-xs font-mono text-amber-300">
+          <Sparkles className="w-4 h-4 text-wire-amber shrink-0 animate-pulse" />
+          <div className="flex-1">
+            <span className="font-bold uppercase tracking-wider text-[10px] block text-wire-amber">Smart Regional Fallback Active:</span>
+            <span>{fallbackDetails.fallbackMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* 4. Country / Region Filter */}
       {availableCountries.length > 1 && (

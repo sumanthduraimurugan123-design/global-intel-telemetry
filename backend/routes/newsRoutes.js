@@ -1,9 +1,26 @@
 import express from 'express';
 import { fetchLiveNews, fetchWorldwideNewsCategorized, getLastSyncTimestamp, COUNTRY_LEXICON } from '../services/newsService.js';
+import { getFullGeoDirectory, resolveGeoHierarchy } from '../services/geoHierarchy.js';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient.js';
 import { explainNews, generatePersonalizedOpinion } from '../services/newsExplainer.js';
 
 const router = express.Router();
+
+/**
+ * GET /api/news/geo-hierarchy
+ * Returns directory of all supported countries, states, and searchable cities
+ */
+router.get('/geo-hierarchy', (req, res) => {
+  try {
+    const directory = getFullGeoDirectory();
+    res.json({
+      success: true,
+      ...directory
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to retrieve geo directory', details: error.message });
+  }
+});
 
 /**
  * GET /api/news/by-country
@@ -29,20 +46,16 @@ router.get('/by-country', async (req, res) => {
  * Returns the lexicon of supported countries with their flags and regions
  */
 router.get('/countries-list', (req, res) => {
+  const directory = getFullGeoDirectory();
   res.json({
-    count: COUNTRY_LEXICON.length,
-    countries: COUNTRY_LEXICON.map(c => ({
-      id: c.id,
-      name: c.name,
-      flag: c.flag,
-      region: c.region
-    }))
+    count: directory.countries.length,
+    countries: directory.countries
   });
 });
 
 /**
  * POST /api/news/explain
- * Returns a smart plain-language explanation and everyday impact in English, Hindi, or Tamil
+ * Returns a smart plain-language explanation and everyday impact in English, Hindi, Tamil, etc.
  */
 router.post('/explain', (req, res) => {
   try {
@@ -107,7 +120,7 @@ router.get('/opinion', (req, res) => {
 
 /**
  * GET /api/news
- * Query parameters: country (default: 'global'), topic (default: 'all'), location (optional city/area), language ('en', 'hi', 'ta'), refresh (boolean)
+ * Query parameters: country, state, city, location, topic, language, refresh
  */
 router.get('/', async (req, res) => {
   res.set({
@@ -118,56 +131,32 @@ router.get('/', async (req, res) => {
 
   try {
     const location = req.query.location ? req.query.location.toLowerCase().trim() : null;
-    const country = (location || req.query.country || 'global').toLowerCase().trim();
+    const state = req.query.state ? req.query.state.toLowerCase().trim() : null;
+    const city = req.query.city ? req.query.city.toLowerCase().trim() : null;
+    const country = (req.query.country || 'global').toLowerCase().trim();
     const language = (req.query.language || 'en').toLowerCase();
     const topic = req.query.topic || 'all';
     const forceRefresh = req.query.refresh === 'true';
 
-    // If Supabase is connected and not forcing refresh and no micro-location filter, try to read from Supabase first
-    if (isSupabaseConfigured && supabase && !forceRefresh && !location) {
-      let query = supabase
-        .from('news')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(30);
+    // Fetch live from authentic feeds with hierarchical resolution & smart fallback
+    const liveArticles = await fetchLiveNews(country, topic, location, language, state, city);
 
-      if (country !== 'global') {
-        query = query.eq('country', country);
-      }
+    // Resolve hierarchical context for metadata reporting
+    const geoInfo = resolveGeoHierarchy(city || location || state || country, country);
 
-      if (topic !== 'all') {
-        query = query.ilike('topic', `%${topic}%`);
-      }
-
-      const { data, error } = await query;
-
-      if (!error && data && data.length >= 5) {
-        const newestArticleTime = new Date(data[0].created_at).getTime();
-        const twoHoursAgo = Date.now() - (2 * 60 * 60 * 1000);
-        // Only return from DB if data is fresh (within last 2 hours)
-        if (newestArticleTime > twoHoursAgo) {
-          return res.json({
-            source: 'supabase',
-            count: data.length,
-            country,
-            location,
-            topic,
-            language,
-            lastUpdated: getLastSyncTimestamp(),
-            news: data
-          });
-        }
-      }
-    }
-
-    // Otherwise fetch live from direct authentic feeds and store in Supabase
-    const liveArticles = await fetchLiveNews(country, topic, location, language);
+    // Check if any articles carry fallback metadata
+    const fallbackArticle = liveArticles.find(a => a.fallbackMeta);
+    const fallbackDetails = fallbackArticle ? fallbackArticle.fallbackMeta : null;
 
     return res.json({
-      source: 'live_feed_upserted_to_supabase',
+      source: 'live_authenticated_multisource_feeds',
       count: liveArticles.length,
       country,
+      state,
+      city,
       location,
+      geoInfo,
+      fallbackDetails,
       topic,
       language,
       lastUpdated: getLastSyncTimestamp(),
@@ -181,7 +170,7 @@ router.get('/', async (req, res) => {
 
 /**
  * POST /api/news/refresh
- * Force instant refresh and ingestion for all key geopolitical hotspots
+ * Force instant refresh and ingestion
  */
 router.post('/refresh', async (req, res) => {
   res.set('Cache-Control', 'no-store');
@@ -189,8 +178,10 @@ router.post('/refresh', async (req, res) => {
     const country = req.body.country || 'global';
     const topic = req.body.topic || 'all';
     const location = req.body.location || null;
+    const state = req.body.state || null;
+    const city = req.body.city || null;
     const language = req.body.language || 'en';
-    const freshData = await fetchLiveNews(country, topic, location, language);
+    const freshData = await fetchLiveNews(country, topic, location, language, state, city);
     res.json({
       success: true,
       refreshedAt: new Date().toISOString(),

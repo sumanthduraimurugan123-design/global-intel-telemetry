@@ -12,7 +12,7 @@ import RadioPlayerBar from '../components/RadioPlayerBar';
 import EasyModeView from '../components/EasyModeView';
 import PersonalImpactModal from '../components/PersonalImpactModal';
 import { calculatePersonalImpact } from '../services/impactEngine';
-import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation } from '../services/newsService';
+import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation, fetchGeoDirectory } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
 import { 
   globalRadioEngine, 
@@ -31,7 +31,9 @@ import {
   Globe2, 
   Compass, 
   Sparkles, 
-  X 
+  X,
+  Layers,
+  ChevronRight
 } from 'lucide-react';
 
 const CHENNAI_NEIGHBORHOODS = [
@@ -47,10 +49,15 @@ const CHENNAI_NEIGHBORHOODS = [
 ];
 
 export default function Dashboard() {
-  // Core Dashboard State
+  // Core Hierarchical Geographic State
   const [selectedCountry, setSelectedCountry] = useState('global');
-  const [selectedLocation, setSelectedLocation] = useState(null); // 'velachery', 't nagar', etc.
+  const [selectedState, setSelectedState] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null); // city / micro-locality
   const [customLocationInput, setCustomLocationInput] = useState('');
+  const [geoDirectory, setGeoDirectory] = useState(null);
+  const [geoInfo, setGeoInfo] = useState(null);
+  const [fallbackDetails, setFallbackDetails] = useState(null);
+
   const [activeTopic, setActiveTopic] = useState('all');
   const [news, setNews] = useState([]);
   const [alerts, setAlerts] = useState([]);
@@ -107,18 +114,32 @@ export default function Dashboard() {
     }
   }, [isLargeText]);
 
+  // Fetch complete geographic directory on boot
+  useEffect(() => {
+    fetchGeoDirectory()
+      .then(dir => {
+        if (dir) setGeoDirectory(dir);
+      })
+      .catch(e => console.log('Could not load geo directory:', e));
+  }, []);
+
   // Load news and alerts
-  const loadTelemetryData = useCallback(async (force = false, overrideCountry = null, overrideLocation = undefined) => {
+  const loadTelemetryData = useCallback(async (force = false, overrideCountry = null, overrideLocation = undefined, overrideState = undefined) => {
     setIsRefreshing(true);
     try {
       const locToUse = overrideLocation !== undefined ? overrideLocation : selectedLocation;
       const countryToUse = overrideCountry || selectedCountry;
-      const [fetchedNews, fetchedAlerts] = await Promise.all([
-        fetchNewsStream(countryToUse, activeTopic, force, locToUse, currentLanguage),
+      const stateToUse = overrideState !== undefined ? overrideState : selectedState;
+
+      const [resStream, fetchedAlerts] = await Promise.all([
+        fetchNewsStream(countryToUse, activeTopic, force, locToUse, currentLanguage, stateToUse, locToUse),
         fetchActiveAlerts(countryToUse)
       ]);
 
-      setNews(fetchedNews);
+      const articles = resStream?.news || (Array.isArray(resStream) ? resStream : []);
+      setNews(articles);
+      setGeoInfo(resStream?.geoInfo || null);
+      setFallbackDetails(resStream?.fallbackDetails || null);
       setAlerts(fetchedAlerts);
       setLastUpdatedTime(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
@@ -139,19 +160,22 @@ export default function Dashboard() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [selectedCountry, selectedLocation, activeTopic, currentLanguage, isAudioAlertsEnabled]);
+  }, [selectedCountry, selectedLocation, selectedState, activeTopic, currentLanguage, isAudioAlertsEnabled]);
 
-  // Initial load and reload when country, location, topic, or language changes
+  // Initial load and reload when country, location, state, topic, or language changes
   useEffect(() => {
     loadTelemetryData(false);
     setCountdown(30);
-    const focusLabel = selectedLocation ? `${selectedLocation.toUpperCase()} (${selectedCountry.toUpperCase()})` : selectedCountry.toUpperCase();
+    const focusLabel = selectedLocation 
+      ? `${selectedLocation.toUpperCase()} (${selectedState || selectedCountry.toUpperCase()})` 
+      : (selectedState ? `${selectedState.toUpperCase()} (${selectedCountry.toUpperCase()})` : selectedCountry.toUpperCase());
     logTelemetryAction(`Sector focus switched to: ${focusLabel}`, persona, { 
       topic: activeTopic,
       language: currentLanguage,
+      state: selectedState,
       location: selectedLocation 
     });
-  }, [selectedCountry, selectedLocation, activeTopic, currentLanguage, loadTelemetryData]);
+  }, [selectedCountry, selectedState, selectedLocation, activeTopic, currentLanguage, loadTelemetryData]);
 
   // Real-time 30-second countdown loop
   useEffect(() => {
@@ -184,23 +208,36 @@ export default function Dashboard() {
   // Handle Country/Location Selection from 3D Globe or Navigation
   const handleSelectCountry = (countryId) => {
     setSelectedCountry(countryId);
+    setSelectedState(null);
     setSelectedLocation(null);
     stopSpeaking();
     setIsSpeaking(false);
-    loadTelemetryData(true, countryId, null);
+    loadTelemetryData(true, countryId, null, null);
   };
 
-  // Handle Specific Locality / Micro-area Selection (e.g. Velachery, T. Nagar)
-  const handleSelectLocation = (locName) => {
+  // Handle State / Province Selection (e.g. Tamil Nadu, California, Texas, Bavaria)
+  const handleSelectState = (stateName, parentCountry = null) => {
     playEarcon('click');
-    setSelectedLocation(locName);
-    setActiveTopic('all');
-    if (locName) {
-      setSelectedCountry('india');
-    }
+    const c = parentCountry || selectedCountry || 'india';
+    setSelectedCountry(c);
+    setSelectedState(stateName);
+    setSelectedLocation(null);
     stopSpeaking();
     setIsSpeaking(false);
-    loadTelemetryData(true, locName ? 'india' : selectedCountry, locName || null);
+    loadTelemetryData(true, c, null, stateName);
+  };
+
+  // Handle Specific Locality / Micro-area Selection (e.g. Velachery, T. Nagar, Munich)
+  const handleSelectLocation = (locName, parentCountry = null, parentState = null) => {
+    playEarcon('click');
+    const c = parentCountry || selectedCountry || 'india';
+    setSelectedCountry(c);
+    if (parentState) setSelectedState(parentState);
+    setSelectedLocation(locName);
+    setActiveTopic('all');
+    stopSpeaking();
+    setIsSpeaking(false);
+    loadTelemetryData(true, c, locName, parentState || selectedState);
   };
 
   // Handle Custom Locality Search
@@ -459,6 +496,7 @@ export default function Dashboard() {
                   selectedCountry={selectedCountry}
                   onSelectCountry={handleSelectCountry}
                   onOpenImpactModal={() => setIsImpactModalOpen(true)}
+                  news={news}
                 />
               </div>
 
@@ -474,25 +512,33 @@ export default function Dashboard() {
 
             </div>
 
-            {/* Row 3: Hyper-Local Neighborhood Telemetry Focus Strip */}
-            <div className="bg-wire-surface border border-wire-border p-3.5 shadow-md">
+            {/* Row 3: Planetary Hierarchical Geo Navigation & Neighborhood Telemetry Strip */}
+            <div className="bg-wire-surface border border-wire-border p-4 shadow-md space-y-3">
+              {/* Header with Breadcrumb and GPS */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-wire-border/60">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span className="font-mono text-xs font-bold text-wire-fg tracking-wide uppercase flex items-center gap-1.5">
-                    <Compass className="w-3.5 h-3.5 text-wire-amber" />
-                    Hyper-Local Telemetry & Neighborhood Focus
+                    <Layers className="w-4 h-4 text-wire-amber" />
+                    Hierarchical Geo Navigation (Planetary Coverage)
                   </span>
-                  {selectedLocation ? (
-                    <span className="px-2 py-0.5 bg-wire-amber text-wire-base font-mono text-[11px] font-bold rounded-sm uppercase flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {selectedLocation} (Chennai / India)
-                    </span>
-                  ) : (
-                    <span className="px-2 py-0.5 bg-slate-900 border border-slate-700 font-mono text-[11px] text-slate-300 rounded-sm uppercase">
-                      {selectedCountry === 'india' ? '🇮🇳 All India' : (selectedCountry === 'global' ? '🌐 Worldwide' : selectedCountry.toUpperCase())}
-                    </span>
-                  )}
+
+                  {/* Active Breadcrumb Badge */}
+                  <div className="flex items-center gap-1 font-mono text-[11px] bg-slate-900 border border-slate-700 px-2.5 py-0.5 rounded-sm">
+                    <span className="text-wire-amber font-semibold uppercase">{selectedCountry}</span>
+                    {selectedState && (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-slate-500" />
+                        <span className="text-white font-semibold">{selectedState}</span>
+                      </>
+                    )}
+                    {selectedLocation && (
+                      <>
+                        <ChevronRight className="w-3 h-3 text-slate-500" />
+                        <span className="text-emerald-400 font-bold">{selectedLocation}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {/* GPS Auto-Detect Button & Reset Button */}
@@ -507,58 +553,121 @@ export default function Dashboard() {
                     <span className="text-[10px] text-wire-subtle">({detectedLocationLabel})</span>
                   </button>
 
-                  {selectedLocation && (
+                  {(selectedLocation || selectedState || selectedCountry !== 'global') && (
                     <button
-                      onClick={() => handleSelectLocation(null)}
-                      className="px-2 py-1.5 text-xs font-mono text-wire-subtle hover:text-wire-red border border-wire-border hover:border-wire-red/40 rounded-sm transition-colors flex items-center gap-1"
-                      title="Reset to global / country view"
+                      onClick={() => handleSelectCountry('global')}
+                      className="px-2.5 py-1.5 text-xs font-mono text-wire-subtle hover:text-wire-red border border-wire-border hover:border-wire-red/40 rounded-sm transition-colors flex items-center gap-1"
+                      title="Reset to global view"
                     >
                       <X className="w-3 h-3" />
-                      <span>Clear Local Focus</span>
+                      <span>Reset to Global</span>
                     </button>
                   )}
                 </div>
               </div>
 
-              {/* Neighborhood Quick Chips & Custom Search */}
-              <div className="mt-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-                {/* Chennai Neighborhood Quick Chips */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-mono text-[11px] text-wire-subtle mr-1">Quick Focus:</span>
-                  
-                  <button
-                    onClick={() => handleSelectCountry('global')}
-                    className={`px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${
-                      !selectedLocation && selectedCountry === 'global'
-                        ? 'bg-wire-amber text-wire-base font-bold border-wire-amber shadow-sm'
-                        : 'bg-wire-base text-wire-subtle border-wire-border hover:text-white hover:border-slate-600'
-                    }`}
+              {/* 3-Level Hierarchical Selectors: Country -> State/Province -> City/District */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                {/* Level 1: Country Selector */}
+                <div>
+                  <label className="block font-mono text-[10px] text-wire-subtle uppercase mb-1">
+                    Level 1: Sovereign Nation
+                  </label>
+                  <select
+                    value={selectedCountry}
+                    onChange={(e) => handleSelectCountry(e.target.value)}
+                    className="w-full bg-slate-950 border border-wire-border px-2.5 py-1.5 text-xs font-mono text-wire-fg focus:outline-none focus:border-wire-amber rounded-sm"
                   >
-                    🌐 Worldwide
-                  </button>
+                    <option value="global">🌐 Worldwide (Planetary Wire)</option>
+                    <option value="india">🇮🇳 India</option>
+                    <option value="us">🇺🇸 United States</option>
+                    <option value="ukraine">🇺🇦 Ukraine</option>
+                    <option value="russia">🇷🇺 Russia</option>
+                    <option value="china">🇨🇳 China</option>
+                    <option value="taiwan">🇹🇼 Taiwan</option>
+                    <option value="israel">🇮🇱 Israel</option>
+                    <option value="iran">🇮🇷 Iran</option>
+                    <option value="germany">🇩🇪 Germany</option>
+                    <option value="france">🇫🇷 France</option>
+                    <option value="uk">🇬🇧 United Kingdom</option>
+                    <option value="japan">🇯🇵 Japan</option>
+                    <option value="australia">🇦🇺 Australia</option>
+                    <option value="canada">🇨🇦 Canada</option>
+                    <option value="brazil">🇧🇷 Brazil</option>
+                    {geoDirectory?.countries
+                      ?.filter(c => !['global', 'india', 'us', 'ukraine', 'russia', 'china', 'taiwan', 'israel', 'iran', 'germany', 'france', 'uk', 'japan', 'australia', 'canada', 'brazil'].includes(c.id))
+                      .map(c => (
+                        <option key={c.id} value={c.id}>{c.flag} {c.name}</option>
+                      ))}
+                  </select>
+                </div>
 
-                  <button
-                    onClick={() => {
-                      setSelectedCountry('india');
-                      setSelectedLocation(null);
-                      loadTelemetryData(true, 'india', null);
+                {/* Level 2: State / Province Selector */}
+                <div>
+                  <label className="block font-mono text-[10px] text-wire-subtle uppercase mb-1">
+                    Level 2: State / Province
+                  </label>
+                  <select
+                    value={selectedState || ''}
+                    onChange={(e) => {
+                      if (!e.target.value) {
+                        setSelectedState(null);
+                        loadTelemetryData(true, selectedCountry, null, null);
+                      } else {
+                        handleSelectState(e.target.value);
+                      }
                     }}
-                    className={`px-2.5 py-1 text-xs font-mono rounded-sm border transition-all ${
-                      !selectedLocation && selectedCountry === 'india'
-                        ? 'bg-wire-amber text-wire-base font-bold border-wire-amber shadow-sm'
-                        : 'bg-wire-base text-wire-subtle border-wire-border hover:text-white hover:border-slate-600'
-                    }`}
+                    className="w-full bg-slate-950 border border-wire-border px-2.5 py-1.5 text-xs font-mono text-wire-fg focus:outline-none focus:border-wire-amber rounded-sm"
                   >
-                    🇮🇳 India
-                  </button>
+                    <option value="">All States / Whole Country</option>
+                    {selectedCountry === 'india' && geoDirectory?.indiaStates?.map(s => (
+                      <option key={s.id} value={s.id}>🇮🇳 {s.name}</option>
+                    ))}
+                    {selectedCountry === 'us' && geoDirectory?.usStates?.map(s => (
+                      <option key={s.id} value={s.id}>🇺🇸 {s.name}</option>
+                    ))}
+                    {selectedCountry !== 'india' && selectedCountry !== 'us' && geoDirectory?.intlRegions?.filter(r => r.country === selectedCountry).map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
+                  </select>
+                </div>
 
-                  {CHENNAI_NEIGHBORHOODS.map(hood => {
+                {/* Level 3: City / District / Micro-Region Quick Drill-down */}
+                <div>
+                  <label className="block font-mono text-[10px] text-wire-subtle uppercase mb-1">
+                    Level 3: City / Micro-Area
+                  </label>
+                  <form onSubmit={handleCustomLocSubmit} className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={customLocationInput}
+                      onChange={(e) => setCustomLocationInput(e.target.value)}
+                      placeholder="e.g. Velachery, Dallas, Munich..."
+                      className="w-full bg-slate-950 border border-wire-border px-2.5 py-1.5 text-xs font-mono text-wire-fg placeholder:text-wire-subtle focus:outline-none focus:border-wire-amber rounded-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="px-3 py-1.5 bg-wire-raised hover:bg-wire-amber hover:text-wire-base border border-wire-border text-wire-fg font-mono text-xs font-semibold rounded-sm transition-all shrink-0 flex items-center gap-1"
+                    >
+                      <Search className="w-3 h-3" />
+                      <span>Drill</span>
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Quick Neighborhood & City Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-wire-border/40">
+                <span className="font-mono text-[11px] text-wire-subtle mr-1">Direct Chips:</span>
+
+                {selectedCountry === 'india' ? (
+                  CHENNAI_NEIGHBORHOODS.map(hood => {
                     const isSelected = selectedLocation === hood.loc;
                     return (
                       <button
                         key={hood.id}
-                        onClick={() => handleSelectLocation(hood.loc)}
-                        className={`px-2.5 py-1 text-xs font-mono rounded-sm border transition-all flex items-center gap-1 ${
+                        onClick={() => handleSelectLocation(hood.loc, 'india', 'tamil nadu')}
+                        className={`px-2 py-0.5 text-xs font-mono rounded-sm border transition-all flex items-center gap-1 ${
                           isSelected
                             ? 'bg-wire-amber text-wire-base font-bold border-wire-amber shadow-sm scale-105'
                             : 'bg-wire-base text-wire-subtle border-wire-border hover:text-white hover:border-slate-600'
@@ -568,28 +677,22 @@ export default function Dashboard() {
                         <span>{hood.label}</span>
                       </button>
                     );
-                  })}
-                </div>
-
-                {/* Custom Neighborhood / Area search form */}
-                <form onSubmit={handleCustomLocSubmit} className="flex items-center gap-1 min-w-[240px]">
-                  <div className="relative flex-1">
-                    <input
-                      type="text"
-                      value={customLocationInput}
-                      onChange={(e) => setCustomLocationInput(e.target.value)}
-                      placeholder="Type area (e.g. Madipakkam)..."
-                      className="w-full bg-slate-950 border border-wire-border px-2.5 py-1 text-xs font-mono text-wire-fg placeholder:text-wire-subtle focus:outline-none focus:border-wire-amber rounded-sm"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="px-3 py-1 bg-wire-raised hover:bg-wire-amber hover:text-wire-base border border-wire-border text-wire-fg font-mono text-xs font-semibold rounded-sm transition-all flex items-center gap-1"
-                  >
-                    <Search className="w-3 h-3" />
-                    <span>Scan</span>
-                  </button>
-                </form>
+                  })
+                ) : (
+                  [
+                    { id: 'all', label: 'All Regions', loc: null },
+                    { id: 'cap', label: 'National Capital', loc: 'capital' },
+                    { id: 'comm', label: 'Economic Core', loc: 'economy' }
+                  ].map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => handleSelectLocation(c.loc)}
+                      className="px-2 py-0.5 text-xs font-mono rounded-sm border bg-wire-base text-wire-subtle border-wire-border hover:text-white hover:border-slate-600"
+                    >
+                      {c.label}
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
@@ -600,6 +703,8 @@ export default function Dashboard() {
                 isLoading={isRefreshing && news.length === 0}
                 selectedCountry={selectedCountry}
                 selectedLocation={selectedLocation}
+                geoInfo={geoInfo}
+                fallbackDetails={fallbackDetails}
                 onSelectLocation={handleSelectLocation}
                 activeTopic={activeTopic}
                 onSelectTopic={setActiveTopic}
