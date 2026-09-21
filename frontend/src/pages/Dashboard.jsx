@@ -11,6 +11,7 @@ import VoiceAssistantModal from '../components/VoiceAssistantModal';
 import RadioPlayerBar from '../components/RadioPlayerBar';
 import EasyModeView from '../components/EasyModeView';
 import PersonalImpactModal from '../components/PersonalImpactModal';
+import FutureImpactSimulatorModal from '../components/FutureImpactSimulatorModal';
 import { calculatePersonalImpact } from '../services/impactEngine';
 import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation, fetchGeoDirectory } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
@@ -91,6 +92,9 @@ export default function Dashboard() {
   // AI Personal Impact Engine State
   const [isImpactModalOpen, setIsImpactModalOpen] = useState(false);
   const [impactProfileId, setImpactProfileId] = useState('tech');
+
+  // Future Impact Simulator Modal State
+  const [isFutureImpactModalOpen, setIsFutureImpactModalOpen] = useState(false);
 
   // Visual Accessibility States
   const [isHighContrast, setIsHighContrast] = useState(false);
@@ -449,6 +453,7 @@ export default function Dashboard() {
             onOpenVoiceModal={() => setIsVoiceModalOpen(true)}
             onToggleEasyMode={handleToggleEasyMode}
             isEasyMode={isEasyMode}
+            onOpenFutureImpactModal={() => setIsFutureImpactModalOpen(true)}
           />
 
           {/* Accessibility & Voice Controls Bar */}
@@ -817,6 +822,14 @@ export default function Dashboard() {
         currentLanguage={currentLanguage}
         isSpeaking={isSpeaking}
         setIsSpeaking={setIsSpeaking}
+      />
+
+      {/* Future Impact Simulator Modal */}
+      <FutureImpactSimulatorModal
+        isOpen={isFutureImpactModalOpen}
+        onClose={() => setIsFutureImpactModalOpen(false)}
+        currentLocation={selectedLocation || selectedState || selectedCountry}
+        currentPersona={persona}
       />
 
     </div>

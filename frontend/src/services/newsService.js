@@ -388,3 +388,41 @@ export function stopSpeech() {
     currentSpeechUtterance = null;
   }
 }
+
+/**
+ * Fetch Future Impact Simulation generated from real news data
+ * Requirement 7: GET /api/future-impact?location=...&persona=...
+ */
+export async function fetchFutureImpact(location = 'global', persona = 'Common Person') {
+  const timestamp = Date.now();
+  const q = `location=${encodeURIComponent(location)}&persona=${encodeURIComponent(persona)}&_t=${timestamp}`;
+
+  const endpoints = [
+    `${API_BASE}/future-impact?${q}`,
+    `${API_BASE}/news/future-impact?${q}`,
+    `http://localhost:5000/api/future-impact?${q}`,
+    `/api/future-impact?${q}`
+  ];
+
+  for (const ep of endpoints) {
+    try {
+      const res = await fetch(ep, { cache: 'no-store' });
+      const ct = res.headers.get('content-type') || '';
+      if (res.ok && ct.includes('application/json')) {
+        const data = await res.json();
+        return data;
+      }
+    } catch (e) {
+      // try next candidate
+    }
+  }
+
+  // Basic fallback return if server offline
+  return {
+    location,
+    persona,
+    totalArticlesAnalyzed: 0,
+    predictions: []
+  };
+}
+

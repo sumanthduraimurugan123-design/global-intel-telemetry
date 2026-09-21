@@ -7,6 +7,7 @@ import logsRoutes from './routes/logsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
 import { isSupabaseConfigured } from './services/supabaseClient.js';
 import { fetchLiveNews } from './services/newsService.js';
+import { getFutureImpactSimulation } from './services/futureImpactSimulator.js';
 
 dotenv.config();
 
@@ -31,6 +32,24 @@ app.use('/api/news', newsRoutes);
 app.use('/api/alerts', alertsRoutes);
 app.use('/api/logs', logsRoutes);
 app.use('/api/users', usersRoutes);
+
+// Dedicated Future Impact Simulator Endpoint (Specification requirement 7)
+app.get('/api/future-impact', async (req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  try {
+    const location = req.query.location || 'global';
+    const persona = req.query.persona || 'Common Person';
+    const simulationData = await getFutureImpactSimulation(location, persona);
+    res.json(simulationData);
+  } catch (error) {
+    console.error('❌ [Future Impact Route Error]:', error);
+    res.status(500).json({ error: 'Failed to generate future impact simulation', details: error.message });
+  }
+});
 
 // Health & System Status Endpoint
 app.get('/api/status', (req, res) => {

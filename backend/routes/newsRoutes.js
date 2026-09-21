@@ -3,6 +3,7 @@ import { fetchLiveNews, fetchWorldwideNewsCategorized, getLastSyncTimestamp, COU
 import { getFullGeoDirectory, resolveGeoHierarchy } from '../services/geoHierarchy.js';
 import { supabase, isSupabaseConfigured } from '../services/supabaseClient.js';
 import { explainNews, generatePersonalizedOpinion } from '../services/newsExplainer.js';
+import { getFutureImpactSimulation } from '../services/futureImpactSimulator.js';
 
 const router = express.Router();
 
@@ -115,6 +116,27 @@ router.get('/opinion', (req, res) => {
   } catch (err) {
     console.error('❌ [News Opinion Error]:', err);
     res.status(500).json({ error: 'Failed to generate personalized opinion', details: err.message });
+  }
+});
+
+/**
+ * GET /api/news/future-impact
+ * Query parameters: location, persona
+ */
+router.get('/future-impact', async (req, res) => {
+  res.set({
+    'Cache-Control': 'no-store, no-cache, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
+  try {
+    const location = req.query.location || 'global';
+    const persona = req.query.persona || 'Common Person';
+    const simulationData = await getFutureImpactSimulation(location, persona);
+    res.json(simulationData);
+  } catch (error) {
+    console.error('❌ [Future Impact Error]:', error);
+    res.status(500).json({ error: 'Failed to generate future impact simulation', details: error.message });
   }
 });
 

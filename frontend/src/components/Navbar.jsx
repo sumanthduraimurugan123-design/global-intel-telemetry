@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Volume2, UserCheck, Database } from 'lucide-react';
+import { RefreshCw, Volume2, UserCheck, Database, Sparkles } from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
 
 export default function Navbar({ 
@@ -16,7 +16,8 @@ export default function Navbar({
   onSelectLanguage,
   onOpenVoiceModal,
   onToggleEasyMode,
-  isEasyMode = false
+  isEasyMode = false,
+  onOpenFutureImpactModal
 }) {
   const [utcTime, setUtcTime] = useState('');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -89,6 +90,17 @@ export default function Navbar({
           >
             <span className="animate-pulse">🎤</span>
             <span className="hidden sm:inline">Voice Access</span>
+          </button>
+
+          {/* 🔮 Future Impact Simulator Button */}
+          <button
+            onClick={onOpenFutureImpactModal}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-mono text-[11px] bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 border border-amber-500/50 font-bold rounded-sm shadow transition-all active:scale-95"
+            title="Simulate Future Impact based on real-time news"
+            aria-label="Simulate Future Impact"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Simulate Future Impact</span>
           </button>
 
           {/* 🌐 Language Switcher Dropdown */}
