@@ -181,18 +181,18 @@ export function calculatePersonalImpact({
   // Determine Severity Level
   let level = 'LOW';
   let levelBadge = 'Mild Ripple';
-  let badgeColor = 'text-wire-green';
+  let badgeColor = 'text-emerald-400';
   let bgBadge = 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300';
 
   if (overallScore >= 70) {
     level = 'HIGH';
     levelBadge = 'Direct Impact Expected';
-    badgeColor = 'text-wire-red';
+    badgeColor = 'text-rose-400';
     bgBadge = 'bg-rose-950/50 border-rose-500/40 text-rose-300';
   } else if (overallScore >= 45) {
     level = 'MEDIUM';
     levelBadge = 'Moderate Ripple';
-    badgeColor = 'text-wire-amber';
+    badgeColor = 'text-amber-400';
     bgBadge = 'bg-amber-950/40 border-amber-500/30 text-amber-300';
   }
 

@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { RefreshCw, Volume2, UserCheck, Database, Sparkles, Globe2, Mic } from 'lucide-react';
+import { 
+  RefreshCw, 
+  Volume2, 
+  VolumeX, 
+  UserCheck, 
+  Database, 
+  Sparkles, 
+  Globe2, 
+  Mic, 
+  Volume1 
+} from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
+import { playUiSound, isSoundMuted, toggleSoundMute } from '../services/soundSystem';
 
 export default function Navbar({ 
   selectedCountry, 
@@ -21,6 +32,7 @@ export default function Navbar({
 }) {
   const [utcTime, setUtcTime] = useState('');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
+  const [isMuted, setIsMuted] = useState(isSoundMuted());
 
   useEffect(() => {
     const updateTime = () => {
@@ -33,6 +45,14 @@ export default function Navbar({
     return () => clearInterval(timer);
   }, []);
 
+  const handleToggleSound = () => {
+    const newMuted = toggleSoundMute();
+    setIsMuted(newMuted);
+    if (!newMuted) {
+      playUiSound('toggle');
+    }
+  };
+
   const languageLabels = {
     en: 'EN',
     ta: 'தமிழ்',
@@ -43,7 +63,7 @@ export default function Navbar({
   };
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-slate-950/80 backdrop-blur-xl border-b border-purple-500/20 shadow-lg shadow-black/40">
+    <header className="sticky top-0 z-40 w-full bg-slate-950/85 backdrop-blur-2xl border-b border-purple-500/20 shadow-xl shadow-black/50 transition-all">
       {/* Top Futuristic Neon Gradient Rule */}
       <div className="h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-400 w-full animate-pulse" />
 
@@ -51,26 +71,30 @@ export default function Navbar({
 
         {/* Left: Brand / Title */}
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md shadow-purple-500/30 text-white font-bold text-sm">
-            <Globe2 className="w-4 h-4 text-white animate-spin-slow" />
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 via-pink-600 to-cyan-500 p-[1px] shadow-lg shadow-purple-500/30">
+            <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
+              <Globe2 className="w-4 h-4 text-cyan-300 animate-spin-slow" />
+            </div>
           </div>
           <div>
             <h1 className="font-display text-white font-bold text-base tracking-tight leading-none flex items-center gap-2">
               <span className="gradient-text">Global Intelligence</span>
-              <span className="text-xs px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono tracking-wider font-semibold">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono tracking-wider font-bold shadow-sm shadow-purple-500/10">
                 AI WIRE
               </span>
             </h1>
             <div className="font-mono text-[10px] text-slate-400 mt-0.5 tracking-wider flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span>LIVE TELEMETRY v2.5</span>
+              <span className="text-slate-300 font-medium">LIVE TELEMETRY v3.0</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-cyan-400/90 font-semibold">SPATIAL AI</span>
             </div>
           </div>
         </div>
 
         {/* Center: UTC Dateline + Sector */}
-        <div className="hidden md:flex items-center gap-3 px-3 py-1 rounded-full bg-purple-950/30 border border-purple-500/20 font-mono text-[11px] text-slate-400 shadow-inner">
-          <span className="text-slate-300 tabular-nums">{utcTime || 'Syncing clock...'}</span>
+        <div className="hidden md:flex items-center gap-3 px-3.5 py-1 rounded-full bg-slate-900/90 border border-purple-500/25 font-mono text-[11px] text-slate-400 shadow-inner backdrop-blur-md">
+          <span className="text-slate-300 tabular-nums font-medium">{utcTime || 'Syncing clock...'}</span>
           <span className="text-purple-500/40">|</span>
           <span className="flex items-center gap-1">
             <span className="text-slate-400">Sector:</span>
@@ -88,9 +112,27 @@ export default function Navbar({
         {/* Right: Action Strip */}
         <div className="flex items-center gap-2">
 
+          {/* 🔊 UI Sound Design Toggle */}
+          <button
+            onClick={handleToggleSound}
+            className={`flex items-center justify-center w-8 h-8 rounded-lg border transition-all ${
+              isMuted
+                ? 'border-slate-800 text-slate-500 bg-slate-900/60 hover:text-slate-300 hover:border-slate-700'
+                : 'border-cyan-500/40 text-cyan-300 bg-cyan-500/10 shadow-sm shadow-cyan-500/20 hover:border-cyan-400'
+            }`}
+            title={isMuted ? 'UI Sounds Muted (Click to enable)' : 'UI Sounds Active (Click to mute)'}
+            aria-label={isMuted ? 'Unmute UI sounds' : 'Mute UI sounds'}
+          >
+            {isMuted ? (
+              <VolumeX className="w-3.5 h-3.5" />
+            ) : (
+              <Volume2 className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+            )}
+          </button>
+
           {/* 🎤 Voice Access Button */}
           <button
-            onClick={onOpenVoiceModal}
+            onClick={() => { playUiSound('click'); onOpenVoiceModal(); }}
             className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-md shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all duration-200"
             title="Voice Access: speak to navigate news"
             aria-label="Open Voice Assistant"
@@ -101,7 +143,7 @@ export default function Navbar({
 
           {/* 🔮 Future Impact Simulator Button */}
           <button
-            onClick={onOpenFutureImpactModal}
+            onClick={() => { playUiSound('click'); onOpenFutureImpactModal(); }}
             className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-900/40 to-pink-900/40 text-pink-300 border border-pink-500/40 hover:border-pink-400 rounded-lg shadow-md hover:shadow-pink-500/20 hover:scale-105 active:scale-95 transition-all duration-200 backdrop-blur-sm"
             title="Simulate Future Impact based on real-time news"
             aria-label="Simulate Future Impact"
@@ -113,8 +155,8 @@ export default function Navbar({
           {/* 🌐 Language Switcher Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setIsLangMenuOpen(!isLangMenuOpen)}
-              className="flex items-center gap-1 px-2.5 py-1.5 font-mono text-xs text-slate-300 border border-slate-700/80 hover:border-purple-500/50 bg-slate-900/80 rounded-lg transition-colors"
+              onClick={() => { playUiSound('click'); setIsLangMenuOpen(!isLangMenuOpen); }}
+              className="flex items-center gap-1 px-2.5 py-1.5 font-mono text-xs text-slate-300 border border-slate-700/80 hover:border-purple-500/50 bg-slate-900/80 rounded-lg transition-colors hover:scale-105 active:scale-95"
               title="Select language"
               aria-label="Select language"
             >
@@ -123,7 +165,7 @@ export default function Navbar({
             </button>
 
             {isLangMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-900/95 border border-purple-500/30 shadow-2xl z-50 py-1.5 min-w-[140px] rounded-xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+              <div className="absolute right-0 top-full mt-1.5 bg-slate-900/95 border border-purple-500/30 shadow-2xl z-50 py-1.5 min-w-[140px] rounded-xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
                 {[
                   { code: 'en', label: '🇬🇧 English' },
                   { code: 'ta', label: '🇮🇳 தமிழ்' },
@@ -134,7 +176,11 @@ export default function Navbar({
                 ].map((item) => (
                   <button
                     key={item.code}
-                    onClick={() => { onSelectLanguage(item.code); setIsLangMenuOpen(false); }}
+                    onClick={() => { 
+                      playUiSound('switch');
+                      onSelectLanguage(item.code); 
+                      setIsLangMenuOpen(false); 
+                    }}
                     className={`w-full text-left px-3.5 py-1.5 text-xs font-mono transition-all ${
                       currentLanguage === item.code 
                         ? 'bg-purple-600/30 text-purple-300 font-bold border-l-2 border-purple-400' 
@@ -150,8 +196,8 @@ export default function Navbar({
 
           {/* 🎛️ Easy Mode Button */}
           <button
-            onClick={() => onToggleEasyMode(!isEasyMode)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all ${
+            onClick={() => { playUiSound('toggle'); onToggleEasyMode(!isEasyMode); }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all active:scale-95 ${
               isEasyMode 
                 ? 'bg-amber-400 text-slate-950 font-bold shadow-md shadow-amber-400/30' 
                 : 'text-slate-400 hover:text-slate-200 border border-slate-700/80 hover:border-slate-600 bg-slate-900/60'
@@ -165,8 +211,8 @@ export default function Navbar({
 
           {/* 👤 Persona Button */}
           <button
-            onClick={onOpenPersonaModal}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-300 hover:text-white border border-slate-700/80 hover:border-purple-500/40 transition-all bg-slate-900/60 hover:bg-slate-800/80 rounded-lg"
+            onClick={() => { playUiSound('click'); onOpenPersonaModal(); }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-slate-300 hover:text-white border border-slate-700/80 hover:border-purple-500/40 transition-all bg-slate-900/60 hover:bg-slate-800/80 rounded-lg active:scale-95"
             title="Switch profile"
           >
             <UserCheck className="w-3.5 h-3.5 text-purple-400" />
@@ -175,8 +221,8 @@ export default function Navbar({
 
           {/* 🗄️ Database Inspector */}
           <button
-            onClick={onOpenDbModal}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all ${
+            onClick={() => { playUiSound('click'); onOpenDbModal(); }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all active:scale-95 ${
               isConfigured
                 ? 'text-slate-400 hover:text-slate-200 border border-slate-700/80 hover:border-slate-600 bg-slate-900/60'
                 : 'text-rose-400 border border-rose-500/40 bg-rose-500/10'
@@ -189,8 +235,8 @@ export default function Navbar({
 
           {/* 🔊 Audio Briefing */}
           <button
-            onClick={onToggleVoiceSummary}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all ${
+            onClick={() => { playUiSound('click'); onToggleVoiceSummary(); }}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs rounded-lg transition-all active:scale-95 ${
               isSpeaking
                 ? 'text-pink-300 border border-pink-500/50 bg-pink-500/20 font-medium shadow-md shadow-pink-500/20'
                 : 'text-slate-400 hover:text-slate-200 border border-slate-700/80 hover:border-slate-600 bg-slate-900/60'
@@ -203,9 +249,9 @@ export default function Navbar({
 
           {/* 🔄 Sync Button */}
           <button
-            onClick={onRefresh}
+            onClick={() => { playUiSound('click'); onRefresh(); }}
             disabled={isRefreshing}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-md shadow-cyan-500/25 transition-all disabled:opacity-50 font-medium active:scale-95"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-lg shadow-md shadow-cyan-500/25 transition-all disabled:opacity-50 font-medium hover:scale-105 active:scale-95"
             title="Sync feeds"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />

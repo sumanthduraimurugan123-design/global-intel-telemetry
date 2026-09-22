@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { 
   AlertTriangle, 
   Flame, 
@@ -13,6 +13,9 @@ import {
   Sparkles,
   Bell
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { playUiSound } from '../services/soundSystem';
+import IntelligentEmptyState from './IntelligentEmptyState';
 
 export default function AlertSystem({ 
   alerts = [], 
@@ -20,22 +23,31 @@ export default function AlertSystem({
   onSelectCountry,
   persona = 'Common person'
 }) {
+  const prevAlertCountRef = useRef(alerts.length);
+
+  // Play subtle alert tone if new alerts arrive
+  useEffect(() => {
+    if (alerts.length > prevAlertCountRef.current && prevAlertCountRef.current > 0) {
+      playUiSound('alert');
+    }
+    prevAlertCountRef.current = alerts.length;
+  }, [alerts.length]);
   
   const getSeverityConfig = (sev) => {
     switch (sev?.toUpperCase()) {
       case 'CRITICAL':
         return {
-          bar: 'border-l-rose-500 bg-rose-500/10 shadow-rose-950/30',
-          badge: 'text-rose-300 border-rose-500/50 bg-rose-500/20 font-bold',
+          bar: 'border-l-rose-500 bg-rose-500/10 shadow-rose-950/40 ambient-glow-risk',
+          badge: 'text-rose-300 border-rose-500/60 bg-rose-500/25 font-bold shadow-sm shadow-rose-500/30',
           icon: <Flame className="w-4 h-4 text-rose-400 shrink-0 animate-bounce" />,
-          glow: 'shadow-[inset_0_0_12px_rgba(244,63,94,0.15)]',
+          glow: 'shadow-[inset_0_0_16px_rgba(244,63,94,0.2)]',
         };
       case 'HIGH':
         return {
           bar: 'border-l-amber-400 bg-amber-500/10 shadow-amber-950/30',
           badge: 'text-amber-300 border-amber-500/50 bg-amber-500/20 font-semibold',
           icon: <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />,
-          glow: 'shadow-[inset_0_0_12px_rgba(245,158,11,0.1)]',
+          glow: 'shadow-[inset_0_0_12px_rgba(245,158,11,0.12)]',
         };
       case 'MEDIUM':
         return {
@@ -129,93 +141,110 @@ export default function AlertSystem({
   const pBadge = getPersonaBadge();
 
   return (
-    <div className="glass-card rounded-xl flex flex-col h-full overflow-hidden shadow-xl">
+    <div className={`glass-card-luxe rounded-xl flex flex-col h-full overflow-hidden shadow-2xl transition-all duration-500 ${
+      criticalCount > 0 ? 'border-rose-500/40 shadow-rose-950/40' : 'border-purple-500/25'
+    }`}>
       
       {/* Header */}
-      <div className="px-4 py-3.5 border-b border-purple-500/20 flex items-center justify-between bg-slate-900/60 backdrop-blur-md">
+      <div className="px-4 py-3.5 border-b border-purple-500/20 flex items-center justify-between bg-slate-900/75 backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
-          <div className="w-6 h-6 rounded-md bg-rose-500/20 border border-rose-500/30 flex items-center justify-center">
-            <Bell className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+          <div className={`w-7 h-7 rounded-lg flex items-center justify-center border transition-colors ${
+            criticalCount > 0 
+              ? 'bg-rose-500/20 border-rose-500/40 shadow-sm shadow-rose-500/30' 
+              : 'bg-purple-500/20 border-purple-500/30'
+          }`}>
+            <Bell className={`w-3.5 h-3.5 ${criticalCount > 0 ? 'text-rose-400 animate-bounce' : 'text-purple-300'}`} />
           </div>
-          <h2 className="font-display text-white text-sm font-bold tracking-tight">Active Alerts</h2>
+          <h2 className="font-display text-white text-sm font-bold tracking-tight">Active Telemetry Alerts</h2>
           <span className={`font-mono text-[10px] px-2 py-0.5 border rounded-full flex items-center gap-1.5 ${pBadge.color}`}>
             {pBadge.icon}
             <span>{pBadge.label}</span>
           </span>
           {criticalCount > 0 && (
-            <span className="font-mono text-[10px] text-rose-300 border border-rose-500/60 bg-rose-500/20 px-2 py-0.5 rounded-full font-bold animate-pulse shadow-sm shadow-rose-500/30">
+            <span className="font-mono text-[10px] text-rose-300 border border-rose-500/60 bg-rose-500/25 px-2.5 py-0.5 rounded-full font-bold animate-pulse shadow-sm shadow-rose-500/30">
               {criticalCount} CRITICAL
             </span>
           )}
         </div>
-        <span className="font-mono text-[11px] text-purple-300 font-semibold px-2 py-0.5 rounded-md bg-purple-950/40 border border-purple-500/30 tabular-nums">
+        <span className="font-mono text-[11px] text-purple-300 font-semibold px-2.5 py-0.5 rounded-lg bg-purple-950/40 border border-purple-500/30 tabular-nums">
           {alerts.length} live
         </span>
       </div>
 
-      {/* Alert rows */}
-      <div className="flex-1 overflow-y-auto divide-y divide-purple-500/10 max-h-[380px] p-2 space-y-2">
+      {/* Alert rows with Framer Motion slide-in */}
+      <div className="flex-1 overflow-y-auto divide-y divide-purple-500/10 max-h-[420px] p-2 space-y-2.5">
         {processedAlerts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center border border-slate-700/60 mb-3">
-              <Radio className="w-6 h-6 text-slate-500 animate-pulse" />
-            </div>
-            <p className="font-mono text-xs text-slate-400">
-              No active warnings for <strong className="text-purple-300">{selectedCountry?.toUpperCase() || 'GLOBAL'}</strong> sector
-            </p>
+          <div className="py-8">
+            <IntelligentEmptyState
+              title={`No Active Warnings in ${selectedCountry?.toUpperCase() || 'GLOBAL'} Sector`}
+              description="Real-time planetary feeds are currently within normal baseline thresholds."
+              onReset={onSelectCountry ? () => onSelectCountry('global') : null}
+              resetLabel="View Global Sector"
+            />
           </div>
         ) : (
-          processedAlerts.map((alert, index) => {
-            const cfg = getSeverityConfig(alert.severity);
-            return (
-              <div
-                key={alert.id || `alert-${index}`}
-                className={`p-3.5 rounded-lg border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110`}
-              >
-                <div className="flex items-center gap-2 mb-1.5">
-                  {cfg.icon}
-                  <span className={`font-mono text-[10px] border px-2 py-0.5 rounded-md tracking-wider ${cfg.badge}`}>
-                    {alert.severity}
-                  </span>
-                  <button
-                    onClick={() => onSelectCountry && onSelectCountry(alert.country)}
-                    className="font-mono text-[10px] text-cyan-300 hover:text-cyan-200 hover:underline capitalize ml-auto flex items-center gap-1 font-medium"
-                  >
-                    <span>📍 {alert.country || 'Global'}</span>
-                  </button>
-                  {alert.created_at && (
-                    <span className="font-mono text-[10px] text-slate-400 tabular-nums">
-                      {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          <AnimatePresence initial={false}>
+            {processedAlerts.map((alert, index) => {
+              const cfg = getSeverityConfig(alert.severity);
+              return (
+                <motion.div
+                  key={alert.id || `alert-${alert._origIdx || index}`}
+                  initial={{ opacity: 0, x: 20, scale: 0.97 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  layout
+                  className={`p-3.5 rounded-xl border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110 relative group`}
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    {cfg.icon}
+                    <span className={`font-mono text-[10px] border px-2 py-0.5 rounded-md tracking-wider ${cfg.badge}`}>
+                      {alert.severity}
                     </span>
-                  )}
-                </div>
-
-                <p className="font-sans text-xs text-slate-100 font-medium leading-relaxed">
-                  {alert.message}
-                </p>
-
-                {/* Persona-Adaptive Advice Tag */}
-                {alert._adviceTag && (
-                  <div className="mt-2.5 text-[11px] font-sans px-3 py-1.5 bg-slate-900/80 border border-purple-500/30 text-purple-200 flex items-center gap-2 rounded-lg shadow-inner">
-                    <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                    <span className="leading-snug">{alert._adviceTag}</span>
+                    <button
+                      onClick={() => {
+                        playUiSound('click');
+                        onSelectCountry && onSelectCountry(alert.country);
+                      }}
+                      className="font-mono text-[10px] text-cyan-300 hover:text-cyan-200 hover:underline capitalize ml-auto flex items-center gap-1 font-medium"
+                    >
+                      <span>📍 {alert.country || 'Global'}</span>
+                    </button>
+                    {alert.created_at && (
+                      <span className="font-mono text-[10px] text-slate-400 tabular-nums">
+                        {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    )}
                   </div>
-                )}
 
-                {alert.source_url && (
-                  <a
-                    href={alert.source_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 mt-2 font-mono text-[10px] text-slate-400 hover:text-pink-300 transition-colors"
-                  >
-                    <span>Verified Source Wire</span>
-                    <ExternalLink className="w-2.5 h-2.5" />
-                  </a>
-                )}
-              </div>
-            );
-          })
+                  <p className="font-sans text-xs text-slate-100 font-medium leading-relaxed">
+                    {alert.message}
+                  </p>
+
+                  {/* Persona-Adaptive Advice Tag */}
+                  {alert._adviceTag && (
+                    <div className="mt-2.5 text-[11px] font-sans px-3 py-1.5 bg-slate-900/90 border border-purple-500/30 text-purple-200 flex items-center gap-2 rounded-lg shadow-inner">
+                      <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                      <span className="leading-snug font-medium">{alert._adviceTag}</span>
+                    </div>
+                  )}
+
+                  {alert.source_url && (
+                    <a
+                      href={alert.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 font-mono text-[10px] text-slate-400 hover:text-pink-300 transition-colors"
+                      onClick={() => playUiSound('click')}
+                    >
+                      <span>Verified Source Wire</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  )}
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         )}
       </div>
     </div>

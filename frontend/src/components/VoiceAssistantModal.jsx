@@ -154,12 +154,12 @@ export default function VoiceAssistantModal({
       aria-modal="true"
       aria-label="Voice Assistant"
     >
-      <div className="relative w-full max-w-lg bg-wire-surface border-2 border-wire-amber shadow-2xl p-6 flex flex-col items-center text-center">
+      <div className="relative w-full max-w-lg bg-slate-950 border-2 border-amber-400/60 shadow-2xl shadow-amber-400/10 p-6 flex flex-col items-center text-center rounded-2xl backdrop-blur-xl">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-wire-subtle hover:text-wire-fg hover:bg-wire-raised rounded-full transition-colors"
+          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-100 hover:bg-slate-800 rounded-full transition-colors"
           aria-label="Close voice assistant"
         >
           <X className="w-5 h-5" />
@@ -167,16 +167,16 @@ export default function VoiceAssistantModal({
 
         {/* Header Icon */}
         <div className="inline-flex items-center gap-2 mb-3">
-          <Sparkles className="w-5 h-5 text-wire-amber animate-pulse" />
-          <span className="font-mono text-xs text-wire-amber uppercase tracking-widest font-semibold">
+          <Sparkles className="w-5 h-5 text-amber-400 animate-pulse" />
+          <span className="font-mono text-xs text-amber-400 uppercase tracking-widest font-semibold">
             Voice Access Assistant
           </span>
         </div>
 
-        <h2 className="font-serif text-xl sm:text-2xl font-bold text-wire-fg mb-1">
+        <h2 className="font-display text-xl sm:text-2xl font-bold text-slate-100 mb-1">
           {currentLanguage === 'ta' ? 'குரல் வழி செய்தி வசதி' : (currentLanguage === 'hi' ? 'आवाज से समाचार सुनें' : (currentLanguage === 'te' ? 'వాయిస్ ద్వారా వార్తలు' : (currentLanguage === 'bn' ? 'ভয়েস দিয়ে সংবাদ' : (currentLanguage === 'mr' ? 'आवाजाने बातम्या ऐका' : 'Speak to Access News'))))}
         </h2>
-        <p className="font-sans text-xs text-wire-subtle mb-6 max-w-sm">
+        <p className="font-sans text-xs text-slate-400 mb-6 max-w-sm">
           {currentLanguage === 'ta' 
             ? 'தட்டச்சு செய்ய தேவையில்லை. பேசுங்கள், கணினி தானாகவே செய்திகளை எடுத்து தரும்.' 
             : (currentLanguage === 'hi' 
@@ -187,18 +187,18 @@ export default function VoiceAssistantModal({
         {/* Central Pulsing Microphone Button */}
         <div className="relative my-4 flex items-center justify-center">
           {isListening && (
-            <div className="absolute w-32 h-32 rounded-full bg-wire-amber/20 animate-ping" />
+            <div className="absolute w-32 h-32 rounded-full bg-amber-400/20 animate-ping" />
           )}
           {isListening && (
-            <div className="absolute w-24 h-24 rounded-full bg-wire-amber/30 animate-pulse" />
+            <div className="absolute w-24 h-24 rounded-full bg-amber-400/30 animate-pulse" />
           )}
           
           <button
             onClick={isListening ? handleStopListening : handleStartListening}
             className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-transform active:scale-95 ${
               isListening 
-                ? 'bg-wire-red text-white ring-4 ring-wire-red/40' 
-                : 'bg-wire-amber text-wire-base hover:bg-wire-amber/90 ring-4 ring-wire-amber/30'
+                ? 'bg-rose-600 text-white ring-4 ring-rose-500/40' 
+                : 'bg-amber-400 text-slate-950 hover:bg-amber-300 ring-4 ring-amber-400/30'
             }`}
             aria-label={isListening ? 'Stop listening' : 'Start speaking'}
           >
@@ -213,12 +213,12 @@ export default function VoiceAssistantModal({
         {/* Status text */}
         <div className="min-h-[28px] mt-2 mb-4">
           {isListening ? (
-            <div className="flex items-center justify-center gap-2 text-wire-amber font-mono text-sm animate-pulse">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-wire-amber" />
+            <div className="flex items-center justify-center gap-2 text-amber-400 font-mono text-sm animate-pulse">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
               {currentLanguage === 'ta' ? 'உங்களை கேட்கிறேன்... பேசுங்கள்' : (currentLanguage === 'hi' ? 'सुन रहे हैं... बोलिए' : (currentLanguage === 'te' ? 'వింటున్నాము... మాట్లాడండి' : (currentLanguage === 'bn' ? 'শুনছি... বলুন' : (currentLanguage === 'mr' ? 'ऐकत आहे... बोला' : 'Listening... speak now'))))}
             </div>
           ) : (
-            <div className="text-wire-subtle font-mono text-xs">
+            <div className="text-slate-400 font-mono text-xs">
               {currentLanguage === 'ta' ? 'பேச மைக் பட்டனை தொடவும்' : (currentLanguage === 'hi' ? 'बोलने के लिए माइक दबाएं' : 'Tap the microphone to speak')}
             </div>
           )}
@@ -226,11 +226,11 @@ export default function VoiceAssistantModal({
 
         {/* User Transcript Box */}
         {transcript && (
-          <div className="w-full bg-wire-base border border-wire-border p-3.5 mb-3 text-left">
-            <span className="font-mono text-[10px] text-wire-subtle block mb-1">
+          <div className="w-full bg-slate-900 border border-slate-800 p-3.5 mb-3 text-left rounded-xl">
+            <span className="font-mono text-[10px] text-slate-400 block mb-1">
               {currentLanguage === 'ta' ? 'நீங்கள் கூறியது:' : (currentLanguage === 'hi' ? 'आपने कहा:' : 'You said:')}
             </span>
-            <p className="font-serif text-sm text-wire-fg font-medium italic">
+            <p className="font-sans text-sm text-slate-100 font-medium italic">
               "{transcript}"
             </p>
           </div>
@@ -238,14 +238,14 @@ export default function VoiceAssistantModal({
 
         {/* Assistant Response Box */}
         {assistantReply && (
-          <div className="w-full bg-wire-raised border border-wire-amber/40 p-3.5 mb-4 text-left">
+          <div className="w-full bg-slate-900/80 border border-amber-400/40 p-3.5 mb-4 text-left rounded-xl">
             <div className="flex items-center gap-2 mb-1">
-              <Volume2 className="w-3.5 h-3.5 text-wire-amber shrink-0" />
-              <span className="font-mono text-[10px] text-wire-amber uppercase tracking-wider font-semibold">
+              <Volume2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span className="font-mono text-[10px] text-amber-400 uppercase tracking-wider font-semibold">
                 UGI Assistant
               </span>
             </div>
-            <p className="font-sans text-xs text-wire-fg leading-relaxed">
+            <p className="font-sans text-xs text-slate-100 leading-relaxed">
               {assistantReply}
             </p>
           </div>
@@ -253,14 +253,14 @@ export default function VoiceAssistantModal({
 
         {/* Error message */}
         {recognitionError && (
-          <div className="w-full bg-wire-red/10 border border-wire-red/40 p-2.5 mb-4 text-wire-red text-xs font-mono">
+          <div className="w-full bg-rose-500/10 border border-rose-500/40 p-2.5 mb-4 text-rose-400 text-xs font-mono rounded-lg">
             {recognitionError}
           </div>
         )}
 
         {/* Language Quick Switcher */}
-        <div className="w-full border-t border-wire-border pt-4 mt-2">
-          <span className="font-mono text-[10px] text-wire-subtle uppercase tracking-wider block mb-2">
+        <div className="w-full border-t border-slate-800 pt-4 mt-2">
+          <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider block mb-2">
             Language / மொழி / भाषा / భాష / ভাষা / भाषा
           </span>
           <div className="flex flex-wrap items-center justify-center gap-1.5">
@@ -272,8 +272,8 @@ export default function VoiceAssistantModal({
                   onClick={() => onSelectLanguage(lang.code)}
                   className={`px-2.5 py-1 font-mono text-xs rounded-sm border transition-all ${
                     isActive 
-                      ? 'bg-wire-amber text-wire-base font-semibold border-wire-amber shadow-sm' 
-                      : 'bg-wire-base text-wire-fg border-wire-border hover:border-wire-muted'
+                      ? 'bg-amber-400 text-slate-950 font-semibold border-amber-400 shadow-sm' 
+                      : 'bg-slate-950 text-slate-100 border-slate-800 hover:border-slate-600'
                   }`}
                 >
                   {lang.flag} {lang.nativeName}
@@ -284,8 +284,8 @@ export default function VoiceAssistantModal({
         </div>
 
         {/* Quick Voice Command Chips */}
-        <div className="w-full mt-4 pt-3 border-t border-wire-border/60">
-          <span className="font-mono text-[10px] text-wire-subtle uppercase tracking-wider block mb-2">
+        <div className="w-full mt-4 pt-3 border-t border-slate-800/60">
+          <span className="font-mono text-[10px] text-slate-400 uppercase tracking-wider block mb-2">
             {currentLanguage === 'ta' ? 'விரைவு கட்டளைகள் (தொட்டு பேசலாம்):' : (currentLanguage === 'hi' ? 'त्वरित निर्देश (टैप करें):' : (currentLanguage === 'te' ? 'త్వరిత ఆదేశాలు (ట్యాప్ చేయండి):' : (currentLanguage === 'bn' ? 'দ্রুত নির্দেশ (ট্যাপ করুন):' : (currentLanguage === 'mr' ? 'जलद सूचना (टॅप करा):' : 'Try saying or tapping:'))))}
           </span>
           <div className="flex flex-wrap items-center justify-center gap-2">
@@ -297,9 +297,9 @@ export default function VoiceAssistantModal({
                 (currentLanguage === 'bn' ? 'চেন্নাই এর খবর দেখাও' : 
                 (currentLanguage === 'mr' ? 'चेन्नईच्या बातम्या दाखवा' : 'I am from Chennai, show me local news'))))
               )}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-wire-base border border-wire-border hover:border-wire-amber text-wire-fg hover:text-wire-amber text-xs font-mono rounded-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-amber-400 text-slate-100 hover:text-amber-400 text-xs font-mono rounded-lg transition-colors"
             >
-              <MapPin className="w-3 h-3 text-wire-amber" />
+              <MapPin className="w-3 h-3 text-amber-400" />
               {currentLanguage === 'ta' ? 'சென்னை செய்திகள்' : (currentLanguage === 'hi' ? 'चेन्नई समाचार' : (currentLanguage === 'te' ? 'చెన్నై వార్తలు' : (currentLanguage === 'bn' ? 'চেন্নাই খবর' : (currentLanguage === 'mr' ? 'चेन्नई बातम्या' : 'Chennai News'))))}
             </button>
 
@@ -311,9 +311,9 @@ export default function VoiceAssistantModal({
                 (currentLanguage === 'bn' ? 'খবর পড়ো' : 
                 (currentLanguage === 'mr' ? 'बातम्या वाचा' : 'Play news'))))
               )}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-wire-base border border-wire-border hover:border-wire-amber text-wire-fg hover:text-wire-amber text-xs font-mono rounded-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-amber-400 text-slate-100 hover:text-amber-400 text-xs font-mono rounded-lg transition-colors"
             >
-              <Radio className="w-3 h-3 text-wire-green" />
+              <Radio className="w-3 h-3 text-emerald-400" />
               {currentLanguage === 'ta' ? 'செய்தி வாசி (Radio)' : (currentLanguage === 'hi' ? 'समाचार पढ़ो (Radio)' : (currentLanguage === 'te' ? 'రేడియో వార్తలు' : (currentLanguage === 'bn' ? 'রেডিও খবর' : (currentLanguage === 'mr' ? 'रेडिओ बातम्या' : 'Play News (Radio)'))))}
             </button>
 
@@ -325,7 +325,7 @@ export default function VoiceAssistantModal({
                 (currentLanguage === 'bn' ? 'কৃষি খবর' : 
                 (currentLanguage === 'mr' ? 'शेती बातम्या' : 'Agriculture news'))))
               )}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-wire-base border border-wire-border hover:border-wire-amber text-wire-fg hover:text-wire-amber text-xs font-mono rounded-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-amber-400 text-slate-100 hover:text-amber-400 text-xs font-mono rounded-lg transition-colors"
             >
               <span>🌾</span>
               {currentLanguage === 'ta' ? 'விவசாயம்' : (currentLanguage === 'hi' ? 'कृषि' : (currentLanguage === 'te' ? 'వ్యవసాయం' : (currentLanguage === 'bn' ? 'কৃষি' : (currentLanguage === 'mr' ? 'शेती' : 'Agriculture'))))}
@@ -339,9 +339,9 @@ export default function VoiceAssistantModal({
                 (currentLanguage === 'bn' ? 'সতর্কতা বলো' : 
                 (currentLanguage === 'mr' ? 'इशारे सांगा' : 'Read alerts'))))
               )}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-wire-base border border-wire-border hover:border-wire-amber text-wire-fg hover:text-wire-amber text-xs font-mono rounded-sm transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-amber-400 text-slate-100 hover:text-amber-400 text-xs font-mono rounded-lg transition-colors"
             >
-              <AlertTriangle className="w-3 h-3 text-wire-red" />
+              <AlertTriangle className="w-3 h-3 text-rose-500" />
               {currentLanguage === 'ta' ? 'எச்சரிக்கைகள்' : (currentLanguage === 'hi' ? 'सक्रिय अलर्ट' : (currentLanguage === 'te' ? 'హెచ్చరికలు' : (currentLanguage === 'bn' ? 'সতর্কতা' : (currentLanguage === 'mr' ? 'इशारे' : 'Read Alerts'))))}
             </button>
           </div>

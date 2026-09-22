@@ -17,10 +17,12 @@ import {
   Compass,
   Zap,
   Cable,
-  Volume2
+  Volume2,
+  Target
 } from 'lucide-react';
 import { HOTSPOT_PERSONAL_IMPACTS } from '../services/impactEngine';
 import { playEarcon, speakInLanguage } from '../services/voiceService';
+import { playUiSound } from '../services/soundSystem';
 
 // Smart Hotspot Sensor Nodes with rich personal impact intelligence
 const GLOBAL_HOTSPOTS = [
@@ -314,6 +316,7 @@ export default function Globe3D({
   const supplyPulsesRef = useRef([]);
   const targetCamPos = useRef(null);
   const customPinRef = useRef(null);
+  const corridorsListRef = useRef([]);
 
   // Smart Interactive Globe Modes & Layers
   const [globeMode, setGlobeMode] = useState('space'); // 'space' (Daylight Earth) or 'cyber' (Night Lights)
@@ -321,6 +324,7 @@ export default function Globe3D({
   const [showCyberCables, setShowCyberCables] = useState(true); // Undersea internet cables
   const [showHeatmaps, setShowHeatmaps] = useState(true); // Dynamic threat & impact rings
   const [autoRotate, setAutoRotate] = useState(true);
+  const [isFocusMode, setIsFocusMode] = useState(false);
 
   // Smart HUD State
   const [smartTarget, setSmartTarget] = useState(null); // Node or geo-coordinate targeted
@@ -531,6 +535,8 @@ export default function Globe3D({
 
     // 10. Supply Chain Arcs & Moving Photon Pulses
     const pulseObjects = [];
+    const corridorsList = [];
+
     if (showSupplyArcs) {
       SUPPLY_CORRIDORS.forEach(conn => {
         const fromNode = GLOBAL_HOTSPOTS.find(h => h.id === conn.from);
@@ -548,18 +554,33 @@ export default function Globe3D({
         const curve = new THREE.QuadraticBezierCurve3(p1, mid, p2);
         const points = curve.getPoints(45);
         const arcGeo = new THREE.BufferGeometry().setFromPoints(points);
+
+        // Core Glowing Line
         const arcMat = new THREE.LineBasicMaterial({
-          color: conn.type === 'chips' ? 0xa855f7 : 0xffb800,
+          color: conn.type === 'chips' ? 0xc084fc : 0xfbbf24,
           transparent: true,
-          opacity: 0.6,
+          opacity: 0.85,
           blending: THREE.AdditiveBlending
         });
-        scene.add(new THREE.Line(arcGeo, arcMat));
+        const arcLine = new THREE.Line(arcGeo, arcMat);
+        scene.add(arcLine);
+        corridorsList.push({ mesh: arcLine, from: conn.from, to: conn.to, baseOpacity: 0.85 });
 
-        // Moving Photon Pulse Sphere
-        const pulseGeo = new THREE.SphereGeometry(1.2, 8, 8);
+        // Outer Radiant Envelope
+        const glowMat = new THREE.LineBasicMaterial({
+          color: conn.type === 'chips' ? 0xa855f7 : 0xf59e0b,
+          transparent: true,
+          opacity: 0.4,
+          blending: THREE.AdditiveBlending
+        });
+        const glowLine = new THREE.Line(arcGeo, glowMat);
+        scene.add(glowLine);
+        corridorsList.push({ mesh: glowLine, from: conn.from, to: conn.to, baseOpacity: 0.4 });
+
+        // Moving Photon Pulse Sphere with Radiant Glow
+        const pulseGeo = new THREE.SphereGeometry(1.5, 10, 10);
         const pulseMat = new THREE.MeshBasicMaterial({ 
-          color: conn.type === 'chips' ? 0xd8b4fe : 0xfef08a,
+          color: conn.type === 'chips' ? 0xf3e8ff : 0xfef9c3,
           blending: THREE.AdditiveBlending
         });
         const pulseMesh = new THREE.Mesh(pulseGeo, pulseMat);
@@ -596,14 +617,17 @@ export default function Globe3D({
         const cableMat = new THREE.LineBasicMaterial({
           color: 0x00f3ff,
           transparent: true,
-          opacity: 0.45,
+          opacity: 0.55,
           blending: THREE.AdditiveBlending
         });
-        scene.add(new THREE.Line(cableGeo, cableMat));
+        const cableLine = new THREE.Line(cableGeo, cableMat);
+        scene.add(cableLine);
+        corridorsList.push({ mesh: cableLine, from: cable.from, to: cable.to, baseOpacity: 0.55 });
       });
     }
 
     supplyPulsesRef.current = pulseObjects;
+    corridorsListRef.current = corridorsList;
 
     // 12. Smart Raycasting (Nodes & Click-Anywhere Surface)
     const raycaster = new THREE.Raycaster();
@@ -857,20 +881,56 @@ export default function Globe3D({
   useEffect(() => {
     if (!selectedCountry) return;
     const target = GLOBAL_HOTSPOTS.find(h => h.id === selectedCountry.toLowerCase());
+    const zoomDist = isFocusMode ? 108 : 140;
     if (target && cameraRef.current) {
-      const pos = latLngToVector3(target.lat, target.lng, GLOBE_RADIUS, 140);
+      const pos = latLngToVector3(target.lat, target.lng, GLOBE_RADIUS, zoomDist);
       targetCamPos.current = pos;
       setSmartTarget(target);
     } else if (news && news.length > 0 && cameraRef.current && news[0].geo?.lat !== undefined) {
-      const pos = latLngToVector3(news[0].geo.lat, news[0].geo.lng, GLOBE_RADIUS, 140);
+      const pos = latLngToVector3(news[0].geo.lat, news[0].geo.lng, GLOBE_RADIUS, zoomDist);
       targetCamPos.current = pos;
     } else if (selectedCountry === 'global' && cameraRef.current) {
       targetCamPos.current = new THREE.Vector3(0, 35, 290);
     }
-  }, [selectedCountry, news]);
+  }, [selectedCountry, news, isFocusMode]);
+
+  // Focus Mode: Dim everything except selected region
+  useEffect(() => {
+    const isGlobal = !selectedCountry || selectedCountry === 'global';
+    const targetId = (selectedCountry || '').toLowerCase();
+
+    // Dim/highlight supply corridors
+    if (corridorsListRef.current) {
+      corridorsListRef.current.forEach(item => {
+        if (!item.mesh || !item.mesh.material) return;
+        if (isFocusMode && !isGlobal) {
+          const isConnected = item.from === targetId || item.to === targetId;
+          item.mesh.material.opacity = isConnected ? 0.95 : 0.08;
+        } else {
+          item.mesh.material.opacity = item.baseOpacity;
+        }
+      });
+    }
+
+    // Dim/highlight beacons
+    if (beaconMeshesRef.current) {
+      beaconMeshesRef.current.forEach(mesh => {
+        if (!mesh || !mesh.material) return;
+        const isMatch = mesh.userData?.id === targetId;
+        if (isFocusMode && !isGlobal) {
+          mesh.material.opacity = isMatch ? 1.0 : 0.15;
+          mesh.scale.setScalar(isMatch ? 1.35 : 0.75);
+        } else {
+          mesh.material.opacity = 1.0;
+          mesh.scale.setScalar(1.0);
+        }
+      });
+    }
+  }, [isFocusMode, selectedCountry]);
 
   // Toggle Auto-rotation
   const toggleAutoRotate = () => {
+    playUiSound('toggle');
     const next = !autoRotate;
     if (controlsRef.current) controlsRef.current.autoRotate = next;
     setAutoRotate(next);
@@ -878,6 +938,7 @@ export default function Globe3D({
 
   // Zoom controls
   const handleZoom = (direction) => {
+    playUiSound('click');
     if (!cameraRef.current) return;
     const factor = direction === 'in' ? 0.8 : 1.25;
     cameraRef.current.position.multiplyScalar(factor);
@@ -886,32 +947,33 @@ export default function Globe3D({
   };
 
   const handleResetView = () => {
+    playUiSound('click');
     targetCamPos.current = new THREE.Vector3(0, 35, 290);
     setSmartTarget(null);
     onSelectCountry('global');
   };
 
   return (
-    <div className="relative w-full h-[480px] lg:h-[530px] overflow-hidden border border-wire-border flex flex-col bg-[#080B11] select-none">
+    <div className="relative w-full h-[480px] lg:h-[530px] overflow-hidden rounded-2xl border border-purple-500/25 flex flex-col bg-[#050811] select-none shadow-2xl">
       
       {/* Top Left HUD — Mode and Layer Controls */}
       <div className="absolute top-2.5 left-3 z-10 flex flex-wrap items-center gap-1.5">
-        <div className="flex items-center gap-2 bg-wire-base/90 backdrop-blur-md px-2.5 py-1.5 border border-wire-border shadow-lg">
-          <Crosshair className="w-3.5 h-3.5 text-wire-amber animate-spin-slow" />
-          <span className="font-mono text-[10px] text-wire-fg tracking-widest font-semibold">
-            SMART ORBITAL GLOBE
+        <div className="flex items-center gap-2 bg-slate-950/85 backdrop-blur-xl px-2.5 py-1.5 rounded-xl border border-purple-500/25 shadow-lg">
+          <Crosshair className="w-3.5 h-3.5 text-cyan-300 animate-spin-slow" />
+          <span className="font-mono text-[10px] text-white tracking-widest font-semibold">
+            ORBITAL GLOBE
           </span>
-          <span className="font-mono text-[9px] text-wire-subtle border border-wire-border px-1.5 py-0.2">
-            WebGL 3D
+          <span className="font-mono text-[9px] text-purple-300 border border-purple-500/30 px-1.5 py-0.2 rounded">
+            SPATIAL 3D
           </span>
         </div>
 
         {/* View Mode Toggle: Day / Night */}
-        <div className="flex items-center bg-wire-base/90 backdrop-blur-md border border-wire-border font-mono text-[10px]">
+        <div className="flex items-center bg-slate-950/85 backdrop-blur-xl border border-purple-500/25 rounded-xl font-mono text-[10px] overflow-hidden shadow-md">
           <button
-            onClick={() => setGlobeMode('space')}
+            onClick={() => { playUiSound('switch'); setGlobeMode('space'); }}
             className={`px-2.5 py-1.5 flex items-center gap-1 transition-colors ${
-              globeMode === 'space' ? 'bg-wire-raised text-wire-fg' : 'text-wire-subtle hover:text-wire-fg'
+              globeMode === 'space' ? 'bg-purple-600/40 text-cyan-200 font-bold' : 'text-slate-400 hover:text-white'
             }`}
             title="Photorealistic daylight Earth"
           >
@@ -919,9 +981,9 @@ export default function Globe3D({
             <span>Day</span>
           </button>
           <button
-            onClick={() => setGlobeMode('cyber')}
-            className={`px-2.5 py-1.5 flex items-center gap-1 border-l border-wire-border transition-colors ${
-              globeMode === 'cyber' ? 'bg-wire-raised text-wire-fg' : 'text-wire-subtle hover:text-wire-fg'
+            onClick={() => { playUiSound('switch'); setGlobeMode('cyber'); }}
+            className={`px-2.5 py-1.5 flex items-center gap-1 border-l border-purple-500/25 transition-colors ${
+              globeMode === 'cyber' ? 'bg-purple-600/40 text-cyan-200 font-bold' : 'text-slate-400 hover:text-white'
             }`}
             title="Night cyber city lights"
           >
@@ -930,22 +992,39 @@ export default function Globe3D({
           </button>
         </div>
 
+        {/* Focus Mode Spotlight Toggle */}
+        <button
+          onClick={() => {
+            playUiSound('toggle');
+            setIsFocusMode(!isFocusMode);
+          }}
+          className={`px-2.5 py-1.5 font-mono text-[10px] flex items-center gap-1.5 rounded-xl border transition-all shadow-md active:scale-95 ${
+            isFocusMode
+              ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white border-pink-400 shadow-pink-500/30'
+              : 'text-slate-300 border-purple-500/25 hover:border-purple-400 bg-slate-950/85 backdrop-blur-xl hover:text-white'
+          }`}
+          title="Focus Mode: Spotlight selected region and dim other territories"
+        >
+          <Target className={`w-3.5 h-3.5 ${isFocusMode ? 'text-pink-200 animate-spin-slow' : 'text-pink-400'}`} />
+          <span className="font-semibold">{isFocusMode ? 'Focused' : 'Focus Mode'}</span>
+        </button>
+
         {/* Smart Layer Toggles */}
-        <div className="hidden sm:flex items-center bg-wire-base/90 backdrop-blur-md border border-wire-border font-mono text-[10px]">
+        <div className="hidden sm:flex items-center bg-slate-950/85 backdrop-blur-xl border border-purple-500/25 rounded-xl font-mono text-[10px] overflow-hidden shadow-md">
           <button
-            onClick={() => setShowSupplyArcs(!showSupplyArcs)}
-            className={`px-2 py-1.5 flex items-center gap-1 transition-colors ${
-              showSupplyArcs ? 'text-purple-400 bg-purple-950/30' : 'text-wire-subtle hover:text-wire-fg'
+            onClick={() => { playUiSound('click'); setShowSupplyArcs(!showSupplyArcs); }}
+            className={`px-2.5 py-1.5 flex items-center gap-1 transition-colors ${
+              showSupplyArcs ? 'text-purple-300 bg-purple-950/50 font-semibold' : 'text-slate-400 hover:text-white'
             }`}
             title="Toggle Semiconductor & Supply Corridors"
           >
             <Zap className="w-3 h-3" />
-            <span>Chips/Supply</span>
+            <span>Supply Arcs</span>
           </button>
           <button
-            onClick={() => setShowCyberCables(!showCyberCables)}
-            className={`px-2 py-1.5 flex items-center gap-1 border-l border-wire-border transition-colors ${
-              showCyberCables ? 'text-cyan-400 bg-cyan-950/30' : 'text-wire-subtle hover:text-wire-fg'
+            onClick={() => { playUiSound('click'); setShowCyberCables(!showCyberCables); }}
+            className={`px-2.5 py-1.5 flex items-center gap-1 border-l border-purple-500/25 transition-colors ${
+              showCyberCables ? 'text-cyan-300 bg-cyan-950/50 font-semibold' : 'text-slate-400 hover:text-white'
             }`}
             title="Toggle Submarine Fiber Optic Cables"
           >
@@ -956,11 +1035,11 @@ export default function Globe3D({
       </div>
 
       {/* Top Right HUD — Camera & Rotation Controls */}
-      <div className="absolute top-2.5 right-3 z-10 flex items-center gap-1 bg-wire-base/90 backdrop-blur-md p-1 border border-wire-border shadow-lg">
+      <div className="absolute top-2.5 right-3 z-10 flex items-center gap-1 bg-slate-950/85 backdrop-blur-xl p-1 rounded-xl border border-purple-500/25 shadow-lg">
         <button
-          onClick={() => setShowHeatmaps(!showHeatmaps)}
-          className={`px-2 py-1 font-mono text-[10px] flex items-center gap-1 transition-colors ${
-            showHeatmaps ? 'text-wire-amber' : 'text-wire-subtle hover:text-wire-fg'
+          onClick={() => { playUiSound('toggle'); setShowHeatmaps(!showHeatmaps); }}
+          className={`px-2 py-1 font-mono text-[10px] flex items-center gap-1 rounded-lg transition-colors ${
+            showHeatmaps ? 'text-amber-400 bg-amber-500/15 font-semibold' : 'text-slate-400 hover:text-white'
           }`}
           title="Toggle threat heatmap shockwaves"
         >
@@ -970,31 +1049,31 @@ export default function Globe3D({
 
         <button
           onClick={toggleAutoRotate}
-          className={`p-1.5 transition-colors ${
-            autoRotate ? 'text-wire-amber' : 'text-wire-subtle hover:text-wire-fg'
+          className={`p-1.5 rounded-lg transition-colors ${
+            autoRotate ? 'text-cyan-300 bg-cyan-500/15' : 'text-slate-400 hover:text-white'
           }`}
           title={autoRotate ? 'Pause Earth orbit' : 'Resume Earth orbit'}
         >
-          <Radio className={`w-3.5 h-3.5 ${autoRotate ? 'animate-pulse-slow' : ''}`} />
+          <Radio className={`w-3.5 h-3.5 ${autoRotate ? 'animate-pulse' : ''}`} />
         </button>
 
         <button
           onClick={() => handleZoom('in')}
-          className="p-1.5 text-wire-subtle hover:text-wire-fg transition-colors"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
           title="Zoom In"
         >
           <ZoomIn className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => handleZoom('out')}
-          className="p-1.5 text-wire-subtle hover:text-wire-fg transition-colors"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800/60 rounded-lg transition-colors"
           title="Zoom Out"
         >
           <ZoomOut className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={handleResetView}
-          className="p-1.5 text-wire-subtle hover:text-wire-amber transition-colors"
+          className="p-1.5 text-slate-400 hover:text-pink-300 hover:bg-slate-800/60 rounded-lg transition-colors"
           title="Reset Global Vantage"
         >
           <RotateCcw className="w-3.5 h-3.5" />
@@ -1004,41 +1083,41 @@ export default function Globe3D({
       {/* SMART TELEMETRY INSPECTION HUD CARD (Floating over 3D Globe) */}
       {smartTarget && (
         <div 
-          className="absolute top-14 left-3 sm:left-4 z-20 max-w-[340px] bg-wire-base/95 backdrop-blur-md border border-wire-border p-3.5 shadow-2xl animate-fade-in pointer-events-auto"
+          className="absolute top-14 left-3 sm:left-4 z-20 max-w-[340px] glass-card-luxe border border-purple-500/30 p-4 rounded-2xl shadow-2xl animate-in fade-in duration-200 pointer-events-auto"
         >
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-wire-border/60 pb-2 mb-2">
+          <div className="flex items-center justify-between border-b border-purple-500/20 pb-2 mb-2.5">
             <div className="flex items-center gap-2">
               <span 
-                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-sm" 
+                className="w-2.5 h-2.5 rounded-full shrink-0 shadow-md animate-pulse" 
                 style={{ backgroundColor: smartTarget.colorHex || '#00f3ff' }} 
               />
-              <span className="font-mono text-xs font-bold text-wire-fg tracking-wide">
+              <span className="font-mono text-xs font-bold text-white tracking-wide">
                 {smartTarget.name}
               </span>
             </div>
-            <span className={`font-mono text-[9px] px-1.5 py-0.5 border ${
-              smartTarget.threat === 'CRITICAL' ? 'border-red-500/40 text-red-400 bg-red-950/40' :
-              smartTarget.threat === 'HIGH' ? 'border-orange-500/40 text-orange-400 bg-orange-950/40' :
-              'border-cyan-500/40 text-cyan-400 bg-cyan-950/40'
+            <span className={`font-mono text-[9px] px-2 py-0.5 rounded-full border font-semibold ${
+              smartTarget.threat === 'CRITICAL' ? 'border-rose-500/50 text-rose-300 bg-rose-500/20' :
+              smartTarget.threat === 'HIGH' ? 'border-amber-500/50 text-amber-300 bg-amber-500/20' :
+              'border-cyan-500/50 text-cyan-300 bg-cyan-500/20'
             }`}>
               {smartTarget.threat || 'MONITORED'}
             </span>
           </div>
 
           {/* Coordinates & Sector */}
-          <div className="flex items-center justify-between font-mono text-[10px] text-wire-subtle mb-2">
+          <div className="flex items-center justify-between font-mono text-[10px] text-slate-400 mb-2.5">
             <span>Lat: {smartTarget.lat.toFixed(1)}° · Lng: {smartTarget.lng.toFixed(1)}°</span>
-            <span className="text-wire-fg">{smartTarget.primarySector || 'Planetary Grid'}</span>
+            <span className="text-cyan-300 font-semibold">{smartTarget.primarySector || 'Planetary Grid'}</span>
           </div>
 
           {/* How This Affects You 1-Liner */}
-          <div className="bg-wire-surface border border-wire-border p-2.5 mb-2.5">
-            <div className="font-mono text-[9px] text-wire-amber tracking-widest uppercase flex items-center gap-1 mb-1">
-              <Sparkles className="w-2.5 h-2.5" />
+          <div className="bg-slate-900/90 border border-purple-500/20 rounded-xl p-2.5 mb-3 shadow-inner">
+            <div className="font-mono text-[9px] text-pink-300 tracking-widest uppercase flex items-center gap-1 mb-1 font-bold">
+              <Sparkles className="w-2.5 h-2.5 text-pink-400" />
               <span>HOW THIS AFFECTS YOU:</span>
             </div>
-            <p className="text-[11px] text-wire-fg leading-relaxed">
+            <p className="text-[11px] text-slate-200 leading-relaxed font-sans">
               {smartTarget.personalVector || 'Telemetry sector under routine orbital observation. Normal domestic operations.'}
             </p>
           </div>
@@ -1047,10 +1126,10 @@ export default function Globe3D({
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                playEarcon('click');
+                playUiSound('click');
                 onSelectCountry(smartTarget.id);
               }}
-              className="flex-1 py-1.5 bg-wire-raised hover:bg-wire-hover border border-wire-border font-mono text-[10px] text-wire-fg transition-colors flex items-center justify-center gap-1"
+              className="flex-1 py-1.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-xl font-mono text-[10px] text-white font-semibold transition-all flex items-center justify-center gap-1 shadow-md shadow-purple-500/20 active:scale-95"
             >
               <span>Focus Sector</span>
               <ArrowRight className="w-3 h-3" />
@@ -1059,14 +1138,14 @@ export default function Globe3D({
             {onOpenImpactModal && (
               <button
                 onClick={() => {
-                  playEarcon('click');
+                  playUiSound('click');
                   onOpenImpactModal();
                 }}
-                className="py-1.5 px-2.5 bg-wire-amber text-black hover:bg-amber-400 font-mono text-[10px] font-semibold transition-colors flex items-center gap-1"
+                className="py-1.5 px-3 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-500/30 rounded-xl font-mono text-[10px] font-semibold transition-all flex items-center gap-1 active:scale-95"
                 title="Deep dive personal impact breakdown"
               >
-                <Sparkles className="w-3 h-3" />
-                <span>Impact Breakdown</span>
+                <Sparkles className="w-3 h-3 text-cyan-400" />
+                <span>Impact</span>
               </button>
             )}
           </div>
@@ -1074,20 +1153,20 @@ export default function Globe3D({
       )}
 
       {/* Bottom Hotspot Quick Selector Bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-1 bg-wire-base/90 backdrop-blur-md px-3 py-2 border-t border-wire-border overflow-x-auto no-scrollbar">
-        <span className="font-mono text-[10px] text-wire-subtle mr-1 shrink-0">Smart Hubs:</span>
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-1 bg-slate-950/85 backdrop-blur-xl px-3 py-2 border-t border-purple-500/20 overflow-x-auto no-scrollbar">
+        <span className="font-mono text-[10px] text-purple-300 font-semibold mr-1 shrink-0">Smart Hubs:</span>
         {GLOBAL_HOTSPOTS.map(h => (
           <button
             key={h.id}
             onClick={() => {
-              playEarcon('click');
+              playUiSound('click');
               onSelectCountry(h.id);
               setSmartTarget(h);
             }}
-            className={`font-mono text-[10px] px-2 py-0.5 border transition-all shrink-0 flex items-center gap-1.5 ${
+            className={`font-mono text-[10px] px-2.5 py-1 rounded-lg border transition-all shrink-0 flex items-center gap-1.5 active:scale-95 ${
               selectedCountry.toLowerCase() === h.id
-                ? 'bg-wire-raised text-wire-fg border-wire-amber shadow-sm'
-                : 'text-wire-subtle border-wire-border hover:text-wire-fg hover:border-wire-muted'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold border-transparent shadow-md shadow-purple-500/30'
+                : 'text-slate-300 border-slate-800 bg-slate-900/60 hover:text-white hover:border-purple-500/40 hover:bg-slate-800/80'
             }`}
           >
             <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: h.colorHex }} />

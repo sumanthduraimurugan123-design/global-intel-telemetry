@@ -15,6 +15,8 @@ import FutureImpactSimulatorModal from '../components/FutureImpactSimulatorModal
 import { calculatePersonalImpact } from '../services/impactEngine';
 import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation, fetchGeoDirectory } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
+import BackgroundMesh from '../components/BackgroundMesh';
+import { playUiSound } from '../services/soundSystem';
 import { 
   globalRadioEngine, 
   speakInLanguage, 
@@ -411,8 +413,12 @@ export default function Dashboard() {
     }
   };
 
+  const hasCriticalAlert = alerts.some(a => a.severity === 'CRITICAL');
+
   return (
-    <div className="min-h-screen flex flex-col bg-wire-base text-wire-fg">
+    <div className="min-h-screen flex flex-col bg-[#030712] text-slate-100 relative overflow-x-hidden selection:bg-purple-500/30 selection:text-white">
+      {/* 3D Spatial Animated Mesh & Contextual Dynamic Ambient Lighting */}
+      <BackgroundMesh activeTopic={activeTopic} hasCriticalAlert={hasCriticalAlert} />
       
       {/* If Easy Mode is active, render full-screen EasyModeView */}
       {isEasyMode ? (
@@ -477,7 +483,7 @@ export default function Dashboard() {
           />
 
           {/* Main Dashboard Grid */}
-          <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-5 space-y-4">
+          <main className="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-5 space-y-4 relative z-10 spatial-perspective">
             
             {/* Row 1: Key Indicators (AI Personal Impact Engine) */}
             <TelemetryStats
@@ -518,7 +524,7 @@ export default function Dashboard() {
             </div>
 
             {/* Row 3: Planetary Hierarchical Geo Navigation & Neighborhood Telemetry Strip */}
-            <div className="glass-card rounded-xl p-5 shadow-2xl border border-purple-500/20 space-y-4">
+            <div className="glass-card-luxe rounded-2xl p-5 shadow-2xl border border-purple-500/25 space-y-4">
               {/* Header with Breadcrumb and GPS */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-purple-500/15">
                 <div className="flex items-center gap-2.5 flex-wrap">
@@ -725,14 +731,17 @@ export default function Dashboard() {
           </main>
 
           {/* Footer */}
-          <footer className="w-full border-t border-wire-border py-3 px-6 bg-wire-base">
+          <footer className="w-full border-t border-purple-500/15 py-3 px-6 bg-slate-950/80 backdrop-blur-xl">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-              <span className="font-serif text-wire-subtle text-xs">Global Intelligence Wire · Voice Subsystem Active</span>
-              <span className="font-mono text-[10px] text-wire-muted tabular-nums">
-                Auto-sync in {countdown}s
+              <span className="font-mono text-slate-500 text-xs flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
+                Global Intelligence Wire · Voice Subsystem Active
               </span>
-              <span className="font-mono text-[10px] text-wire-muted">
-                Speech API Ready (EN / தமிழ் / हिंदी)
+              <span className="font-mono text-[10px] text-slate-500 tabular-nums">
+                Auto-sync in <span className={`font-bold ${countdown <= 5 ? 'text-pink-400 animate-pulse' : 'text-purple-300'}`}>{countdown}s</span>
+              </span>
+              <span className="font-mono text-[10px] text-slate-500">
+                Speech API · EN / தமிழ் / हिंदी
               </span>
             </div>
           </footer>

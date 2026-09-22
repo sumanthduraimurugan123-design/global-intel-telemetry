@@ -2,6 +2,37 @@ import React, { useState, useMemo } from 'react';
 import { ExternalLink, Volume2, Globe2, HelpCircle, Sparkles, VolumeX, LineChart, Coffee, Accessibility, Bot, Lightbulb, MapPin, ShieldAlert, CheckCircle2, GraduationCap, Wheat, Briefcase, Users } from 'lucide-react';
 import { speakInLanguage, stopSpeaking, playEarcon } from '../services/voiceService';
 import { fetchNewsExplanation, fetchPersonalizedOpinion } from '../services/newsService';
+import { playUiSound } from '../services/soundSystem';
+import IntelligentEmptyState from './IntelligentEmptyState';
+
+function NewsSkeletonLoader() {
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+        <span className="font-mono text-xs text-cyan-300 animate-pulse font-semibold">
+          Processing global data streams & synthesizing intelligence...
+        </span>
+      </div>
+      {[1, 2, 3, 4].map(idx => (
+        <div key={idx} className="p-4 rounded-xl border border-purple-500/15 bg-slate-900/40 relative overflow-hidden shimmer-mask">
+          <div className="flex items-center gap-2 mb-2.5">
+            <div className="w-5 h-5 rounded-full bg-slate-800" />
+            <div className="w-28 h-3.5 rounded bg-slate-800" />
+            <div className="w-20 h-3.5 rounded bg-slate-800/60 ml-auto" />
+          </div>
+          <div className="w-4/5 h-4 rounded bg-slate-700/60 mb-2" />
+          <div className="w-full h-3 rounded bg-slate-800/80 mb-1.5" />
+          <div className="w-2/3 h-3 rounded bg-slate-800/80" />
+          <div className="flex gap-2 mt-3 pt-2 border-t border-purple-500/10">
+            <div className="w-20 h-6 rounded-lg bg-slate-800/60" />
+            <div className="w-24 h-6 rounded-lg bg-slate-800/60" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const TOPICS = ['all', 'Geopolitics', 'Defense', 'Economy', 'Cyber', 'Energy'];
 
@@ -223,34 +254,44 @@ export default function NewsPanel({
 
     const pLower = (persona || '').toLowerCase();
 
+    const catStr = `${item.category || ''} ${item.topic || ''} ${item.sentiment || ''} ${item.title || ''}`.toLowerCase();
+    let categoryGlow = 'hover:border-purple-400/40 hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]';
+    if (catStr.includes('economy') || catStr.includes('market') || catStr.includes('finance') || catStr.includes('trade')) {
+      categoryGlow = 'hover:border-cyan-400/50 hover:shadow-[0_0_24px_rgba(6,182,212,0.22)]';
+    } else if (catStr.includes('risk') || catStr.includes('hostile') || catStr.includes('defense') || catStr.includes('war') || catStr.includes('threat')) {
+      categoryGlow = 'hover:border-rose-400/50 hover:shadow-[0_0_24px_rgba(244,63,94,0.22)]';
+    } else if (catStr.includes('growth') || catStr.includes('tech') || catStr.includes('energy') || catStr.includes('cyber') || catStr.includes('chip')) {
+      categoryGlow = 'hover:border-emerald-400/50 hover:shadow-[0_0_24px_rgba(16,185,129,0.22)]';
+    }
+
     // ACCESSIBILITY MODE VIEW (Large buttons, high-contrast, speech-friendly)
     if (pLower.includes('accessibility') || isCognitiveSimple) {
       return (
-        <div key={cardId} className={`p-4 border-b-2 border-wire-border bg-wire-surface ${isReading ? 'bg-amber-950/20 border-l-4 border-l-wire-amber' : ''}`}>
+        <div key={cardId} className={`p-4 border-b-2 border-slate-800 bg-slate-900/50 ${isReading ? 'bg-amber-950/20 border-l-4 border-l-amber-400' : ''}`}>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-2xl">{item.country_flag || '🌐'}</span>
-            <span className="font-mono text-sm font-bold text-wire-fg">{item.country_name || item.country}</span>
+            <span className="font-mono text-sm font-bold text-slate-100">{item.country_name || item.country}</span>
             {isLocal && (
-              <span className="bg-wire-amber text-wire-base font-mono font-bold text-[11px] px-2 py-0.5 rounded-sm">
+              <span className="bg-amber-400 text-slate-950 font-mono font-bold text-[11px] px-2 py-0.5 rounded-sm">
                 LOCAL NEWS
               </span>
             )}
-            <span className="font-mono text-xs text-wire-subtle ml-auto">{item.source}</span>
+            <span className="font-mono text-xs text-slate-400 ml-auto">{item.source}</span>
           </div>
 
           <a
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-lg font-bold text-white hover:text-wire-amber transition-colors leading-snug mb-3"
+            className="block text-lg font-bold text-white hover:text-amber-400 transition-colors leading-snug mb-3"
           >
             {item.title}
           </a>
 
           {/* Explanation if loaded */}
           {explanation && (
-            <div className="bg-wire-raised border-2 border-wire-amber p-3 my-2 text-white font-sans text-sm">
-              <span className="font-mono text-xs text-wire-amber font-bold block mb-1">💡 எளிய விளக்கம் / PLAIN MEANING:</span>
+            <div className="bg-slate-900/80 border-2 border-amber-500/60 p-3 my-2 text-white font-sans text-sm">
+              <span className="font-mono text-xs text-amber-400 font-bold block mb-1">💡 எளிய விளக்கம் / PLAIN MEANING:</span>
               <p className="font-medium mb-1">{explanation.explanation}</p>
               <p className="text-amber-300 font-semibold">👉 {explanation.impact}</p>
             </div>
@@ -258,7 +299,7 @@ export default function NewsPanel({
 
           {/* AI Opinion if loaded */}
           {opinion && (
-            <div className="bg-wire-raised border-2 border-cyan-500 p-3 my-2 text-white font-sans text-sm">
+            <div className="bg-slate-900/80 border-2 border-cyan-500 p-3 my-2 text-white font-sans text-sm">
               <span className="font-mono text-xs text-cyan-400 font-bold block mb-1">🤖 AI OPINION:</span>
               <p className="font-medium mb-1">{opinion.opinion}</p>
               <p className="text-cyan-300 font-semibold">👉 {opinion.keyTakeaway}</p>
@@ -275,7 +316,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleSpeak(e, item, cardId)}
               className={`px-4 py-2 font-mono text-sm font-bold rounded-sm border transition-colors flex items-center gap-2 ${
-                isReading ? 'bg-wire-red text-white border-wire-red' : 'bg-wire-base text-wire-fg border-wire-border hover:border-wire-amber'
+                isReading ? 'bg-rose-600 text-white border-rose-600' : 'bg-slate-950 text-slate-100 border-slate-800 hover:border-amber-500/60'
               }`}
             >
               <Volume2 className="w-4 h-4" />
@@ -284,7 +325,7 @@ export default function NewsPanel({
 
             <button
               onClick={(e) => handleExplain(e, item, cardId)}
-              className="px-4 py-2 font-mono text-sm font-bold rounded-sm border bg-wire-base text-wire-amber border-wire-amber hover:bg-wire-amber hover:text-wire-base transition-colors flex items-center gap-2"
+              className="px-4 py-2 font-mono text-sm font-bold rounded-sm border bg-slate-950 text-amber-400 border-amber-500/60 hover:bg-amber-400 hover:text-slate-950 transition-colors flex items-center gap-2"
             >
               <Sparkles className="w-4 h-4" />
               <span>💡 Explain News</span>
@@ -292,7 +333,7 @@ export default function NewsPanel({
 
             <button
               onClick={(e) => handleGetOpinion(e, item, cardId)}
-              className="px-4 py-2 font-mono text-sm font-bold rounded-sm border bg-wire-base text-cyan-400 border-cyan-500 hover:bg-cyan-500 hover:text-wire-base transition-colors flex items-center gap-2"
+              className="px-4 py-2 font-mono text-sm font-bold rounded-sm border bg-slate-950 text-cyan-400 border-cyan-500 hover:bg-cyan-500 hover:text-slate-950 transition-colors flex items-center gap-2"
             >
               <Bot className="w-4 h-4" />
               <span>🤖 AI Opinion</span>
@@ -307,8 +348,8 @@ export default function NewsPanel({
       return (
         <div
           key={cardId}
-          className={`px-4 py-3.5 border-b border-wire-border/50 hover:bg-wire-raised/60 transition-colors ${
-            isReading ? 'bg-amber-950/20 border-l-2 border-l-wire-amber' : ''
+          className={`px-4 py-3.5 border-b border-slate-800/50 hover:bg-slate-900/80/60 transition-colors ${
+            isReading ? 'bg-amber-950/20 border-l-2 border-l-amber-400' : ''
           }`}
         >
           {/* Top Analyst Metric Strip */}
@@ -319,14 +360,14 @@ export default function NewsPanel({
             </span>
 
             {isLocal && (
-              <span className="px-1.5 py-0.5 bg-amber-950 text-wire-amber border border-amber-800 font-semibold">
+              <span className="px-1.5 py-0.5 bg-amber-950 text-amber-400 border border-amber-800 font-semibold">
                 HYPER-LOCAL INTEL
               </span>
             )}
 
-            <span className="text-wire-subtle">{item.source}</span>
-            <span className="text-wire-border">·</span>
-            <span className="text-wire-subtle tabular-nums">
+            <span className="text-slate-400">{item.source}</span>
+            <span className="text-slate-600">·</span>
+            <span className="text-slate-400 tabular-nums">
               {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
 
@@ -338,7 +379,7 @@ export default function NewsPanel({
               <button
                 onClick={(e) => handleSpeak(e, item, cardId)}
                 className={`p-1 border text-[10px] flex items-center gap-1 transition-colors ${
-                  isReading ? 'bg-wire-red text-white border-wire-red' : 'border-wire-border text-wire-subtle hover:text-white'
+                  isReading ? 'bg-rose-600 text-white border-rose-600' : 'border-slate-800 text-slate-400 hover:text-white'
                 }`}
                 title="Listen to dispatch"
               >
@@ -348,7 +389,7 @@ export default function NewsPanel({
               <button
                 onClick={(e) => handleGetOpinion(e, item, cardId)}
                 className={`p-1 border text-[10px] flex items-center gap-1 transition-colors ${
-                  opinion ? 'bg-cyan-950 text-cyan-400 border-cyan-800' : 'border-wire-border text-cyan-400 hover:bg-cyan-950/40'
+                  opinion ? 'bg-cyan-950 text-cyan-400 border-cyan-800' : 'border-slate-800 text-cyan-400 hover:bg-cyan-950/40'
                 }`}
                 title="Run Strategic AI Assessment"
               >
@@ -363,7 +404,7 @@ export default function NewsPanel({
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block font-serif text-sm font-semibold text-slate-100 hover:text-wire-amber transition-colors leading-snug"
+            className="block font-serif text-sm font-semibold text-slate-100 hover:text-amber-400 transition-colors leading-snug"
           >
             {item.title}
           </a>
@@ -400,7 +441,7 @@ export default function NewsPanel({
       return (
         <div
           key={cardId}
-          className={`px-4 py-3.5 border-b border-wire-border/40 hover:bg-sky-950/10 transition-colors ${
+          className={`px-4 py-3.5 border-b border-slate-800/40 hover:bg-sky-950/10 transition-colors ${
             isReading ? 'bg-sky-950/20 border-l-2 border-l-sky-400' : ''
           }`}
         >
@@ -452,7 +493,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleSpeak(e, item, cardId)}
               className={`px-2.5 py-1 text-xs font-mono border rounded-sm flex items-center gap-1 transition-colors ${
-                isReading ? 'bg-sky-600 text-white border-sky-600' : 'bg-wire-base text-wire-fg border-wire-border hover:border-sky-400'
+                isReading ? 'bg-sky-600 text-white border-sky-600' : 'bg-slate-950 text-slate-100 border-slate-800 hover:border-sky-400'
               }`}
             >
               <Volume2 className="w-3 h-3" />
@@ -461,7 +502,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleGetOpinion(e, item, cardId)}
               className={`px-2.5 py-1 text-xs font-mono border rounded-sm flex items-center gap-1 transition-colors ${
-                opinion ? 'bg-sky-700 text-white border-sky-700' : 'bg-wire-base text-sky-400 border-sky-700/50 hover:border-sky-400'
+                opinion ? 'bg-sky-700 text-white border-sky-700' : 'bg-slate-950 text-sky-400 border-sky-700/50 hover:border-sky-400'
               }`}
             >
               <GraduationCap className="w-3 h-3" />
@@ -469,7 +510,7 @@ export default function NewsPanel({
             </button>
             <button
               onClick={(e) => handleExplain(e, item, cardId)}
-              className="px-2.5 py-1 text-xs font-mono border rounded-sm bg-wire-base text-slate-400 border-wire-border hover:text-white transition-colors flex items-center gap-1"
+              className="px-2.5 py-1 text-xs font-mono border rounded-sm bg-slate-950 text-slate-400 border-slate-800 hover:text-white transition-colors flex items-center gap-1"
             >
               <Lightbulb className="w-3 h-3 text-sky-300" />
               <span>💡 Explain</span>
@@ -484,7 +525,7 @@ export default function NewsPanel({
       return (
         <div
           key={cardId}
-          className={`px-4 py-3.5 border-b border-wire-border/40 hover:bg-emerald-950/10 transition-colors ${
+          className={`px-4 py-3.5 border-b border-slate-800/40 hover:bg-emerald-950/10 transition-colors ${
             isReading ? 'bg-emerald-950/20 border-l-2 border-l-emerald-400' : ''
           }`}
         >
@@ -536,7 +577,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleSpeak(e, item, cardId)}
               className={`px-3 py-1.5 text-sm font-mono border rounded-sm flex items-center gap-2 transition-colors ${
-                isReading ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-wire-base text-wire-fg border-wire-border hover:border-emerald-400'
+                isReading ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-slate-950 text-slate-100 border-slate-800 hover:border-emerald-400'
               }`}
             >
               <Volume2 className="w-4 h-4" />
@@ -545,7 +586,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleGetOpinion(e, item, cardId)}
               className={`px-3 py-1.5 text-sm font-mono border rounded-sm flex items-center gap-2 transition-colors ${
-                opinion ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-wire-base text-emerald-400 border-emerald-700/50 hover:border-emerald-400'
+                opinion ? 'bg-emerald-700 text-white border-emerald-700' : 'bg-slate-950 text-emerald-400 border-emerald-700/50 hover:border-emerald-400'
               }`}
             >
               <Wheat className="w-4 h-4" />
@@ -561,7 +602,7 @@ export default function NewsPanel({
       return (
         <div
           key={cardId}
-          className={`px-4 py-3.5 border-b border-wire-border/50 hover:bg-purple-950/10 transition-colors ${
+          className={`px-4 py-3.5 border-b border-slate-800/50 hover:bg-purple-950/10 transition-colors ${
             isReading ? 'bg-purple-950/20 border-l-2 border-l-purple-400' : ''
           }`}
         >
@@ -575,7 +616,7 @@ export default function NewsPanel({
                 LOCAL MARKET
               </span>
             )}
-            <span className="text-wire-subtle">{item.source}</span>
+            <span className="text-slate-400">{item.source}</span>
             <span className={`ml-auto border px-1.5 py-0.5 text-[9px] font-semibold ${sentCfg.cls}`}>
               {sentCfg.label}
             </span>
@@ -583,7 +624,7 @@ export default function NewsPanel({
               <button
                 onClick={(e) => handleSpeak(e, item, cardId)}
                 className={`p-1 border text-[10px] flex items-center gap-1 transition-colors ${
-                  isReading ? 'bg-purple-600 text-white border-purple-600' : 'border-wire-border text-wire-subtle hover:text-white'
+                  isReading ? 'bg-purple-600 text-white border-purple-600' : 'border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
                 <Volume2 className="w-3 h-3" />
@@ -592,7 +633,7 @@ export default function NewsPanel({
               <button
                 onClick={(e) => handleGetOpinion(e, item, cardId)}
                 className={`p-1 border text-[10px] flex items-center gap-1 transition-colors ${
-                  opinion ? 'bg-purple-950 text-purple-400 border-purple-800' : 'border-wire-border text-purple-400 hover:bg-purple-950/40'
+                  opinion ? 'bg-purple-950 text-purple-400 border-purple-800' : 'border-slate-800 text-purple-400 hover:bg-purple-950/40'
                 }`}
               >
                 <Briefcase className="w-3 h-3" />
@@ -640,11 +681,11 @@ export default function NewsPanel({
       return (
         <div
           key={cardId}
-          className={`px-4 py-3.5 border-b border-wire-border/40 hover:bg-amber-950/10 transition-colors ${
+          className={`px-4 py-3.5 border-b border-slate-800/40 hover:bg-amber-950/10 transition-colors ${
             isReading ? 'bg-amber-950/20 border-l-2 border-l-amber-400' : ''
           }`}
         >
-          <div className="flex items-center gap-2 mb-1 text-xs text-wire-subtle font-mono">
+          <div className="flex items-center gap-2 mb-1 text-xs text-slate-400 font-mono">
             <span className="text-base">{item.country_flag || '🌐'}</span>
             <span>{item.country_name || item.country}</span>
             {isLocal && (
@@ -654,7 +695,7 @@ export default function NewsPanel({
             )}
             <span>·</span>
             <span>{item.source}</span>
-            <span className="ml-auto text-[10px] text-wire-muted">
+            <span className="ml-auto text-[10px] text-slate-500">
               {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
@@ -663,7 +704,7 @@ export default function NewsPanel({
             href={item.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="block font-serif text-base font-bold text-wire-fg hover:text-amber-300 transition-colors leading-snug mb-1"
+            className="block font-serif text-base font-bold text-slate-100 hover:text-amber-300 transition-colors leading-snug mb-1"
           >
             {item.title}
           </a>
@@ -675,7 +716,7 @@ export default function NewsPanel({
           })()}
 
           {opinion && (
-            <div className="bg-wire-base border-l-2 border-l-amber-400 border-y border-r border-amber-800/30 p-3 my-2 text-sm font-sans">
+            <div className="bg-slate-950 border-l-2 border-l-amber-400 border-y border-r border-amber-800/30 p-3 my-2 text-sm font-sans">
               <div className="flex items-center gap-1.5 font-mono text-[10px] text-amber-400 font-bold mb-1">
                 <Users className="w-3.5 h-3.5" />
                 <span>{opinion.badge || '👥 EVERYDAY PERSPECTIVE'}</span>
@@ -686,7 +727,7 @@ export default function NewsPanel({
           )}
 
           {explanation && !opinion && (
-            <div className="bg-wire-base border-l-2 border-l-amber-400 p-2.5 my-2 text-sm font-sans">
+            <div className="bg-slate-950 border-l-2 border-l-amber-400 p-2.5 my-2 text-sm font-sans">
               <span className="font-mono text-[10px] text-amber-300 block mb-1 font-bold">💡 PLAIN MEANING:</span>
               <p className="text-white mb-1">{explanation.explanation}</p>
               <p className="text-slate-400 text-xs">👉 {explanation.impact}</p>
@@ -697,7 +738,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleSpeak(e, item, cardId)}
               className={`px-3 py-1.5 text-sm font-mono border rounded-sm flex items-center gap-2 transition-colors ${
-                isReading ? 'bg-amber-600 text-black border-amber-600' : 'bg-wire-base text-wire-fg border-wire-border hover:border-amber-400'
+                isReading ? 'bg-amber-600 text-black border-amber-600' : 'bg-slate-950 text-slate-100 border-slate-800 hover:border-amber-400'
               }`}
             >
               <Volume2 className="w-4 h-4" />
@@ -706,7 +747,7 @@ export default function NewsPanel({
             <button
               onClick={(e) => handleGetOpinion(e, item, cardId)}
               className={`px-3 py-1.5 text-sm font-mono border rounded-sm flex items-center gap-2 transition-colors ${
-                opinion ? 'bg-amber-600 text-black border-amber-600 font-bold' : 'bg-wire-base text-amber-400 border-amber-700/50 hover:border-amber-400'
+                opinion ? 'bg-amber-600 text-black border-amber-600 font-bold' : 'bg-slate-950 text-amber-400 border-amber-700/50 hover:border-amber-400'
               }`}
             >
               <Users className="w-4 h-4" />
@@ -714,7 +755,7 @@ export default function NewsPanel({
             </button>
             <button
               onClick={(e) => handleExplain(e, item, cardId)}
-              className="px-3 py-1.5 text-sm font-mono border rounded-sm bg-wire-base text-slate-400 border-wire-border hover:text-white transition-colors flex items-center gap-2"
+              className="px-3 py-1.5 text-sm font-mono border rounded-sm bg-slate-950 text-slate-400 border-slate-800 hover:text-white transition-colors flex items-center gap-2"
             >
               <Lightbulb className="w-4 h-4 text-amber-400" />
               <span>Explain Simply</span>
@@ -728,11 +769,11 @@ export default function NewsPanel({
     return (
       <div
         key={cardId}
-        className={`px-4 py-3.5 border-b border-wire-border/40 hover:bg-wire-raised/50 transition-colors ${
-          isReading ? 'bg-amber-950/20 border-l-2 border-l-wire-amber' : ''
+        className={`px-4 py-3.5 border-b border-purple-500/10 hover:bg-slate-900/60 transition-all duration-300 rounded-xl my-1 mx-1 border border-transparent ${categoryGlow} ${
+          isReading ? 'bg-amber-950/20 border-l-4 border-l-amber-400' : ''
         }`}
       >
-        <div className="flex items-center gap-2 mb-1 text-xs text-wire-subtle font-mono">
+        <div className="flex items-center gap-2 mb-1 text-xs text-slate-400 font-mono">
           <span>{item.country_flag || '🌐'} {item.country_name || item.country}</span>
           {isLocal && (
             <span className="px-1.5 py-0.2 bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px] font-bold">
@@ -741,7 +782,7 @@ export default function NewsPanel({
           )}
           <span>·</span>
           <span>{item.source}</span>
-          <span className="ml-auto text-[10px] text-wire-muted">
+          <span className="ml-auto text-[10px] text-slate-500">
             {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
@@ -750,7 +791,7 @@ export default function NewsPanel({
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block font-serif text-sm sm:text-base font-semibold text-wire-fg hover:text-wire-amber transition-colors leading-snug mb-1"
+          className="block font-serif text-sm sm:text-base font-semibold text-slate-100 hover:text-amber-400 transition-colors leading-snug mb-1"
         >
           {item.title}
         </a>
@@ -759,7 +800,7 @@ export default function NewsPanel({
           const desc = cleanDescription(item.description, item.title);
           if (!desc) return null;
           return (
-            <p className="text-xs text-wire-subtle font-sans leading-relaxed line-clamp-2 mb-2">
+            <p className="text-xs text-slate-400 font-sans leading-relaxed line-clamp-2 mb-2">
               {desc}
             </p>
           );
@@ -767,21 +808,21 @@ export default function NewsPanel({
 
         {/* Personalized AI Citizen Opinion */}
         {opinion && (
-          <div className="bg-wire-base border-l-2 border-l-wire-amber border-y border-r border-wire-border p-3 my-2 text-xs text-wire-fg font-sans">
-            <div className="flex items-center gap-1.5 font-mono text-[10px] text-wire-amber font-bold mb-1">
-              <Lightbulb className="w-3.5 h-3.5 text-wire-amber" />
+          <div className="bg-slate-950 border-l-2 border-l-amber-400 border-y border-r border-slate-800 p-3 my-2 text-xs text-slate-100 font-sans">
+            <div className="flex items-center gap-1.5 font-mono text-[10px] text-amber-400 font-bold mb-1">
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
               <span>{opinion.badge || 'CITIZEN AI PERSPECTIVE'}</span>
             </div>
             <p className="text-white mb-1.5 leading-relaxed">{opinion.opinion}</p>
-            <p className="text-wire-subtle font-medium text-[11px]">👉 {opinion.keyTakeaway}</p>
+            <p className="text-slate-400 font-medium text-[11px]">👉 {opinion.keyTakeaway}</p>
           </div>
         )}
 
         {explanation && !opinion && (
-          <div className="bg-wire-base border-l-2 border-l-wire-amber border-y border-r border-wire-border p-2.5 my-2 text-xs text-wire-fg font-sans">
-            <span className="font-mono text-[10px] text-wire-amber block mb-1 font-bold">💡 PLAIN EXPLANATION:</span>
+          <div className="bg-slate-950 border-l-2 border-l-amber-400 border-y border-r border-slate-800 p-2.5 my-2 text-xs text-slate-100 font-sans">
+            <span className="font-mono text-[10px] text-amber-400 block mb-1 font-bold">💡 PLAIN EXPLANATION:</span>
             <p className="text-white mb-1">{explanation.explanation}</p>
-            <p className="text-wire-subtle text-[11px]">👉 {explanation.impact}</p>
+            <p className="text-slate-400 text-[11px]">👉 {explanation.impact}</p>
           </div>
         )}
 
@@ -790,7 +831,7 @@ export default function NewsPanel({
           <button
             onClick={(e) => handleSpeak(e, item, cardId)}
             className={`px-2.5 py-1 text-xs font-mono border rounded-sm flex items-center gap-1 transition-colors ${
-              isReading ? 'bg-wire-red text-white border-wire-red' : 'bg-wire-base text-wire-fg border-wire-border hover:border-wire-amber'
+              isReading ? 'bg-rose-600 text-white border-rose-600' : 'bg-slate-950 text-slate-100 border-slate-800 hover:border-amber-500/60'
             }`}
           >
             <Volume2 className="w-3 h-3" />
@@ -800,18 +841,18 @@ export default function NewsPanel({
           <button
             onClick={(e) => handleGetOpinion(e, item, cardId)}
             className={`px-2.5 py-1 text-xs font-mono border rounded-sm flex items-center gap-1 transition-colors ${
-              opinion ? 'bg-wire-amber text-wire-base font-semibold border-wire-amber' : 'bg-wire-base text-wire-subtle border-wire-border hover:text-wire-amber hover:border-wire-amber'
+              opinion ? 'bg-amber-400 text-slate-950 font-semibold border-amber-500/60' : 'bg-slate-950 text-slate-400 border-slate-800 hover:text-amber-400 hover:border-amber-500/60'
             }`}
           >
-            <Bot className="w-3 h-3 text-wire-amber" />
+            <Bot className="w-3 h-3 text-amber-400" />
             <span>{opinion ? 'AI Opinion Active' : '🤖 AI Opinion'}</span>
           </button>
 
           <button
             onClick={(e) => handleExplain(e, item, cardId)}
-            className="px-2.5 py-1 text-xs font-mono border rounded-sm bg-wire-base text-wire-subtle border-wire-border hover:text-white transition-colors flex items-center gap-1"
+            className="px-2.5 py-1 text-xs font-mono border rounded-sm bg-slate-950 text-slate-400 border-slate-800 hover:text-white transition-colors flex items-center gap-1"
           >
-            <Sparkles className="w-3 h-3 text-wire-amber" />
+            <Sparkles className="w-3 h-3 text-amber-400" />
             <span>💡 Explain</span>
           </button>
         </div>
@@ -820,7 +861,7 @@ export default function NewsPanel({
   };
 
   return (
-    <div className="glass-card rounded-xl flex flex-col shadow-2xl overflow-hidden my-4 border border-purple-500/20">
+    <div className="glass-card-luxe rounded-2xl flex flex-col shadow-2xl overflow-hidden my-4 border border-purple-500/25">
       
       {/* 1. Prominent Active Persona Status & 1-Click Persona Tabs */}
       <div className="bg-slate-900/80 border-b border-purple-500/20 px-4 py-3 flex flex-wrap items-center justify-between gap-3 backdrop-blur-md">
@@ -1008,13 +1049,19 @@ export default function NewsPanel({
       {/* 5. Articles List */}
       <div className="divide-y divide-purple-500/10">
         {isLoading ? (
-          <div className="p-12 text-center font-mono text-xs text-purple-300">
-            <div className="w-10 h-10 border-2 border-purple-500 border-t-pink-500 rounded-full animate-spin mx-auto mb-3" />
-            <span className="animate-pulse">Loading live verified telemetry stream...</span>
-          </div>
+          <NewsSkeletonLoader />
         ) : filteredNews.length === 0 ? (
-          <div className="p-12 text-center font-mono text-xs text-slate-400">
-            No dispatches for this filter. Try selecting 'All' or a different sector.
+          <div className="p-4">
+            <IntelligentEmptyState
+              title={`No Verified Telemetry in ${selectedCountryFilter !== 'all' ? selectedCountryFilter.toUpperCase() : 'Selected'} Scope`}
+              description="Planetary intelligence aggregator is scanning sovereign feeds. Try selecting 'All' or clearing sector filters."
+              onReset={() => {
+                playUiSound('click');
+                setSelectedCountryFilter('all');
+                if (onSelectTopic) onSelectTopic('all');
+              }}
+              resetLabel="Reset Scope to All"
+            />
           </div>
         ) : viewMode === 'stream' ? (
           filteredNews.map(renderNewsRow)
