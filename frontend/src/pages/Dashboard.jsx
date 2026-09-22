@@ -532,7 +532,17 @@ export default function Dashboard() {
               currentLanguage={currentLanguage}
             />
 
-            {/* Row 2: 3D Planetary Smart Globe & Real-time Alert System + Global Impact DNA */}
+            {/* Row 2: Global Impact DNA — Full-width, unmissable feature strip */}
+            <div id="dna-feature-row" className="w-full animate-fade-in">
+              <GlobalImpactDna
+                riskScore={dnaRiskScore}
+                activityLevel={dnaActivityLevel}
+                climateScore={dnaClimateScore}
+                compact={false}
+              />
+            </div>
+
+            {/* Row 3: 3D Planetary Smart Globe & Real-time Alert System */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
               {/* 3D Smart Globe: 7 columns on desktop */}
@@ -547,14 +557,8 @@ export default function Dashboard() {
                 />
               </div>
 
-              {/* Global Impact DNA & Alert System: 5 columns on desktop */}
+              {/* Alert System: 5 columns on desktop */}
               <div className="lg:col-span-5 flex flex-col gap-4">
-                <GlobalImpactDna
-                  riskScore={dnaRiskScore}
-                  activityLevel={dnaActivityLevel}
-                  climateScore={dnaClimateScore}
-                />
-
                 <AlertSystem
                   alerts={alerts}
                   selectedCountry={selectedCountry}

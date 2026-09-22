@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX, Eye, Type, Smile, Mic, Radio, Bell, BellOff } from 'lucide-react';
+import { Volume2, VolumeX, Eye, Type, Smile, Mic, Radio, Bell, BellOff, Dna } from 'lucide-react';
 import { playSound } from '../services/soundSystem';
 
 export default function AccessibilityToolbar({
@@ -18,7 +18,8 @@ export default function AccessibilityToolbar({
   onToggleAudioAlerts,
   onToggleEasyMode,
   isEasyMode,
-  currentLanguage = 'en'
+  currentLanguage = 'en',
+  onOpenDnaSidePanel
 }) {
   const btnBase = "flex items-center gap-1.5 px-3 py-1.5 font-sans text-xs font-medium border transition-all rounded-lg";
   const btnOff = "text-slate-400 border-slate-800/80 hover:text-slate-100 hover:border-slate-700 bg-slate-900/60 backdrop-blur-sm";
@@ -85,6 +86,19 @@ export default function AccessibilityToolbar({
           >
             {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             <span>{isSpeaking ? 'Stop Briefing' : 'Brief Aloud'}</span>
+          </button>
+
+          {/* Global Impact DNA Helix Trigger */}
+          <button
+            onClick={() => handleClick(() => {
+              if (onOpenDnaSidePanel) onOpenDnaSidePanel();
+              else document.getElementById('global-impact-dna')?.scrollIntoView({ behavior: 'smooth' });
+            })}
+            className={`${btnBase} bg-gradient-to-r from-purple-950/60 to-cyan-950/60 border-purple-500/40 text-cyan-300 hover:text-white hover:border-cyan-400 font-semibold shadow-sm`}
+            title="Open Global Impact DNA Helix biometrics"
+          >
+            <Dna className="w-3.5 h-3.5 text-cyan-300 animate-spin-slow" />
+            <span>Global DNA</span>
           </button>
         </div>
 

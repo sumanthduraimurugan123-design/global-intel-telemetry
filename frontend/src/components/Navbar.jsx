@@ -8,7 +8,8 @@ import {
   Sparkles, 
   Globe2, 
   Mic, 
-  Volume1 
+  Volume1,
+  Dna
 } from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
 import { playUiSound, isSoundMuted, toggleSoundMute } from '../services/soundSystem';
@@ -28,7 +29,8 @@ export default function Navbar({
   onOpenVoiceModal,
   onToggleEasyMode,
   isEasyMode = false,
-  onOpenFutureImpactModal
+  onOpenFutureImpactModal,
+  onOpenDnaSidePanel
 }) {
   const [utcTime, setUtcTime] = useState('');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -150,6 +152,25 @@ export default function Navbar({
           >
             <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
             <span className="hidden md:inline font-semibold">Future Impact</span>
+          </button>
+
+          {/* 🧬 Global Impact DNA Side Panel Trigger */}
+          <button
+            onClick={() => {
+              playUiSound('click');
+              if (onOpenDnaSidePanel) {
+                onOpenDnaSidePanel();
+              } else {
+                document.getElementById('global-impact-dna')?.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-cyan-950/60 via-purple-950/60 to-pink-950/60 text-cyan-200 border border-cyan-500/40 hover:border-cyan-300 rounded-lg shadow-md hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all duration-200 backdrop-blur-sm"
+            title="Open Global Impact DNA 3-Strand Helix Model"
+            aria-label="Open Global Impact DNA"
+          >
+            <Dna className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
+            <span className="font-semibold hidden sm:inline">Global DNA</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
           </button>
 
           {/* 🌐 Language Switcher Dropdown */}
