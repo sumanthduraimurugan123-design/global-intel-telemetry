@@ -16,6 +16,8 @@ import { calculatePersonalImpact } from '../services/impactEngine';
 import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation, fetchGeoDirectory } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
 import BackgroundMesh from '../components/BackgroundMesh';
+import GlobalImpactDna from '../components/GlobalImpactDna';
+import CinematicRegionPanel from '../components/CinematicRegionPanel';
 import { playUiSound } from '../services/soundSystem';
 import { 
   globalRadioEngine, 
@@ -97,6 +99,28 @@ export default function Dashboard() {
 
   // Future Impact Simulator Modal State
   const [isFutureImpactModalOpen, setIsFutureImpactModalOpen] = useState(false);
+
+  // Cinematic Focus Mode State
+  const [isCinematicFocus, setIsCinematicFocus] = useState(false);
+
+  // Dynamic Global Impact DNA Biometrics
+  const criticalAlertsCount = alerts.filter(a => a.severity?.toUpperCase() === 'CRITICAL').length;
+  const dnaRiskScore = Math.min(95, Math.max(15, (alerts.length * 7) + (criticalAlertsCount * 16)));
+  const dnaActivityLevel = Math.min(100, Math.max(25, news.length * 4));
+  const climateNewsCount = news.filter(n => n.category === 'climate' || n.topic?.includes('climate')).length;
+  const dnaClimateScore = Math.min(90, Math.max(20, 30 + climateNewsCount * 12));
+
+  // ESC Key listener to exit Cinematic Focus Mode
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isCinematicFocus) {
+        playUiSound('click');
+        setIsCinematicFocus(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isCinematicFocus]);
 
   // Visual Accessibility States
   const [isHighContrast, setIsHighContrast] = useState(false);
@@ -212,13 +236,23 @@ export default function Dashboard() {
   };
 
   // Handle Country/Location Selection from 3D Globe or Navigation
-  const handleSelectCountry = (countryId) => {
+  const handleSelectCountry = (countryId, activateFocus = true) => {
     setSelectedCountry(countryId);
     setSelectedState(null);
     setSelectedLocation(null);
     stopSpeaking();
     setIsSpeaking(false);
+    if (countryId && countryId !== 'global' && activateFocus) {
+      setIsCinematicFocus(true);
+    }
     loadTelemetryData(true, countryId, null, null);
+  };
+
+  const handleExitFocusMode = () => {
+    playUiSound('click');
+    setIsCinematicFocus(false);
+    setSelectedCountry('global');
+    loadTelemetryData(true, 'global', null, null);
   };
 
   // Handle State / Province Selection (e.g. Tamil Nadu, California, Texas, Bavaria)
@@ -498,7 +532,7 @@ export default function Dashboard() {
               currentLanguage={currentLanguage}
             />
 
-            {/* Row 2: 3D Planetary Smart Globe & Real-time Alert System */}
+            {/* Row 2: 3D Planetary Smart Globe & Real-time Alert System + Global Impact DNA */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
               {/* 3D Smart Globe: 7 columns on desktop */}
@@ -508,11 +542,19 @@ export default function Dashboard() {
                   onSelectCountry={handleSelectCountry}
                   onOpenImpactModal={() => setIsImpactModalOpen(true)}
                   news={news}
+                  isFocusMode={isCinematicFocus}
+                  onToggleFocusMode={(nextVal) => setIsCinematicFocus(nextVal)}
                 />
               </div>
 
-              {/* Alert System: 5 columns on desktop */}
-              <div className="lg:col-span-5 flex flex-col">
+              {/* Global Impact DNA & Alert System: 5 columns on desktop */}
+              <div className="lg:col-span-5 flex flex-col gap-4">
+                <GlobalImpactDna
+                  riskScore={dnaRiskScore}
+                  activityLevel={dnaActivityLevel}
+                  climateScore={dnaClimateScore}
+                />
+
                 <AlertSystem
                   alerts={alerts}
                   selectedCountry={selectedCountry}
@@ -840,6 +882,71 @@ export default function Dashboard() {
         currentLocation={selectedLocation || selectedState || selectedCountry}
         currentPersona={persona}
       />
+
+      {/* Cinematic Focus Mode Fullscreen Immersive View */}
+      {isCinematicFocus && (
+        <div className="fixed inset-0 z-50 bg-[#02040a]/94 backdrop-blur-2xl p-4 sm:p-6 flex flex-col overflow-y-auto animate-fade-in">
+          {/* Cinematic Top Control Bar */}
+          <div className="flex items-center justify-between p-3.5 mb-4 rounded-2xl glass-card-luxe border border-pink-500/30 shadow-2xl shrink-0">
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full bg-pink-500 animate-ping" />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs font-bold text-white tracking-widest uppercase">
+                    CINEMATIC FOCUS MODE
+                  </span>
+                  <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full border border-pink-500/50 bg-pink-500/20 text-pink-200 font-semibold">
+                    ORBITAL SPOTLIGHT
+                  </span>
+                </div>
+                <p className="font-sans text-[11px] text-slate-400">
+                  Target Territory: <strong className="text-cyan-300 uppercase">{selectedCountry}</strong> · Background dimmed · Regional stream locked
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={handleExitFocusMode}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-sans text-xs font-semibold shadow-lg shadow-pink-500/25 transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
+                title="Exit Cinematic Focus Mode (or press ESC)"
+              >
+                <X className="w-4 h-4" />
+                <span>Exit Focus Mode</span>
+                <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-black/40 text-[10px] font-mono border border-white/20">ESC</kbd>
+              </button>
+            </div>
+          </div>
+
+          {/* Cinematic Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
+            {/* Expanded 3D Globe with Close Orbital Focus */}
+            <div className="lg:col-span-7 flex flex-col min-h-[480px]">
+              <Globe3D
+                selectedCountry={selectedCountry}
+                onSelectCountry={(cId) => handleSelectCountry(cId, false)}
+                onOpenImpactModal={() => setIsImpactModalOpen(true)}
+                news={news}
+                isFocusMode={true}
+                onToggleFocusMode={handleExitFocusMode}
+              />
+            </div>
+
+            {/* Regional Intelligence Data Panel */}
+            <div className="lg:col-span-5 flex flex-col">
+              <CinematicRegionPanel
+                selectedCountry={selectedCountry}
+                onSelectCountry={(cId) => handleSelectCountry(cId, false)}
+                onExitFocusMode={handleExitFocusMode}
+                news={news}
+                alerts={alerts}
+                currentLanguage={currentLanguage}
+                onOpenImpactModal={() => setIsImpactModalOpen(true)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
