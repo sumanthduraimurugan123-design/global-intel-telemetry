@@ -1,6 +1,7 @@
 import { supabase, isConfigured, logTelemetryAction } from './supabaseClient';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+// Use relative /api path so it works on Vercel without any env vars; override with VITE_API_BASE_URL if set
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api';
 
 /**
  * Fetch real news stream directly from Express backend (which aggregates verified deep-links)
@@ -18,43 +19,27 @@ export async function fetchNewsStream(country = 'global', topic = 'all', forceRe
   const langParam = language ? `&language=${encodeURIComponent(language)}` : '';
   const queryParams = `country=${encodeURIComponent(country)}&topic=${encodeURIComponent(topic)}&refresh=${forceRefresh}${locParam}${stateParam}${cityParam}${langParam}&_t=${timestamp}`;
 
-  // 1. Primary: Direct Backend API on localhost:5000 or production base
-  const candidateUrls = [
-    `${API_BASE}/news?${queryParams}`,
-    `http://localhost:5000/api/news?${queryParams}`,
-    `/api/news?${queryParams}`
-  ];
-
-  for (const endpoint of candidateUrls) {
-    try {
-      const response = await fetch(endpoint, {
-        cache: 'no-store',
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        }
-      });
-
-      const contentType = response.headers.get('content-type') || '';
-      if (response.ok && contentType.includes('application/json')) {
-        const data = await response.json();
-        if (Array.isArray(data.news) && data.news.length > 0) {
-          // Verify that items have valid URLs
-          const validArticles = data.news.filter(n => n.url && n.url.startsWith('http'));
-          if (validArticles.length > 0) {
-            // Attach top-level fallback metadata if present
-            return {
-              news: validArticles,
-              geoInfo: data.geoInfo || null,
-              fallbackDetails: data.fallbackDetails || null
-            };
-          }
+  // 1. Primary: Backend API (relative /api path works on Vercel)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(`${API_BASE}/news?${queryParams}`, {
+      cache: 'no-store',
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json', 'Cache-Control': 'no-cache' }
+    });
+    clearTimeout(timeoutId);
+    const contentType = response.headers.get('content-type') || '';
+    if (response.ok && contentType.includes('application/json')) {
+      const data = await response.json();
+      if (Array.isArray(data.news) && data.news.length > 0) {
+        const validArticles = data.news.filter(n => n.url && n.url.startsWith('http'));
+        if (validArticles.length > 0) {
+          return { news: validArticles, geoInfo: data.geoInfo || null, fallbackDetails: data.fallbackDetails || null };
         }
       }
-    } catch (err) {
-      // Try next endpoint candidate
     }
-  }
+  } catch (err) { /* proceed to fallbacks */ }
 
   // 2. Secondary: Direct Supabase query if credentials configured
   if (isConfigured && supabase) {
@@ -78,60 +63,60 @@ export async function fetchNewsStream(country = 'global', topic = 'all', forceRe
     }
   }
 
-  // 3. Tertiary: Direct RSS fallback via public CORS proxy with strict Regex link extraction
-  try {
-    const feedUrl = 'https://feeds.bbci.co.uk/news/world/rss.xml';
-    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(feedUrl)}`;
-    const directRes = await fetch(proxyUrl, { cache: 'no-store' });
-    const xml = await directRes.text();
+  // 3. Tertiary: Multi-feed RSS fallback via CORS proxies
+  const RSS_FEEDS = [
+    { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', source: 'BBC News' },
+    { url: 'https://rss.nytimes.com/services/xml/rss/nyt/World.xml', source: 'The New York Times' },
+    { url: 'https://www.theguardian.com/world/rss', source: 'The Guardian' },
+    { url: 'https://www.aljazeera.com/xml/rss/all.xml', source: 'Al Jazeera' },
+  ];
+  const CORS_PROXIES = [
+    (u) => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+    (u) => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    (u) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`,
+  ];
 
+  const parseRssXml = (xml, feedSource, countryId) => {
     const items = [];
-    const itemRegex = /<item>([\s\S]*?)<\/item>/gi;
+    const itemRegex = /<item>([\ \S]*?)<\/item>/gi;
     let match;
-
-    while ((match = itemRegex.exec(xml)) !== null && items.length < 25) {
-      const itemBlock = match[1];
-
-      // Declare titleMatch and decode HTML entities
-      const titleMatch = itemBlock.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/i) || itemBlock.match(/<title>(.*?)<\/title>/i);
+    while ((match = itemRegex.exec(xml)) !== null && items.length < 20) {
+      const block = match[1];
+      const titleMatch = block.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/i) || block.match(/<title>(.*?)<\/title>/i);
       let title = titleMatch ? titleMatch[1].trim() : '';
-      title = title.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-
-      // Extract and clean description
-      const descMatch = itemBlock.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/i) || itemBlock.match(/<description>(.*?)<\/description>/i);
-      let desc = descMatch ? descMatch[1].replace(/<[^>]*>?/gm, '').trim() : title;
-      desc = desc.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
-
-      // Extract EXACT article link from <link> or <guid>
-      let articleUrl = '';
-      const linkMatch = itemBlock.match(/<link>(.*?)<\/link>/i) || itemBlock.match(/<guid[^>]*>(.*?)<\/guid>/i);
-      if (linkMatch && linkMatch[1]) {
-        articleUrl = linkMatch[1].trim().split('?')[0]; // Strip tracking queries
-      }
-
-      const pubDateMatch = itemBlock.match(/<pubDate>(.*?)<\/pubDate>/i);
+      title = title.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').split(' - ')[0].trim();
+      if (!title) continue;
+      const descMatch = block.match(/<description><!\[CDATA\[(.*?)\]\]><\/description>/i) || block.match(/<description>(.*?)<\/description>/i);
+      let desc = descMatch ? descMatch[1].replace(/<[^>]*>?/gm, '').trim() : '';
+      desc = desc.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+      if (desc.includes('news.google.com') || desc.includes('target="_blank"')) desc = '';
+      const linkMatch = block.match(/<link>(.*?)<\/link>/i) || block.match(/<guid[^>]*>(.*?)<\/guid>/i);
+      const articleUrl = linkMatch ? linkMatch[1].trim().split('?')[0] : '';
+      if (!articleUrl || !articleUrl.startsWith('http')) continue;
+      const urlLower = articleUrl.toLowerCase();
+      if (urlLower.endsWith('.com') || urlLower.endsWith('/world') || urlLower.endsWith('/news') || urlLower.endsWith('/rss')) continue;
+      const pubDateMatch = block.match(/<pubDate>(.*?)<\/pubDate>/i);
       const pubDate = pubDateMatch ? new Date(pubDateMatch[1]).toISOString() : new Date().toISOString();
-
-      if (title && articleUrl && articleUrl.startsWith('http') && !articleUrl.endsWith('/news') && !articleUrl.endsWith('/world')) {
-        items.push({
-          id: `wire-${Date.now()}-${items.length}`,
-          title,
-          description: desc,
-          url: articleUrl,
-          source: 'BBC News',
-          country: country.toLowerCase(),
-          topic: topic === 'all' ? 'Geopolitics' : topic,
-          sentiment: 'Active',
-          created_at: pubDate
-        });
-      }
+      items.push({ id: `wire-${Date.now()}-${items.length}`, title, description: desc.substring(0, 200), url: articleUrl, source: feedSource, country: countryId, topic: 'Geopolitics', sentiment: 'Neutral', created_at: pubDate });
     }
+    return items;
+  };
 
-    if (items.length > 0) {
-      return { news: items, geoInfo: null, fallbackDetails: null };
+  for (const feed of RSS_FEEDS) {
+    for (const makeProxy of CORS_PROXIES) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 6000);
+        const res = await fetch(makeProxy(feed.url), { cache: 'no-store', signal: controller.signal });
+        clearTimeout(timeoutId);
+        const xml = await res.text();
+        if (!xml || xml.trim().startsWith('{')) continue;
+        const items = parseRssXml(xml, feed.source, country.toLowerCase());
+        if (items.length > 0) {
+          return { news: items, geoInfo: null, fallbackDetails: { fallbackMessage: `Live RSS from ${feed.source}` } };
+        }
+      } catch (e) { /* try next */ }
     }
-  } catch (directErr) {
-    console.warn('Tertiary RSS fallback exception:', directErr);
   }
 
   return { news: [], geoInfo: null, fallbackDetails: null };
