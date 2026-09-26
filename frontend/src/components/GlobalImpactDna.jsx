@@ -1,833 +1,715 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { 
-  Dna, 
-  Activity, 
-  ShieldAlert, 
-  TrendingUp, 
-  CloudRain, 
-  Maximize2, 
-  Minimize2, 
-  X, 
-  Sparkles, 
-  Sliders, 
-  Info,
-  CheckCircle2,
-  AlertTriangle,
-  Globe2,
-  Zap,
-  HelpCircle,
-  BookOpen,
-  Wheat,
-  GraduationCap,
-  Briefcase,
-  LineChart,
-  Users,
-  Volume2
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import {
+  Globe2, BookOpen, Maximize2, Minimize2, X,
+  Wheat, GraduationCap, Briefcase, LineChart, Users,
+  AlertTriangle, Eye, Wifi
 } from 'lucide-react';
 import { playSound } from '../services/soundSystem';
 
 /**
- * Global Impact DNA Visual - 3D Holographic Globe & Orbiting Triple Helix
- * Visualizing planetary equilibrium across 3 biometrics:
- * - Strand 1: Economy (Electric Blue / #38bdf8)
- * - Strand 2: Risk & Conflict (Vibrant Red / #f43f5e)
- * - Strand 3: Climate & Agri (Emerald Green / #10b981)
+ * GlobalImpactDna
+ * ───────────────
+ * A 3D holographic globe with three orbiting DNA helix strands.
+ *
+ *  🔵 Blue  = Economy & Trade
+ *  🔴 Red   = Risk & Conflict
+ *  🟢 Green = Climate & Food
+ *
+ * Designed to be understood by EVERYONE — farmers, students,
+ * business owners, analysts, and everyday citizens.
  */
 export default function GlobalImpactDna({
-  riskScore = 42,
+  riskScore     = 42,
   activityLevel = 65,
-  climateScore = 38,
-  compact = false,
-  asSidePanel = false,
-  isOpen = true,
+  climateScore  = 38,
+  compact       = false,
+  asSidePanel   = false,
+  isOpen        = true,
   onClose,
-  persona = 'Casual user',
-  className = ''
+  persona       = 'Casual user',
+  className     = '',
 }) {
-  const canvasRef = useRef(null);
+  const canvasRef    = useRef(null);
   const containerRef = useRef(null);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [selectedStrand, setSelectedStrand] = useState(null); // 'economy' | 'risk' | 'climate' | null
-  const [visualMode, setVisualMode] = useState('globe'); // 'globe' | 'helix' | 'wave'
-  const [showInstructions, setShowInstructions] = useState(false);
-  const [activeGuideTab, setActiveGuideTab] = useState('howToRead'); // 'howToRead' | 'strands' | 'personas'
+  const animRef      = useRef(null);
+  const timeRef      = useRef(0);
 
-  // Normalize scores 0-100
-  const normalizedRisk = Math.max(5, Math.min(100, Number(riskScore) || 42));
-  const normalizedActivity = Math.max(10, Math.min(100, Number(activityLevel) || 60));
-  const normalizedClimate = Math.max(5, Math.min(100, Number(climateScore) || 35));
+  const [isExpanded,     setIsExpanded]     = useState(false);
+  const [selectedStrand, setSelectedStrand] = useState(null);
+  const [showGuide,      setShowGuide]      = useState(false);
+  const [guideTab,       setGuideTab]       = useState('simple');
+  const [liveStatus,     setLiveStatus]     = useState('LIVE');
 
-  // Instability calculation: higher risk = higher distortion
-  const instabilityFactor = normalizedRisk / 100;
-  const isHighTension = normalizedRisk > 60;
+  // Normalise 0-100
+  const risk     = Math.max(5,  Math.min(100, Number(riskScore)     || 42));
+  const activity = Math.max(10, Math.min(100, Number(activityLevel) || 60));
+  const climate  = Math.max(5,  Math.min(100, Number(climateScore)  || 35));
 
+  const instability   = risk / 100;
+  const isHighTension = risk > 60;
+
+  // ── Live event hotspots (real lat/lon) ──────────────────────────────────────
+  const HOTSPOTS = [
+    { lat:  28.6, lon:  77.2, label: 'Delhi: Market Activity',       color: '#38bdf8', type: 'economy' },
+    { lat:  51.5, lon:  -0.1, label: 'London: Trade Hub',            color: '#38bdf8', type: 'economy' },
+    { lat:  31.2, lon: 121.5, label: 'Shanghai: Port Dispatch',      color: '#38bdf8', type: 'economy' },
+    { lat:  48.8, lon:   2.3, label: 'Paris: Climate Summit',        color: '#10b981', type: 'climate' },
+    { lat: -23.5, lon: -46.6, label: 'Sao Paulo: Agri Output',       color: '#10b981', type: 'climate' },
+    { lat:  33.3, lon:  44.4, label: 'Baghdad: Conflict Zone',       color: '#f43f5e', type: 'risk'    },
+    { lat:  50.4, lon:  30.5, label: 'Kyiv: Active Alert',           color: '#f43f5e', type: 'risk'    },
+    { lat:  40.7, lon: -74.0, label: 'New York: Financial Hub',      color: '#38bdf8', type: 'economy' },
+    { lat:  35.7, lon: 139.7, label: 'Tokyo: Tech Corridor',         color: '#38bdf8', type: 'economy' },
+    { lat:  -1.3, lon:  36.8, label: 'Nairobi: Food Security Alert', color: '#10b981', type: 'climate' },
+  ];
+
+  // ── Persona-aware plain-language panel ──────────────────────────────────────
+  const getPersonaInfo = useCallback(() => {
+    const p = (persona || '').toLowerCase();
+
+    if (p.includes('farmer') || p.includes('kisan')) return {
+      icon:   <Wheat className="w-4 h-4 text-emerald-400" />,
+      title:  '🌾 For You, Farmer',
+      what:   'This spinning globe shows the world\'s health in 3 simple colors.',
+      tips: [
+        { icon: '🟢', text: 'GREEN going slow → Good rains coming, prices may drop. Hold your stock.' },
+        { icon: '🔴', text: 'RED rising high → Diesel and transport costs going up. Sell at Mandi quickly.' },
+        { icon: '🔵', text: 'BLUE spinning fast → Trade is active. Good export demand for your crops.' },
+      ],
+      action: risk > 60
+        ? '⚠️ High Red Alert: Diesel prices may spike. Contact your Mandi agent today.'
+        : '✅ Globe looks stable. Safe time to plan crop dispatch.',
+    };
+
+    if (p.includes('student')) return {
+      icon:   <GraduationCap className="w-4 h-4 text-cyan-400" />,
+      title:  '🎓 For You, Student',
+      what:   'Each spinning strand is a real world system you can study for exams.',
+      tips: [
+        { icon: '🔵', text: 'BLUE strand = Economics. Faster spin = good UPSC/GK trade topics.' },
+        { icon: '🔴', text: 'RED strand = Geopolitics. Spikes = current affairs exam material.' },
+        { icon: '🟢', text: 'GREEN strand = Environment. Essential for IELTS/GRE essays.' },
+      ],
+      action: risk > 60
+        ? '📚 High tension — great time to revise international relations!'
+        : '📖 Stable world. Focus on economics and trade chapters now.',
+    };
+
+    if (p.includes('business')) return {
+      icon:   <Briefcase className="w-4 h-4 text-purple-400" />,
+      title:  '💼 For You, Business Owner',
+      what:   'This globe tracks 3 forces that affect your supply chain and costs.',
+      tips: [
+        { icon: '🔴', text: `RED at ${risk}% → ${risk > 60 ? 'Add 7–10 days to delivery timelines NOW.' : 'Supply chains normal. No change needed.'}` },
+        { icon: '🔵', text: `BLUE at ${100 - risk}% → Trade flow ${100 - risk > 60 ? 'good — lock in freight rates today.' : 'slow — negotiate lower freight costs.'}` },
+        { icon: '🟢', text: `GREEN at ${climate}% → Raw material prices ${climate > 50 ? 'under pressure — stock up.' : 'stable.'}` },
+      ],
+      action: risk > 60
+        ? '⚠️ Risk High: Extend vendor payment terms and hedge your FX exposure.'
+        : '✅ Low risk window. Good time to sign new supplier contracts.',
+    };
+
+    if (p.includes('analyst') || p.includes('strategic')) return {
+      icon:   <LineChart className="w-4 h-4 text-pink-400" />,
+      title:  '🛡️ Strategic Analyst View',
+      what:   '3-axis equilibrium matrix: Economy ↔ Risk ↔ Climate interplay.',
+      tips: [
+        { icon: '🔴', text: `Risk Index: ${risk}% — ${risk > 70 ? 'Escalation phase. Monitor proxy corridors.' : risk > 50 ? 'Elevated. Watch maritime chokepoints.' : 'Nominal baseline ISR posture.'}` },
+        { icon: '🔵', text: `Economy Throughput: ${100 - risk}% — ${100 - risk > 60 ? 'Liquidity nominal. FX stable.' : 'Liquidity stress. CDS spreads widening.'}` },
+        { icon: '🟢', text: `Climate Index: ${climate}% — ${climate > 60 ? 'Agri stress. Food security risk elevated.' : 'Monsoon corridor nominal.'}` },
+      ],
+      action: risk > 60
+        ? `⚡ Threat vector active at ${risk}%. Audit proxy postures and sovereign CDS.`
+        : '✦ Planetary equilibrium nominal. Maintain standing watch.',
+    };
+
+    // Default – common person
+    return {
+      icon:   <Users className="w-4 h-4 text-amber-400" />,
+      title:  '👋 What Does This Mean For You?',
+      what:   'This globe is like a health check for the whole world — shown in 3 colors.',
+      tips: [
+        { icon: '🟢', text: 'GREEN strand — Are farms and weather okay? High = possible food price rise.' },
+        { icon: '🔴', text: 'RED strand — Is the world peaceful? High = conflict somewhere, petrol may cost more.' },
+        { icon: '🔵', text: 'BLUE strand — Is business good? High = jobs and economy are doing well.' },
+      ],
+      action: risk > 60
+        ? '⚠️ World is a bit tense right now. Some goods may become more expensive soon.'
+        : '✅ The world looks fairly stable today. No major alarms.',
+    };
+  }, [persona, risk, climate]);
+
+  // ── Canvas 3D Globe Renderer ────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    let animationFrameId;
-    let time = 0;
-
-    // Generate random background stars once
-    const stars = Array.from({ length: 45 }, () => ({
-      x: Math.random(),
-      y: Math.random(),
-      size: Math.random() * 1.5 + 0.5,
-      alpha: Math.random() * 0.7 + 0.3,
-      speed: Math.random() * 0.02 + 0.005
+    // Background stars
+    const stars = Array.from({ length: 70 }, () => ({
+      x: Math.random(), y: Math.random(),
+      r: Math.random() * 1.3 + 0.3,
+      a: Math.random() * 0.5 + 0.2,
+      sp: Math.random() * 0.01 + 0.003,
     }));
+
+    // Continent dot cloud (simplified lat/lon clusters)
+    const contDots = [
+      ...Array.from({ length: 50 }, () => ({ lat: 35  + Math.random() * 20, lon: -100 + Math.random() * 45 })), // N.America
+      ...Array.from({ length: 40 }, () => ({ lat: 45  + Math.random() * 18, lon:   -5 + Math.random() * 35 })), // Europe
+      ...Array.from({ length: 65 }, () => ({ lat: 15  + Math.random() * 40, lon:   60 + Math.random() * 90 })), // Asia
+      ...Array.from({ length: 40 }, () => ({ lat: -25 + Math.random() * 50, lon:  -15 + Math.random() * 55 })), // Africa
+      ...Array.from({ length: 30 }, () => ({ lat: -32 + Math.random() * 42, lon:  -75 + Math.random() * 38 })), // S.America
+      ...Array.from({ length: 18 }, () => ({ lat: -30 + Math.random() * 18, lon:  115 + Math.random() * 38 })), // Australia
+    ];
+
+    // Lat/Lon → screen projection (orthographic + mild perspective)
+    const proj = (lat, lon, rotY, R, cx, cy) => {
+      const phi   = (lat * Math.PI) / 180;
+      const theta = (lon * Math.PI) / 180 + rotY;
+      const x3 = Math.cos(phi) * Math.cos(theta);
+      const y3 = Math.sin(phi);
+      const z3 = Math.cos(phi) * Math.sin(theta);
+      const pv = 2.6 / (2.6 + z3 * 0.28);
+      return { x: cx + x3 * R * pv, y: cy - y3 * R * pv, z: z3, visible: z3 > -0.08 };
+    };
 
     const render = () => {
       try {
-        const container = containerRef.current || canvas.parentElement;
-        const width = container ? container.clientWidth : 340;
-        const height = container ? container.clientHeight : (compact ? 130 : 200);
-
-        if (width <= 40 || height <= 20) {
-          animationFrameId = requestAnimationFrame(render);
-          return;
-        }
+        const cont = containerRef.current || canvas.parentElement;
+        const W = cont ? cont.clientWidth  : 420;
+        const H = cont ? cont.clientHeight : 240;
+        if (W < 40 || H < 20) { animRef.current = requestAnimationFrame(render); return; }
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        const targetW = Math.floor(width * dpr);
-        const targetH = Math.floor(height * dpr);
-
-        if (canvas.width !== targetW || canvas.height !== targetH) {
-          canvas.width = targetW;
-          canvas.height = targetH;
+        if (canvas.width !== Math.floor(W * dpr) || canvas.height !== Math.floor(H * dpr)) {
+          canvas.width  = Math.floor(W * dpr);
+          canvas.height = Math.floor(H * dpr);
         }
 
-        time += 0.015 + (normalizedActivity / 100) * 0.025;
+        const t  = timeRef.current;
+        timeRef.current += 0.012 + (activity / 100) * 0.02;
 
         ctx.save();
         ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, width, height);
+        ctx.clearRect(0, 0, W, H);
 
-        const centerX = width / 2;
-        const centerY = height / 2;
+        const cx = W / 2;
+        const cy = H / 2;
+        const R  = Math.min(W, H) * (compact ? 0.25 : 0.30);
+        const rY = t * 0.32;
 
-        // 1. Draw Starfield Background
-        stars.forEach(star => {
-          star.alpha = 0.3 + Math.sin(time * 2 + star.x * 10) * 0.3;
+        // 1. Stars
+        stars.forEach(s => {
+          s.a = 0.2 + Math.abs(Math.sin(t * s.sp * 25 + s.x * 9)) * 0.55;
           ctx.beginPath();
-          ctx.arc(star.x * width, star.y * height, star.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(168, 85, 247, ${star.alpha})`;
+          ctx.arc(s.x * W, s.y * H, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(200,185,255,${s.a})`;
           ctx.fill();
         });
 
-        if (visualMode === 'globe') {
-          // --- 3D HOLOGRAPHIC GLOBE + ORBITING TRIPLE HELIX ---
-          const globeRadius = Math.min(width, height) * (compact ? 0.28 : 0.32);
-          const rotY = time * 0.4;
-          const rotX = Math.sin(time * 0.2) * 0.15;
+        // 2. Deep-space ambient glow
+        const bg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.8);
+        bg.addColorStop(0, isHighTension ? 'rgba(244,63,94,0.10)'  : 'rgba(99,102,241,0.12)');
+        bg.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.beginPath(); ctx.arc(cx, cy, R * 1.8, 0, Math.PI * 2);
+        ctx.fillStyle = bg; ctx.fill();
 
-          // A. Globe Atmosphere Core Glow
-          const atmosphereGradient = ctx.createRadialGradient(
-            centerX, centerY, globeRadius * 0.2,
-            centerX, centerY, globeRadius * 1.3
-          );
-          if (isHighTension) {
-            atmosphereGradient.addColorStop(0, 'rgba(244, 63, 94, 0.25)');
-            atmosphereGradient.addColorStop(0.6, 'rgba(244, 63, 94, 0.08)');
-            atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          } else {
-            atmosphereGradient.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
-            atmosphereGradient.addColorStop(0.6, 'rgba(168, 85, 247, 0.08)');
-            atmosphereGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-          }
+        // 3. Globe sphere body
+        const sg = ctx.createRadialGradient(cx - R * 0.28, cy - R * 0.22, R * 0.04, cx, cy, R);
+        sg.addColorStop(0,    isHighTension ? 'rgba(55,8,18,0.97)'  : 'rgba(8,18,55,0.97)');
+        sg.addColorStop(0.65, isHighTension ? 'rgba(35,4,12,0.93)'  : 'rgba(5,10,38,0.94)');
+        sg.addColorStop(1,    'rgba(2,3,18,0.98)');
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        ctx.fillStyle = sg; ctx.fill();
+
+        // 4. Latitude circles
+        for (let li = 1; li < 8; li++) {
+          const phi = (li / 8) * Math.PI;
+          const ry2 = Math.cos(phi - Math.PI / 2) * R;
+          const py  = cy + Math.sin(phi - Math.PI / 2) * R;
           ctx.beginPath();
-          ctx.arc(centerX, centerY, globeRadius * 1.3, 0, Math.PI * 2);
-          ctx.fillStyle = atmosphereGradient;
-          ctx.fill();
-
-          // B. 3D Globe Latitude & Longitude Wireframe Grid
-          const latLines = 6;
-          const lonLines = 8;
-          ctx.strokeStyle = isHighTension ? 'rgba(244, 63, 94, 0.2)' : 'rgba(168, 85, 247, 0.22)';
-          ctx.lineWidth = 1;
-
-          // Latitude Circles
-          for (let i = 1; i < latLines; i++) {
-            const phi = (i / latLines) * Math.PI - Math.PI / 2;
-            const rLat = globeRadius * Math.cos(phi);
-            const yLat = centerY + globeRadius * Math.sin(phi);
-            ctx.beginPath();
-            ctx.ellipse(centerX, yLat, rLat, rLat * 0.35, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-
-          // Longitude Meridians
-          for (let i = 0; i < lonLines; i++) {
-            const theta = (i / lonLines) * Math.PI + rotY;
-            const rx = globeRadius * Math.sin(theta);
-            ctx.beginPath();
-            ctx.ellipse(centerX, centerY, Math.abs(rx), globeRadius, 0, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-
-          // C. Orbiting Triple Helix Strands wrapping around 3D Globe
-          const strandConfigs = [
-            { id: 'economy', color: '#38bdf8', glow: 'rgba(56, 189, 248, 0.6)', phase: 0, ampMult: 1.1 },
-            { id: 'risk', color: '#f43f5e', glow: 'rgba(244, 63, 94, 0.7)', phase: (Math.PI * 2) / 3, ampMult: 1.25 * (1 + instabilityFactor * 0.3) },
-            { id: 'climate', color: '#10b981', glow: 'rgba(16, 185, 129, 0.6)', phase: (Math.PI * 4) / 3, ampMult: 1.05 }
-          ];
-
-          const numBeads = compact ? 28 : 42;
-          const renderElements = [];
-
-          strandConfigs.forEach((strand) => {
-            if (selectedStrand && selectedStrand !== strand.id) return;
-
-            for (let i = 0; i < numBeads; i++) {
-              const progress = i / numBeads;
-              const angle = time * 0.8 + progress * Math.PI * 3 + strand.phase;
-
-              // Spherical spiral around globe
-              const orbitR = globeRadius * strand.ampMult;
-              const x3d = Math.cos(angle) * orbitR;
-              const y3d = (progress - 0.5) * globeRadius * 2.2 + Math.sin(angle * 2) * (instabilityFactor * 12);
-              const z3d = Math.sin(angle) * orbitR;
-
-              // Rotate 3D point around Y and X
-              const cosY = Math.cos(rotY * 0.5);
-              const sinY = Math.sin(rotY * 0.5);
-              const rx3d = x3d * cosY - z3d * sinY;
-              const rz3d = x3d * sinY + z3d * cosY;
-
-              const perspective = 300;
-              const scale = perspective / (perspective + rz3d);
-              const scrX = centerX + rx3d * scale;
-              const scrY = centerY + y3d * scale;
-              const opacity = Math.max(0.15, Math.min(1, (rz3d + orbitR) / (orbitR * 2)));
-
-              renderElements.push({
-                type: 'bead',
-                id: strand.id,
-                color: strand.color,
-                glow: strand.glow,
-                x: scrX,
-                y: scrY,
-                z: rz3d,
-                scale,
-                opacity,
-                isFront: rz3d > 0
-              });
-            }
-          });
-
-          // Sort 3D elements by Z depth (back to front)
-          renderElements.sort((a, b) => a.z - b.z);
-
-          // Render sorted 3D beads
-          renderElements.forEach((el) => {
-            const baseSize = (compact ? 2.2 : 3) * el.scale;
-            const isHighlight = selectedStrand === el.id;
-            const finalSize = isHighlight ? baseSize * 1.5 : baseSize;
-
-            ctx.beginPath();
-            ctx.arc(el.x, el.y, finalSize * 2, 0, Math.PI * 2);
-            ctx.fillStyle = el.glow;
-            ctx.globalAlpha = el.opacity * 0.6;
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.arc(el.x, el.y, finalSize, 0, Math.PI * 2);
-            ctx.fillStyle = el.isFront ? '#ffffff' : el.color;
-            ctx.globalAlpha = el.opacity;
-            ctx.fill();
-            ctx.globalAlpha = 1.0;
-          });
-
-        } else if (visualMode === 'helix') {
-          // --- HOLOGRAPHIC LINEAR HELIX ---
-          const numPoints = compact ? 32 : 48;
-          const startX = 20;
-          const endX = width - 20;
-          const stepX = (endX - startX) / Math.max(1, numPoints - 1);
-          const distortion = instabilityFactor * 16;
-
-          const strands = [
-            { id: 'economy', name: 'Economy', color: '#38bdf8', glow: 'rgba(56,189,248,0.5)', phase: 0, amp: Math.min(height * 0.32, 44) },
-            { id: 'risk', name: 'Risk', color: '#f43f5e', glow: 'rgba(244,63,94,0.6)', phase: (Math.PI * 2) / 3, amp: Math.min(height * 0.35, 48) * (1 + instabilityFactor * 0.25) },
-            { id: 'climate', name: 'Climate', color: '#10b981', glow: 'rgba(16,185,129,0.5)', phase: (Math.PI * 4) / 3, amp: Math.min(height * 0.3, 40) }
-          ];
-
-          const strandPoints = strands.map((strand) => {
-            const points = [];
-            for (let i = 0; i < numPoints; i++) {
-              const x = startX + i * stepX;
-              const progress = i / (numPoints - 1);
-              const angle = time + progress * Math.PI * 4 + strand.phase;
-              let noise = 0;
-              if (instabilityFactor > 0.3) {
-                noise = Math.sin(time * 3.4 + i * 0.65) * distortion * Math.sin(progress * Math.PI);
-              }
-              const z = Math.sin(angle);
-              const y = centerY + Math.cos(angle) * strand.amp + noise;
-              points.push({ x, y, z, scale: 0.75 + (z + 1) * 0.25 });
-            }
-            return points;
-          });
-
-          // Draw connector rungs
-          for (let i = 0; i < numPoints; i += 3) {
-            const p1 = strandPoints[0][i];
-            const p2 = strandPoints[1][i];
-            if (p1 && p2) {
-              ctx.beginPath();
-              ctx.strokeStyle = 'rgba(168, 85, 247, 0.25)';
-              ctx.lineWidth = 1;
-              ctx.setLineDash([2, 3]);
-              ctx.moveTo(p1.x, p1.y);
-              ctx.lineTo(p2.x, p2.y);
-              ctx.stroke();
-              ctx.setLineDash([]);
-            }
-          }
-
-          // Draw strand curves & nodes
-          strands.forEach((strand, sIdx) => {
-            if (selectedStrand && selectedStrand !== strand.id) return;
-            const points = strandPoints[sIdx];
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            for (let i = 1; i < points.length - 1; i++) {
-              const xc = (points[i].x + points[i + 1].x) / 2;
-              const yc = (points[i].y + points[i + 1].y) / 2;
-              ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
-            }
-            ctx.strokeStyle = strand.color;
-            ctx.lineWidth = selectedStrand === strand.id ? 3.5 : 2.2;
-            ctx.stroke();
-
-            points.forEach((p, idx) => {
-              if (idx % 2 === 0) {
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.scale * 3, 0, Math.PI * 2);
-                ctx.fillStyle = strand.color;
-                ctx.fill();
-              }
-            });
-          });
-
-        } else {
-          // --- SPHERICAL THREAT WAVE MATRIX ---
-          const waveRadius = Math.min(width, height) * 0.35;
-          const pointsCount = 60;
-          ctx.beginPath();
-          for (let i = 0; i <= pointsCount; i++) {
-            const angle = (i / pointsCount) * Math.PI * 2;
-            const r = waveRadius + Math.sin(angle * 6 + time * 3) * (10 + instabilityFactor * 20);
-            const x = centerX + Math.cos(angle) * r;
-            const y = centerY + Math.sin(angle) * r;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.closePath();
-          ctx.strokeStyle = isHighTension ? '#f43f5e' : '#38bdf8';
-          ctx.lineWidth = 2.5;
-          ctx.stroke();
+          ctx.ellipse(cx, py, Math.abs(ry2), Math.abs(ry2) * 0.17, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = isHighTension ? 'rgba(244,63,94,0.13)' : 'rgba(99,102,241,0.17)';
+          ctx.lineWidth = 0.65; ctx.stroke();
         }
 
-        ctx.restore();
-      } catch (e) {
-        // Suppress rendering exceptions
-      }
+        // 5. Longitude meridians
+        for (let mi = 0; mi < 10; mi++) {
+          const theta = (mi / 10) * Math.PI + rY;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, Math.abs(Math.sin(theta)) * R, R, 0, 0, Math.PI * 2);
+          ctx.strokeStyle = isHighTension ? 'rgba(244,63,94,0.11)' : 'rgba(99,102,241,0.13)';
+          ctx.lineWidth = 0.55; ctx.stroke();
+        }
 
-      animationFrameId = requestAnimationFrame(render);
+        // 6. Continent dot-cloud
+        contDots.forEach(d => {
+          const p = proj(d.lat, d.lon, rY, R, cx, cy);
+          if (!p.visible) return;
+          const b = 0.25 + p.z * 0.75;
+          ctx.beginPath(); ctx.arc(p.x, p.y, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(110,155,255,${b * 0.60})`; ctx.fill();
+        });
+
+        // 7. Live hotspot event markers
+        HOTSPOTS.forEach((hs, hi) => {
+          if (selectedStrand && selectedStrand !== hs.type) return;
+          const p = proj(hs.lat, hs.lon, rY, R, cx, cy);
+          if (!p.visible) return;
+          const pulse = 0.5 + Math.sin(t * 2.4 + hi * 1.2) * 0.5;
+          const r1 = 2.2 + pulse * 1.8;
+          const r2 = 4.5 + pulse * 3.5;
+          ctx.beginPath(); ctx.arc(p.x, p.y, r2, 0, Math.PI * 2);
+          ctx.fillStyle = hs.color + '28'; ctx.fill();
+          ctx.beginPath(); ctx.arc(p.x, p.y, r1, 0, Math.PI * 2);
+          ctx.fillStyle = hs.color;
+          ctx.globalAlpha = 0.85 + pulse * 0.15; ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+
+        // 8. Triple DNA helix strands orbiting the globe
+        const strandDefs = [
+          { id: 'economy', color: '#38bdf8', glow: 'rgba(56,189,248,0.50)',  phase: 0,                  amp: 1.18 },
+          { id: 'risk',    color: '#f43f5e', glow: 'rgba(244,63,94,0.62)',   phase: (Math.PI * 2) / 3,  amp: 1.28 * (1 + instability * 0.25) },
+          { id: 'climate', color: '#10b981', glow: 'rgba(16,185,129,0.50)',  phase: (Math.PI * 4) / 3,  amp: 1.12 },
+        ];
+        const nBeads = compact ? 32 : 52;
+        const beads  = [];
+
+        strandDefs.forEach(sd => {
+          if (selectedStrand && selectedStrand !== sd.id) return;
+          for (let i = 0; i < nBeads; i++) {
+            const prog  = i / nBeads;
+            const angle = t * 0.72 + prog * Math.PI * 2.8 + sd.phase;
+            const or    = R * sd.amp;
+            const x3d   = Math.cos(angle) * or;
+            const y3d   = (prog - 0.5) * R * 2.1 + Math.sin(angle * 1.5) * (instability * 9);
+            const z3d   = Math.sin(angle) * or;
+            // Rotate around Y axis with globe
+            const cR = Math.cos(rY * 0.38), sR = Math.sin(rY * 0.38);
+            const rx3d = x3d * cR - z3d * sR;
+            const rz3d = x3d * sR + z3d * cR;
+            const pv   = 275 / (275 + rz3d);
+            const op   = Math.max(0.07, Math.min(1, (rz3d + or) / (or * 2)));
+            beads.push({
+              id: sd.id, color: sd.color, glow: sd.glow,
+              x: cx + rx3d * pv, y: cy + y3d * pv,
+              z: rz3d, scl: pv, op, isFront: rz3d > 0,
+            });
+          }
+        });
+
+        // Sort back-to-front (painter's algorithm)
+        beads.sort((a, b) => a.z - b.z);
+        beads.forEach(b => {
+          const sz = (compact ? 2 : 2.7) * b.scl * (selectedStrand === b.id ? 1.6 : 1);
+          // Glow halo
+          ctx.beginPath(); ctx.arc(b.x, b.y, sz * 2.3, 0, Math.PI * 2);
+          ctx.fillStyle = b.glow; ctx.globalAlpha = b.op * 0.45; ctx.fill();
+          // Core bead
+          ctx.beginPath(); ctx.arc(b.x, b.y, sz, 0, Math.PI * 2);
+          ctx.fillStyle = b.isFront ? '#ffffff' : b.color;
+          ctx.globalAlpha = b.op; ctx.fill();
+          ctx.globalAlpha = 1;
+        });
+
+        // 9. Atmosphere rim glow
+        const rim = ctx.createRadialGradient(cx, cy, R * 0.87, cx, cy, R * 1.14);
+        rim.addColorStop(0,    'rgba(0,0,0,0)');
+        rim.addColorStop(0.55, isHighTension ? 'rgba(244,63,94,0.05)' : 'rgba(56,189,248,0.06)');
+        rim.addColorStop(1,    isHighTension ? 'rgba(244,63,94,0.20)' : 'rgba(99,102,241,0.18)');
+        ctx.beginPath(); ctx.arc(cx, cy, R * 1.14, 0, Math.PI * 2);
+        ctx.fillStyle = rim; ctx.fill();
+
+        // 10. Shine highlight (top-left specular)
+        const sh = ctx.createRadialGradient(cx - R * 0.38, cy - R * 0.38, 0, cx - R * 0.25, cy - R * 0.25, R * 0.58);
+        sh.addColorStop(0,   'rgba(255,255,255,0.13)');
+        sh.addColorStop(0.5, 'rgba(255,255,255,0.04)');
+        sh.addColorStop(1,   'rgba(255,255,255,0)');
+        ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
+        ctx.fillStyle = sh; ctx.fill();
+
+        ctx.restore();
+      } catch (e) { /* suppress render errors */ }
+      animRef.current = requestAnimationFrame(render);
     };
 
     render();
+    return () => { if (animRef.current) cancelAnimationFrame(animRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [risk, activity, climate, compact, instability, isHighTension, selectedStrand]);
 
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
-  }, [normalizedRisk, normalizedActivity, normalizedClimate, compact, instabilityFactor, isHighTension, selectedStrand, visualMode]);
+  // Blinking LIVE status
+  useEffect(() => {
+    const id = setInterval(() => setLiveStatus(s => (s === 'LIVE' ? '● LIVE' : 'LIVE')), 900);
+    return () => clearInterval(id);
+  }, []);
 
-  const toggleExpand = () => {
-    playSound('toggle');
-    setIsExpanded(!isExpanded);
-  };
+  const personaInfo = getPersonaInfo();
 
-  const handleStrandClick = (id) => {
-    playSound('click');
-    setSelectedStrand(selectedStrand === id ? null : id);
-  };
+  // Strand metadata for UI cards
+  const STRAND_META = [
+    {
+      id: 'economy', cname: 'cyan',
+      dot: 'bg-cyan-400', border: 'border-cyan-500/25', active: 'border-cyan-400 bg-cyan-950/40',
+      label: '🔵 ECONOMY', val: `${100 - risk}%`, hint: 'Flow',
+      simple: 'How well global business and shipping is working.',
+      detail: `Trade flow at ${100 - risk}%. ${100 - risk > 60 ? 'Strong — markets liquid.' : 'Slow — supply chain stress possible.'}`,
+    },
+    {
+      id: 'risk', cname: 'rose',
+      dot: 'bg-rose-500', border: 'border-rose-500/25', active: 'border-rose-400 bg-rose-950/40',
+      label: '🔴 RISK', val: `${risk}%`, hint: isHighTension ? '⚡HIGH' : 'Low',
+      simple: 'How much war or conflict is happening in the world right now.',
+      detail: `Risk tension at ${risk}%. ${risk > 60 ? 'High — prices may spike.' : 'Manageable — no major escalation.'}`,
+    },
+    {
+      id: 'climate', cname: 'emerald',
+      dot: 'bg-emerald-400', border: 'border-emerald-500/25', active: 'border-emerald-400 bg-emerald-950/40',
+      label: '🟢 CLIMATE', val: `${climate}%`, hint: 'Monitor',
+      simple: 'Are rains and food supply okay around the world?',
+      detail: `Climate index at ${climate}%. ${climate > 60 ? 'Stress — drought or food risk.' : 'Harvest on track.'}`,
+    },
+  ];
 
-  // Get persona-tailored DNA instructions badge
-  const getPersonaDnaBadge = () => {
-    const pLower = (persona || '').toLowerCase();
-    if (pLower.includes('farmer') || pLower.includes('kisan')) {
-      return { icon: <Wheat className="w-3.5 h-3.5 text-emerald-400" />, title: 'Kisan Agrarian DNA Telemetry', focus: 'Monitor Green Climate Strand & Red Risk Spikes for harvesting & Mandi dispatch.' };
-    } else if (pLower.includes('student')) {
-      return { icon: <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />, title: 'Student Academic DNA Guide', focus: 'Observe Blue Economy twist & Red Risk velocity for exam case studies.' };
-    } else if (pLower.includes('business')) {
-      return { icon: <Briefcase className="w-3.5 h-3.5 text-purple-400" />, title: 'Enterprise Risk DNA Monitor', focus: 'Track Red Risk distortion to adjust supply lead times & freight buffers.' };
-    } else if (pLower.includes('analyst')) {
-      return { icon: <LineChart className="w-3.5 h-3.5 text-pink-400" />, title: 'Tactical Command DNA Telemetry', focus: 'Audit 3D planetary balance index & threat vector spillover.' };
-    }
-    return { icon: <Users className="w-3.5 h-3.5 text-amber-400" />, title: 'Everyday Citizen DNA Overview', focus: 'Track general planetary stability & local household risk index.' };
-  };
-
-  const personaBadge = getPersonaDnaBadge();
-
-  // Render Side Drawer Panel
+  // ── Side Panel Mode ───────────────────────────────────────────────────────
   if (asSidePanel) {
     if (!isOpen) return null;
-
     return (
-      <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-md animate-fade-in">
-        <div 
-          className="relative w-full max-w-lg h-full bg-[#050814] border-l border-purple-500/30 shadow-2xl p-5 flex flex-col overflow-y-auto space-y-4"
-          onClick={(e) => e.stopPropagation()}
+      <div className="fixed inset-0 z-50 flex justify-end bg-black/75 backdrop-blur-md">
+        <div
+          className="relative w-full max-w-lg h-full bg-[#050814] border-l border-purple-500/30 shadow-2xl p-5 flex flex-col overflow-y-auto gap-4"
+          onClick={e => e.stopPropagation()}
         >
-          {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-purple-500/20">
             <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-500/40 text-purple-300">
-                <Globe2 className="w-5 h-5 animate-spin-slow text-purple-300" />
+              <div className="p-2 rounded-xl bg-purple-500/20 border border-purple-500/40">
+                <Globe2 className="w-5 h-5 text-purple-300 animate-spin-slow" />
               </div>
               <div>
-                <h3 className="font-display text-base font-bold text-white tracking-wide">
-                  Global Impact DNA Globe & Telemetry
-                </h3>
-                <p className="font-mono text-[10px] text-purple-300">
-                  3D Holographic Planetary Equilibrium Model
-                </p>
+                <h3 className="font-display text-base font-bold text-white">Global Impact DNA Globe</h3>
+                <p className="font-mono text-[10px] text-purple-300">3D Holographic Planetary Health Monitor</p>
               </div>
             </div>
-
             <button
-              onClick={() => {
-                playSound('click');
-                if (onClose) onClose();
-              }}
+              onClick={() => { playSound('click'); if (onClose) onClose(); }}
               className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
-          {/* Canvas View */}
-          <div 
-            ref={containerRef}
-            className="w-full h-56 rounded-xl bg-slate-950/90 border border-purple-500/30 overflow-hidden relative shadow-inner flex items-center justify-center"
-          >
+          <div ref={containerRef} className="w-full h-64 rounded-xl bg-slate-950 border border-purple-500/30 overflow-hidden">
             <canvas ref={canvasRef} className="w-full h-full" />
-            <div className="absolute bottom-2 left-3 font-mono text-[9px] text-slate-400 pointer-events-none">
-              ROTATION: {(0.015 + (normalizedActivity / 100) * 0.025).toFixed(3)} rad/s · DISTORTION: {(instabilityFactor * 100).toFixed(0)}%
+          </div>
+
+          {/* Plain-language persona block */}
+          <div className="p-3.5 bg-purple-950/30 border border-purple-500/30 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 font-semibold text-sm text-white">
+              {personaInfo.icon} <span>{personaInfo.title}</span>
+            </div>
+            <p className="text-slate-300 text-xs leading-relaxed">{personaInfo.what}</p>
+            <div className="space-y-1.5">
+              {personaInfo.tips.map((tip, i) => (
+                <div key={i} className="flex gap-2 text-xs text-slate-200 leading-relaxed">
+                  <span>{tip.icon}</span><span>{tip.text}</span>
+                </div>
+              ))}
+            </div>
+            <div className={`mt-2 text-xs font-semibold ${isHighTension ? 'text-rose-300' : 'text-emerald-300'}`}>
+              {personaInfo.action}
             </div>
           </div>
 
-          {/* Mode Switcher */}
-          <div className="flex items-center justify-between bg-slate-900/80 border border-purple-500/20 p-1.5 rounded-xl font-mono text-xs">
-            <button
-              onClick={() => setVisualMode('globe')}
-              className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                visualMode === 'globe' ? 'bg-purple-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Globe2 className="w-3.5 h-3.5" />
-              <span>3D Globe</span>
-            </button>
-            <button
-              onClick={() => setVisualMode('helix')}
-              className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                visualMode === 'helix' ? 'bg-purple-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Dna className="w-3.5 h-3.5" />
-              <span>Hologram Helix</span>
-            </button>
-            <button
-              onClick={() => setVisualMode('wave')}
-              className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-                visualMode === 'wave' ? 'bg-purple-600 text-white font-bold shadow' : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              <Activity className="w-3.5 h-3.5" />
-              <span>Threat Wave</span>
-            </button>
-          </div>
-
-          {/* Persona Guidance Banner */}
-          <div className="p-3 bg-purple-950/30 border border-purple-500/30 rounded-xl font-sans text-xs">
-            <div className="flex items-center gap-2 font-mono text-purple-300 font-bold mb-1">
-              {personaBadge.icon}
-              <span>{personaBadge.title}</span>
-            </div>
-            <p className="text-slate-200 text-xs leading-relaxed">{personaBadge.focus}</p>
-          </div>
-
-          {/* 3 Strands Selector */}
-          <div className="space-y-2">
-            <h4 className="font-mono text-xs text-purple-300 uppercase tracking-wider font-semibold">
-              The 3 Planetary Strands:
-            </h4>
-
-            {/* Economy */}
-            <div 
-              onClick={() => handleStrandClick('economy')}
+          {STRAND_META.map(s => (
+            <div
+              key={s.id}
+              onClick={() => { playSound('click'); setSelectedStrand(selectedStrand === s.id ? null : s.id); }}
               className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                selectedStrand === 'economy' ? 'bg-cyan-950/50 border-cyan-400 shadow-md' : 'bg-slate-900/60 border-slate-800 hover:border-cyan-500/40'
+                selectedStrand === s.id ? `${s.active} shadow-md` : `bg-slate-900/60 ${s.border}`
               }`}
             >
-              <div className="flex items-center justify-between font-mono text-xs font-bold text-cyan-300 mb-1">
+              <div className={`flex items-center justify-between font-mono text-xs font-bold text-${s.cname}-300 mb-1`}>
                 <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50" />
-                  ECONOMY & TECH (BLUE)
+                  <span className={`w-2.5 h-2.5 rounded-full ${s.dot}`} />
+                  {s.label}
                 </span>
-                <span>{100 - normalizedRisk}% Throughput</span>
+                <span>{s.val}</span>
               </div>
-              <p className="text-xs text-slate-300 font-sans leading-relaxed">
-                Tracks maritime trade velocity, financial liquidity, semiconductor supply chains, and market confidence.
-              </p>
+              <p className="text-xs text-slate-300 leading-relaxed">{s.simple}</p>
+              {selectedStrand === s.id && (
+                <p className={`mt-1.5 text-xs text-${s.cname}-200 font-medium leading-relaxed border-t border-${s.cname}-500/20 pt-1.5`}>
+                  {s.detail}
+                </p>
+              )}
             </div>
-
-            {/* Risk */}
-            <div 
-              onClick={() => handleStrandClick('risk')}
-              className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                selectedStrand === 'risk' ? 'bg-rose-950/50 border-rose-400 shadow-md' : 'bg-slate-900/60 border-slate-800 hover:border-rose-500/40'
-              }`}
-            >
-              <div className="flex items-center justify-between font-mono text-xs font-bold text-rose-400 mb-1">
-                <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50" />
-                  RISK & GEOPOLITICS (RED)
-                </span>
-                <span>{normalizedRisk}% Tension Index</span>
-              </div>
-              <p className="text-xs text-slate-300 font-sans leading-relaxed">
-                Reflects active war corridors, cyber threat intensity, and border friction. Higher scores distort the 3D globe orbit into chaotic wave spikes.
-              </p>
-            </div>
-
-            {/* Climate */}
-            <div 
-              onClick={() => handleStrandClick('climate')}
-              className={`p-3 rounded-xl border cursor-pointer transition-all ${
-                selectedStrand === 'climate' ? 'bg-emerald-950/50 border-emerald-400 shadow-md' : 'bg-slate-900/60 border-slate-800 hover:border-emerald-500/40'
-              }`}
-            >
-              <div className="flex items-center justify-between font-mono text-xs font-bold text-emerald-300 mb-1">
-                <span className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-                  CLIMATE & FOOD (GREEN)
-                </span>
-                <span>{normalizedClimate}% Monitored</span>
-              </div>
-              <p className="text-xs text-slate-300 font-sans leading-relaxed">
-                Monitors rainfall anomalies, agricultural yield risks, monsoon cycles, and raw grain food security.
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     );
   }
 
-  // Standard Dashboard Component Mode
+  // ── Dashboard Component Mode ─────────────────────────────────────────────
   return (
-    <div 
+    <div
       id="global-impact-dna"
       className={`glass-card-luxe rounded-2xl border border-purple-500/30 p-5 relative overflow-hidden transition-all shadow-2xl ${className}`}
     >
-      {/* Background glow */}
-      <div 
-        className="absolute -top-16 -right-16 w-64 h-64 rounded-full blur-3xl pointer-events-none transition-all duration-700 opacity-25"
-        style={{
-          background: isHighTension 
-            ? 'radial-gradient(circle, #f43f5e 0%, transparent 65%)' 
-            : 'radial-gradient(circle, #a855f7 0%, transparent 65%)'
-        }}
+      {/* Ambient background glow */}
+      <div
+        className="absolute -top-20 -right-20 w-72 h-72 rounded-full blur-3xl pointer-events-none opacity-20 transition-all duration-700"
+        style={{ background: isHighTension
+          ? 'radial-gradient(circle, #f43f5e 0%, transparent 65%)'
+          : 'radial-gradient(circle, #a855f7 0%, transparent 65%)' }}
       />
 
-      {/* Header Bar */}
+      {/* ── Header ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between z-10 relative mb-4 gap-3">
         <div className="flex items-center gap-3">
           <div className={`p-2.5 rounded-2xl border shadow-lg ${
-            isHighTension 
-              ? 'bg-rose-500/20 border-rose-500/40 shadow-rose-500/30' 
+            isHighTension
+              ? 'bg-rose-500/20 border-rose-500/40 shadow-rose-500/30'
               : 'bg-gradient-to-br from-purple-600/40 to-cyan-500/20 border-purple-500/40 shadow-purple-500/30'
           }`}>
-            <Globe2 className={`w-5 h-5 ${
-              isHighTension ? 'text-rose-400 animate-pulse' : 'text-cyan-300 animate-spin-slow'
-            }`} />
+            <Globe2 className={`w-5 h-5 ${isHighTension ? 'text-rose-400 animate-pulse' : 'text-cyan-300 animate-spin-slow'}`} />
           </div>
           <div>
-            <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-display text-sm font-bold text-white tracking-widest uppercase">
-                Global Impact 3D DNA Globe
+                Global Impact DNA Globe
               </h3>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                3D LIVE
+              <span className="inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold">
+                <Wifi className="w-2.5 h-2.5" /> {liveStatus}
               </span>
-              <span className={`font-mono text-[10px] px-2.5 py-0.5 rounded-full border font-semibold ${
-                isHighTension
-                  ? 'border-rose-500/50 bg-rose-500/20 text-rose-300 animate-pulse'
-                  : 'border-purple-500/40 bg-purple-500/15 text-purple-200'
-              }`}>
-                {isHighTension ? '⚠ HIGH INSTABILITY' : '✦ EQUILIBRIUM ACTIVE'}
-              </span>
+              {isHighTension && (
+                <span className="font-mono text-[10px] px-2 py-0.5 rounded-full border border-rose-500/50 bg-rose-500/20 text-rose-300 animate-pulse flex items-center gap-1">
+                  <AlertTriangle className="w-2.5 h-2.5" /> HIGH TENSION
+                </span>
+              )}
             </div>
             <p className="font-mono text-[10px] text-slate-400 mt-0.5">
-              3D Holographic Globe & Triple Helix · Economy · Risk · Climate
+              3D globe · Economy · Risk · Climate · {HOTSPOTS.length} live event markers
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2 self-start sm:self-auto">
-          {/* Instructions Guide Button */}
           <button
-            onClick={() => {
-              playSound('click');
-              setShowInstructions(!showInstructions);
-            }}
+            onClick={() => { playSound('click'); setShowGuide(!showGuide); }}
             className={`flex items-center gap-1.5 px-3 py-1.5 font-mono text-xs rounded-xl border transition-all ${
-              showInstructions 
-                ? 'bg-purple-600 border-purple-400 text-white shadow-md' 
-                : 'bg-slate-900/80 border-purple-500/30 text-purple-300 hover:bg-purple-950/50 hover:border-purple-400'
+              showGuide
+                ? 'bg-purple-600 border-purple-400 text-white'
+                : 'bg-slate-900/80 border-purple-500/30 text-purple-300 hover:bg-purple-950/50'
             }`}
-            title="Read detailed instructions & persona DNA manual"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>DNA Guide & Instructions</span>
+            <span>How to Read</span>
           </button>
-
-          {/* Mode Switcher Toggle */}
           <button
-            onClick={() => {
-              playSound('click');
-              setVisualMode(visualMode === 'globe' ? 'helix' : visualMode === 'helix' ? 'wave' : 'globe');
-            }}
-            className="p-2 bg-slate-900/80 border border-purple-500/30 text-cyan-300 hover:text-white rounded-xl transition-all font-mono text-xs flex items-center gap-1"
-            title="Switch 3D View Mode"
-          >
-            {visualMode === 'globe' ? <Globe2 className="w-4 h-4 text-cyan-400" /> : visualMode === 'helix' ? <Dna className="w-4 h-4 text-purple-400" /> : <Activity className="w-4 h-4 text-rose-400" />}
-            <span className="hidden md:inline uppercase text-[10px]">{visualMode}</span>
-          </button>
-
-          <button
-            onClick={toggleExpand}
+            onClick={() => { playSound('toggle'); setIsExpanded(!isExpanded); }}
             className="p-2 text-slate-400 hover:text-purple-300 hover:bg-purple-500/10 border border-transparent hover:border-purple-500/30 rounded-xl transition-all"
-            title={isExpanded ? 'Collapse' : 'Expand DNA view'}
           >
             {isExpanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
         </div>
       </div>
 
-      {/* 3D Holographic Globe Canvas */}
-      <div 
+      {/* ── Globe Canvas ── */}
+      <div
         ref={containerRef}
-        className={`relative w-full rounded-2xl border overflow-hidden shadow-2xl cursor-pointer group ${
-          isHighTension 
-            ? 'bg-slate-950 border-rose-500/30 shadow-rose-950/40' 
-            : 'bg-slate-950 border-purple-500/30 shadow-purple-950/40'
-        } ${
-          isExpanded ? 'h-80' : compact ? 'h-32' : 'h-52'
-        }`}
-        onClick={toggleExpand}
-        title="Click to expand / collapse 3D Globe"
+        className={`relative w-full rounded-2xl border overflow-hidden shadow-2xl cursor-pointer transition-all duration-500 bg-slate-950 ${
+          isHighTension ? 'border-rose-500/30' : 'border-purple-500/30'
+        } ${isExpanded ? 'h-96' : compact ? 'h-36' : 'h-60'}`}
+        onClick={() => { playSound('toggle'); setIsExpanded(!isExpanded); }}
+        title="Click to expand / collapse"
       >
-        <canvas 
-          ref={canvasRef} 
-          className="w-full h-full"
+        <canvas ref={canvasRef} className="w-full h-full" />
+
+        {/* Edge vignette */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{ background: 'linear-gradient(to right, rgba(3,7,18,0.55) 0%, transparent 12%, transparent 88%, rgba(3,7,18,0.55) 100%)' }}
         />
 
-        {/* Depth vignette */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(to right, rgba(3,7,18,0.6) 0%, transparent 15%, transparent 85%, rgba(3,7,18,0.6) 100%)'
-        }} />
-
-        {/* Telemetry HUD overlay */}
-        <div className="absolute bottom-3 left-4 pointer-events-none flex items-center gap-4 font-mono text-[10px] flex-wrap">
-          <span className="text-cyan-300 flex items-center gap-1 font-bold">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-            3D GLOBE ROTATION: {(0.015 + (normalizedActivity / 100) * 0.025).toFixed(3)} rad/s
-          </span>
-          <span className="text-rose-400 flex items-center gap-1 font-bold">
-            ⚡ DISTORTION: {(instabilityFactor * 100).toFixed(0)}%
-          </span>
-          <span className="text-emerald-300 font-bold">✦ STRANDS: 3 ACTIVE</span>
+        {/* Persona badge */}
+        <div className="absolute top-3 left-3 bg-slate-950/85 border border-purple-500/30 px-2.5 py-1 rounded-lg text-purple-200 font-mono text-[10px] flex items-center gap-1.5 shadow">
+          {personaInfo.icon}
+          <span className="hidden sm:inline">{personaInfo.title}</span>
         </div>
 
-        {/* Persona Active Overlay Badge */}
-        <div className="absolute top-3 left-3 bg-slate-950/80 border border-purple-500/30 px-3 py-1 rounded-lg text-purple-200 font-mono text-[10px] flex items-center gap-1.5 shadow-md">
-          {personaBadge.icon}
-          <span>{personaBadge.title}</span>
+        {/* Telemetry HUD strip */}
+        <div className="absolute bottom-3 left-4 right-4 pointer-events-none flex items-center justify-between font-mono text-[10px] flex-wrap gap-1">
+          <span className="text-cyan-300 font-bold flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            GLOBE SPIN: {(0.012 + (activity / 100) * 0.02).toFixed(3)} rad/s
+          </span>
+          <span className="text-rose-400 font-bold">⚡ DISTORTION: {(instability * 100).toFixed(0)}%</span>
+          <span className="text-emerald-300 font-bold">✦ {HOTSPOTS.length} LIVE MARKERS</span>
+        </div>
+
+        {!isExpanded && (
+          <div className="absolute top-3 right-3 text-slate-500 font-mono text-[9px] flex items-center gap-1">
+            <Eye className="w-3 h-3" /> expand
+          </div>
+        )}
+      </div>
+
+      {/* ── Plain-Language Persona Panel ── */}
+      <div className="mt-4 p-3.5 rounded-xl border border-purple-500/20 bg-slate-900/50 space-y-2">
+        <div className="flex items-center gap-2 font-semibold text-sm text-white">
+          {personaInfo.icon} <span>{personaInfo.title}</span>
+        </div>
+        <p className="text-slate-300 text-xs leading-relaxed">{personaInfo.what}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+          {personaInfo.tips.map((tip, i) => (
+            <div key={i} className="flex gap-1.5 text-xs text-slate-200 leading-snug bg-slate-950/60 p-2 rounded-lg border border-slate-700/40">
+              <span className="text-base leading-none">{tip.icon}</span>
+              <span>{tip.text}</span>
+            </div>
+          ))}
+        </div>
+        <div className={`text-xs font-semibold pt-1 ${isHighTension ? 'text-rose-300' : 'text-emerald-300'}`}>
+          {personaInfo.action}
         </div>
       </div>
 
-      {/* 3 Strands Status Metric Strip */}
+      {/* ── Strand Metric Cards ── */}
       <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-purple-500/20 z-10 relative">
-        <button 
-          onClick={() => handleStrandClick('economy')}
-          className={`bg-slate-900/70 border rounded-xl p-2.5 text-left transition-all ${
-            selectedStrand === 'economy' ? 'border-cyan-400 bg-cyan-950/40 shadow-lg shadow-cyan-500/20' : 'border-cyan-500/20 hover:border-cyan-500/50'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 font-mono text-[10px] text-cyan-300 font-semibold mb-1">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-sm shadow-cyan-400/50 animate-pulse" />
-            <span className="truncate">ECONOMY (BLUE)</span>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-xs text-white font-bold">{100 - normalizedRisk}%</span>
-            <span className="font-mono text-[9px] text-cyan-300/80">Flow</span>
-          </div>
-        </button>
-
-        <button 
-          onClick={() => handleStrandClick('risk')}
-          className={`bg-slate-900/70 border rounded-xl p-2.5 text-left transition-all ${
-            selectedStrand === 'risk' ? 'border-rose-400 bg-rose-950/40 shadow-lg shadow-rose-500/20' : 'border-rose-500/20 hover:border-rose-500/50'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 font-mono text-[10px] text-rose-300 font-semibold mb-1">
-            <span className="w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50 animate-ping" />
-            <span className="truncate">RISK (RED)</span>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-xs text-rose-400 font-bold">{normalizedRisk}%</span>
-            <span className="font-mono text-[9px] text-rose-300/80">{isHighTension ? 'Tension' : 'Nominal'}</span>
-          </div>
-        </button>
-
-        <button 
-          onClick={() => handleStrandClick('climate')}
-          className={`bg-slate-900/70 border rounded-xl p-2.5 text-left transition-all ${
-            selectedStrand === 'climate' ? 'border-emerald-400 bg-emerald-950/40 shadow-lg shadow-emerald-500/20' : 'border-emerald-500/20 hover:border-emerald-500/50'
-          }`}
-        >
-          <div className="flex items-center gap-1.5 font-mono text-[10px] text-emerald-300 font-semibold mb-1">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50" />
-            <span className="truncate">CLIMATE (GREEN)</span>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <span className="font-mono text-xs text-emerald-400 font-bold">{normalizedClimate}%</span>
-            <span className="font-mono text-[9px] text-emerald-300/80">Monitored</span>
-          </div>
-        </button>
+        {STRAND_META.map(s => (
+          <button
+            key={s.id}
+            onClick={() => { playSound('click'); setSelectedStrand(selectedStrand === s.id ? null : s.id); }}
+            className={`bg-slate-900/70 border rounded-xl p-2.5 text-left transition-all ${
+              selectedStrand === s.id
+                ? `${s.active} shadow-lg`
+                : `${s.border} hover:brightness-125`
+            }`}
+          >
+            <div className={`flex items-center gap-1.5 font-mono text-[10px] text-${s.cname}-300 font-semibold mb-1 truncate`}>
+              <span className={`w-2 h-2 rounded-full ${s.dot} animate-pulse flex-shrink-0`} />
+              <span className="truncate">{s.label}</span>
+            </div>
+            <div className="flex items-baseline justify-between">
+              <span className={`font-mono text-xs text-${s.cname}-400 font-bold`}>{s.val}</span>
+              <span className="font-mono text-[9px] text-slate-400">{s.hint}</span>
+            </div>
+            {selectedStrand === s.id && (
+              <p className={`mt-1.5 text-[10px] text-${s.cname}-200 leading-snug`}>{s.simple}</p>
+            )}
+          </button>
+        ))}
       </div>
 
-      {/* --- INSTRUCTIONS & PERSONA MANUAL MODAL --- */}
-      {showInstructions && (
-        <div className="mt-4 p-4 rounded-2xl bg-slate-950 border-2 border-purple-500/40 shadow-2xl space-y-4 animate-fade-in relative z-20">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between pb-3 border-b border-purple-500/25">
-            <div className="flex items-center gap-2 font-display text-sm font-bold text-white">
-              <BookOpen className="w-4 h-4 text-purple-400" />
-              <span>Planetary DNA Telemetry Instructions & Manual</span>
-            </div>
-            <button
-              onClick={() => setShowInstructions(false)}
-              className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+      {/* ── How To Read Guide ── */}
+      {showGuide && (
+        <div className="mt-4 rounded-2xl bg-slate-950 border-2 border-purple-500/40 shadow-2xl overflow-hidden">
+          {/* Tabs */}
+          <div className="flex border-b border-purple-500/20 font-mono text-xs">
+            {[
+              ['simple',   '🙋 Simple Guide'],
+              ['strands',  '🔬 3 Strands'],
+              ['personas', '👥 Persona Tips'],
+            ].map(([k, l]) => (
+              <button
+                key={k}
+                onClick={() => setGuideTab(k)}
+                className={`flex-1 py-2.5 px-2 transition-all ${
+                  guideTab === k ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
           </div>
 
-          {/* Guide Tabs */}
-          <div className="flex gap-2 border-b border-purple-500/20 pb-2 font-mono text-xs">
-            <button
-              onClick={() => setActiveGuideTab('howToRead')}
-              className={`px-3 py-1.5 rounded-lg border transition-all ${
-                activeGuideTab === 'howToRead' ? 'bg-purple-600 border-purple-400 text-white font-bold' : 'bg-slate-900 text-slate-400 border-transparent hover:text-white'
-              }`}
-            >
-              1. Reading the 3D DNA
-            </button>
-            <button
-              onClick={() => setActiveGuideTab('strands')}
-              className={`px-3 py-1.5 rounded-lg border transition-all ${
-                activeGuideTab === 'strands' ? 'bg-purple-600 border-purple-400 text-white font-bold' : 'bg-slate-900 text-slate-400 border-transparent hover:text-white'
-              }`}
-            >
-              2. The 3 Strands
-            </button>
-            <button
-              onClick={() => setActiveGuideTab('personas')}
-              className={`px-3 py-1.5 rounded-lg border transition-all ${
-                activeGuideTab === 'personas' ? 'bg-purple-600 border-purple-400 text-white font-bold' : 'bg-slate-900 text-slate-400 border-transparent hover:text-white'
-              }`}
-            >
-              3. Persona Workflows
-            </button>
+          <div className="p-4 space-y-3 text-xs">
+            {/* Tab 1 – Simple Guide */}
+            {guideTab === 'simple' && (
+              <div className="space-y-3 text-slate-300 leading-relaxed">
+                <p className="text-white font-semibold">
+                  Think of this globe like a doctor's health chart for the whole world.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    ['🌍', 'The Spinning Globe',     `It spins faster when the world is busy — lots of trade, travel, and activity happening.`],
+                    ['💫', 'The 3 Colored Rings',    'Three strands orbit the globe. Each tracks something important: money, conflict, or weather.'],
+                    ['⚡', 'Shaking / Distortion',   `When the RED strand gets wobbly, tensions are high (${risk}% now). Like when news feels scary.`],
+                    ['📍', 'Glowing Dots on Globe',  `Those ${HOTSPOTS.length} pulsing dots are real places with active news — trade hubs, conflict zones, climate alerts.`],
+                    ['🔵🔴🟢', 'Color System',       'Blue = Money. Red = War & Risk. Green = Weather & Food. Simple as a traffic light.'],
+                    ['👆', 'Tap Any Strand Card',    'Tap Blue, Red, or Green below to focus on that topic and get a plain-English explanation.'],
+                  ].map(([icon, title, text], i) => (
+                    <div key={i} className="p-2.5 rounded-xl bg-slate-900 border border-slate-700/50">
+                      <p className="font-semibold text-white mb-1">{icon} {title}</p>
+                      <p className="text-slate-400 leading-relaxed">{text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2 – 3 Strands */}
+            {guideTab === 'strands' && (
+              <div className="space-y-3">
+                <div className="p-3 rounded-xl bg-cyan-950/30 border border-cyan-500/30">
+                  <p className="font-mono text-cyan-300 font-bold mb-1">🔵 Blue Strand — Economy &amp; Trade ({100 - risk}% Flow)</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    Tracks global shipping, business deals, stock markets, and how fast goods move between countries.
+                    HIGH means imports are cheaper and jobs are plentiful. LOW means delays and price increases.
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/30">
+                  <p className="font-mono text-rose-400 font-bold mb-1">🔴 Red Strand — Risk &amp; Conflict ({risk}% Tension)</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    Tracks wars, political tensions, cyber attacks, and border disputes.
+                    HIGH means petrol and food prices often rise and shipping gets disrupted.
+                    Currently {risk}% — {risk > 60 ? 'elevated, be cautious.' : 'within safe range.'}
+                  </p>
+                </div>
+                <div className="p-3 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
+                  <p className="font-mono text-emerald-300 font-bold mb-1">🟢 Green Strand — Climate &amp; Food ({climate}% Monitored)</p>
+                  <p className="text-slate-300 leading-relaxed">
+                    Watches rainfall, heatwaves, monsoon patterns, and crop yields worldwide.
+                    HIGH means food may be scarce and prices rise.
+                    Currently {climate}% — {climate > 60 ? 'watch food prices carefully.' : 'harvest looks stable.'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 3 – Persona Tips */}
+            {guideTab === 'personas' && (
+              <div className="space-y-2.5">
+                {[
+                  ['🌾', 'Farmer / Kisan',   'Watch GREEN for monsoon signs. If RED goes above 60%, diesel prices will rise — sell Mandi stock fast before costs increase.'],
+                  ['🎓', 'Student',          'RED strand spikes = rich geopolitics exam essays. BLUE drops = economics case studies. GREEN issues = environment topics.'],
+                  ['💼', 'Business Owner',   'RED above 60% means add 10-day delivery buffers. BLUE below 40% means renegotiate freight contracts immediately.'],
+                  ['🛡️', 'Analyst',          'Monitor the 3D equilibrium balance. Red and Blue diverging signals proxy conflict or sanctions escalation cycle.'],
+                  ['👋', 'Common Person',    'RED going up = petrol and food may cost more soon. GREEN stable = good rains and harvest ahead. BLUE high = economy healthy.'],
+                ].map(([icon, who, tip], i) => (
+                  <div key={i} className="flex gap-3 p-2.5 rounded-xl bg-slate-900 border border-slate-700/40">
+                    <span className="text-lg leading-none mt-0.5">{icon}</span>
+                    <div>
+                      <p className="font-semibold text-white text-xs mb-0.5">{who}</p>
+                      <p className="text-slate-400 leading-relaxed">{tip}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* Tab 1: How to Read the 3D DNA Globe */}
-          {activeGuideTab === 'howToRead' && (
-            <div className="space-y-2.5 font-sans text-xs text-slate-300 leading-relaxed">
-              <p className="font-medium text-white">
-                The <strong className="text-purple-300">Global Impact DNA</strong> is a real-time 3D holographic biometrics model representing global equilibrium:
-              </p>
-              <ul className="space-y-1.5 list-disc list-inside font-mono text-[11px] text-slate-300">
-                <li><strong className="text-cyan-300">Twist Velocity:</strong> Globe & helix rotation speed increases automatically as live market trading and international dispatches accelerate.</li>
-                <li><strong className="text-rose-400">Wave Distortion & Spikes:</strong> High geopolitical tension or warfare alerts distort the 3D orbits into chaotic, pulsing wave spikes.</li>
-                <li><strong className="text-emerald-300">Base-Pair Rungs:</strong> Interconnecting dashed lines represent cross-domain ripple effects (e.g. how war impacts fuel prices and crop harvest).</li>
-              </ul>
-            </div>
-          )}
-
-          {/* Tab 2: The 3 Strands Breakdown */}
-          {activeGuideTab === 'strands' && (
-            <div className="space-y-2.5 font-sans text-xs">
-              <div className="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/30">
-                <span className="font-mono text-cyan-300 font-bold block mb-1">🔵 Blue Strand: Economy & Freight</span>
-                <p className="text-slate-300 text-[11px]">Monitors global shipping corridors, currency exchange liquidity, semiconductor manufacturing, and corporate trade speed.</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/30">
-                <span className="font-mono text-rose-400 font-bold block mb-1">🔴 Red Strand: Risk & Conflict</span>
-                <p className="text-slate-300 text-[11px]">Tracks active warfare, missile alerts, cyber attacks, civil unrest, and international trade sanctions.</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30">
-                <span className="font-mono text-emerald-300 font-bold block mb-1">🟢 Green Strand: Climate & Food</span>
-                <p className="text-slate-300 text-[11px]">Measures monsoon rainfall cycles, heatwave alerts, crop soil moisture, and raw agricultural commodity harvests.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Tab 3: Persona Specific Workflow Instructions */}
-          {activeGuideTab === 'personas' && (
-            <div className="space-y-2.5 font-sans text-xs">
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-purple-500/20">
-                <span className="font-mono text-emerald-300 font-bold flex items-center gap-1.5 mb-1">
-                  <Wheat className="w-3.5 h-3.5" /> 🌾 Kisan / Farmer Instructions
-                </span>
-                <p className="text-slate-300 text-[11px]">Watch the Green Climate Strand for monsoon timing & rain anomalies. If the Red Risk Strand spikes, check diesel pump rates and Mandi procurement centers immediately.</p>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-purple-500/20">
-                <span className="font-mono text-cyan-300 font-bold flex items-center gap-1.5 mb-1">
-                  <GraduationCap className="w-3.5 h-3.5" /> 🎓 Student Instructions
-                </span>
-                <p className="text-slate-300 text-[11px]">Use DNA rotation velocity and Red Risk spikes to identify high-order case studies for UPSC, GRE, and international current affairs exam essays.</p>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-purple-500/20">
-                <span className="font-mono text-purple-300 font-bold flex items-center gap-1.5 mb-1">
-                  <Briefcase className="w-3.5 h-3.5" /> 💼 Enterprise / Business Instructions
-                </span>
-                <p className="text-slate-300 text-[11px]">If Red Risk distortion rises above 50%, extend vendor lead-times by 7-10 days and lock in freight forwarder contracts to prevent supply chain bottlenecks.</p>
-              </div>
-
-              <div className="p-2.5 rounded-xl bg-slate-900 border border-purple-500/20">
-                <span className="font-mono text-pink-300 font-bold flex items-center gap-1.5 mb-1">
-                  <LineChart className="w-3.5 h-3.5" /> 🛡️ Strategic Analyst Instructions
-                </span>
-                <p className="text-slate-300 text-[11px]">Audit the 3D globe balance index to evaluate proxy force postures and sovereign debt CDS volatility for command dispatches.</p>
-              </div>
-            </div>
-          )}
+          <div className="px-4 pb-4">
+            <button
+              onClick={() => setShowGuide(false)}
+              className="w-full py-2 rounded-xl bg-purple-600/20 border border-purple-500/30 text-purple-300 font-mono text-xs hover:bg-purple-600/40 transition-all"
+            >
+              Close Guide
+            </button>
+          </div>
         </div>
       )}
-
     </div>
   );
 }
+
