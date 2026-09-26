@@ -27,14 +27,21 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
+// Routes (mounted with and without /api prefix for Vercel compatibility)
 app.use('/api/news', newsRoutes);
-app.use('/api/alerts', alertsRoutes);
-app.use('/api/logs', logsRoutes);
-app.use('/api/users', usersRoutes);
+app.use('/news', newsRoutes);
 
-// Dedicated Future Impact Simulator Endpoint (Specification requirement 7)
-app.get('/api/future-impact', async (req, res) => {
+app.use('/api/alerts', alertsRoutes);
+app.use('/alerts', alertsRoutes);
+
+app.use('/api/logs', logsRoutes);
+app.use('/logs', logsRoutes);
+
+app.use('/api/users', usersRoutes);
+app.use('/users', usersRoutes);
+
+// Dedicated Future Impact Simulator Endpoint
+const handleFutureImpact = async (req, res) => {
   res.set({
     'Cache-Control': 'no-store, no-cache, must-revalidate',
     'Pragma': 'no-cache',
@@ -49,10 +56,12 @@ app.get('/api/future-impact', async (req, res) => {
     console.error('❌ [Future Impact Route Error]:', error);
     res.status(500).json({ error: 'Failed to generate future impact simulation', details: error.message });
   }
-});
+};
+app.get('/api/future-impact', handleFutureImpact);
+app.get('/future-impact', handleFutureImpact);
 
 // Health & System Status Endpoint
-app.get('/api/status', (req, res) => {
+const handleStatus = (req, res) => {
   res.json({
     status: 'ONLINE',
     system: 'Global Intel & Telemetry (UGI)',
@@ -60,7 +69,9 @@ app.get('/api/status', (req, res) => {
     supabaseConnected: isSupabaseConfigured,
     autoRefreshIntervalSeconds: 45
   });
-});
+};
+app.get('/api/status', handleStatus);
+app.get('/status', handleStatus);
 
 // Automated Background Sync Engine (Refreshes real news & alerts every 45s)
 let syncInterval = null;
