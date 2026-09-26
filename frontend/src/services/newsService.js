@@ -225,46 +225,119 @@ export async function fetchPersonalizedOpinion(title, description, persona = 'Ca
   const isGeo = /war|strike|missile|military|army|defense|border|treaty|sanction|russia|ukraine|israel|gaza|iran|china|us|trump|biden|putin|modi|minister|election|politic|protest|security|un|nato/i.test(fullText);
   const isTech = /cyber|ai|hack|tech|chip|data|software|app|digital|cloud|google|apple|microsoft|openai|bot|internet|phone|network|battery/i.test(fullText);
   const isTransit = /traffic|road|bridge|metro|bus|train|flight|airline|airport|port|freight|shipping|ship|canal|railway|highway/i.test(fullText);
+  const isPolicy = /law|policy|court|bill|act|parliament|government|rules|regulation|ban|order|verdict|supreme court/i.test(fullText);
 
   const topicSnippet = cleanTitle.length > 55 ? cleanTitle.substring(0, 52) + '...' : cleanTitle;
   const pLower = (persona || '').toLowerCase();
 
   let badge = 'Citizen AI Perspective';
-  let opinion = `Headline Intel: "${topicSnippet}" - Relevant community update.`;
-  let keyTakeaway = 'Stay informed with verified news.';
+  let opinion = '';
+  let keyTakeaway = '';
 
   if (pLower.includes('farmer') || pLower.includes('kisan')) {
     badge = lang === 'ta' ? '🌾 உழவர் வேளாண் ஆலோசனை' : (lang === 'hi' ? '🌾 किसान कृषि सलाह' : '🌾 Kisan Agrarian Advisory');
     if (isAgri || isWeather) {
-      opinion = lang === 'ta' ? `வேளாண் எச்சரிக்கை: "${topicSnippet}" விளைபொருட்கள் மற்றும் அறுவடை திட்டங்களை நேரடியாக பாதிக்கலாம்.` : (lang === 'hi' ? `कृषि अलर्ट: "${topicSnippet}" फसल कटाई और मंडी भाव को प्रभावित कर सकता है।` : `Direct Agrarian Impact: "${topicSnippet}" may affect crop harvesting, soil moisture, or Mandi sales.`);
-      keyTakeaway = lang === 'ta' ? 'வயல் வடிகால் மற்றும் அறுவடை தானியங்களை பாதுகாக்கவும்.' : (lang === 'hi' ? 'खेतों की जल निकासी और कटी फसल सुरक्षित करें।' : 'Check field drainage and store harvested grain safely.');
+      opinion = lang === 'ta' 
+        ? `வேளாண் எச்சரிக்கை: "${topicSnippet}" - பருவமழை, மண் ஈரப்பதம் மற்றும் அறுவடை திட்டங்களை நேரடியாக பாதிக்கலாம்.`
+        : (lang === 'hi'
+          ? `कृषि चेतावनी: "${topicSnippet}" - फसल कटाई, सिंचाई और मंडी आवक को प्रभावित कर सकता है।`
+          : `Direct Agrarian Impact: "${topicSnippet}" - May directly affect field drainage, soil moisture, crop harvesting schedule, or Mandi arrivals.`);
+      keyTakeaway = lang === 'ta' ? 'வயல் வடிகால் வசதியை சரிசெய்து, அறுவடை தானியங்களை உலர் சேமிப்பகத்தில் பாதுகாக்கவும்.' : (lang === 'hi' ? 'खेतों में जल निकासी सुनिश्चित करें और कटी फसल को शुष्क भंडारण में सुरक्षित रखें।' : 'Ensure field drainage, secure harvested produce in dry storage, and monitor local weather alerts.');
     } else if (isEcon) {
-      opinion = lang === 'ta' ? `சந்தை எச்சரிக்கை: "${topicSnippet}" உரம், டீசல் கட்டணம் மற்றும் உள்ளூர் மண்டி விலையில் மாற்றத்தை ஏற்படுத்தலாம்.` : (lang === 'hi' ? `बाजार अलर्ट: "${topicSnippet}" डीजल, खाद की लागत और मंडी दामों को प्रभावित कर सकता है।` : `Input Cost Alert: "${topicSnippet}" could influence diesel prices, fertilizer rates, or regional crop valuation.`);
-      keyTakeaway = lang === 'ta' ? 'கொள்முதல் விலைகளை ஒப்பிட்டு விற்கவும்.' : (lang === 'hi' ? 'मंडी भाव और सरकारी खरीद केंद्रों की तुलना करें।' : 'Compare local Mandi rates before selling your produce.');
+      opinion = lang === 'ta' 
+        ? `சந்தை கட்டண மாற்றம்: "${topicSnippet}" - உரம், டீசல் விலை மற்றும் உள்ளூர் விளைபொருள் கொள்முதல் மண்டி விலையை பாதிக்கலாம்.`
+        : (lang === 'hi'
+          ? `बाजार मूल्य अलर्ट: "${topicSnippet}" - खाद, डीजल लागत और मंडी में फसलों के बिक्री भावों में फेरबदल कर सकता है।`
+          : `Input Cost & Pricing Alert: "${topicSnippet}" - Influences fertilizer tariffs, diesel pump rates, and regional Mandi procurement prices.`);
+      keyTakeaway = lang === 'ta' ? 'அரசு குறைந்தபட்ச ஆதரவு விலை (MSP) மற்றும் மண்டி விலைகளை ஒப்பிட்டு விற்கவும்.' : (lang === 'hi' ? 'सरकारी न्यूनतम समर्थन मूल्य (MSP) और स्थानीय मंडी भावों की तुलना करके उपज बेचें।' : 'Compare local Mandi rates with MSP benchmarks before executing crop sales.');
+    } else if (isGeo || isTransit) {
+      opinion = lang === 'ta'
+        ? `சரக்கு வழித்தட செய்தி: "${topicSnippet}" - சர்வதேச கப்பல் நெரிசல் மற்றும் டீசல், உரம் இறக்குமதி விநியோகத்தை பாதிக்கலாம்.`
+        : (lang === 'hi'
+          ? `आपूर्ति मार्ग अपडेट: "${topicSnippet}" - अंतरराष्ट्रीय समुद्री परिवहन, डीजल और उर्वरक आयात लागत को प्रभावित कर सकता है।`
+          : `Supply Logistics Brief: "${topicSnippet}" - Signals potential freight rate surcharges, diesel transport inflation, or fertilizer import delays.`);
+      keyTakeaway = lang === 'ta' ? 'விவசாய தேவைக்கான உரம் மற்றும் டீசல் இருப்பை முன்கூட்டியே திட்டமிட்டு வைத்திருக்கவும்.' : (lang === 'hi' ? 'कृषि सीजन के लिए आवश्यक उर्वरक और ईंधन का अग्रिम स्टॉक सुनिश्चित करें।' : 'Pre-order essential farm inputs (fertilizer & fuel) to guard against regional transit delays.');
     } else {
-      opinion = lang === 'ta' ? `பொது செய்தி: "${topicSnippet}" செய்தி உழவர் குடும்பங்களின் அன்றாட வாழ்கைக்கு மறைமுக தகவலாகும்.` : (lang === 'hi' ? `ग्रामीण सूचना: "${topicSnippet}" का कृषि कार्यों पर सीधा प्रभाव नहीं है, पर ग्रामीण जनजीवन से जुड़ा है।` : `General Rural Overview: "${topicSnippet}" carries general rural interest and family context.`);
-      keyTakeaway = lang === 'ta' ? 'அன்றாட விவசாய பணிகளை தொடரவும்.' : (lang === 'hi' ? 'नियमित खेती-किसानी कार्य सुचारू रखें।' : 'Continue routine farm management as planned.');
+      opinion = lang === 'ta'
+        ? `கிராமப்புற பொது தகவல்: "${topicSnippet}" - விவசாயப்பணிகளுக்கு நேரடி அச்சுறுத்தல் இல்லை, கிராமப்புற சூழல் செய்தி.`
+        : (lang === 'hi'
+          ? `ग्रामीण जनजीवन अपडेट: "${topicSnippet}" - कृषि कार्यों पर कोई सीधा खतरा नहीं, सामान्य ग्रामीण जागरूकता खबर।`
+          : `General Rural Context: "${topicSnippet}" - No immediate crop risk; presents general community awareness context.`);
+      keyTakeaway = lang === 'ta' ? 'வழக்கமான விவசாய மற்றும் கால்நடை பராமரிப்பு பணிகளை தொடரவும்.' : (lang === 'hi' ? 'अपनी दैनिक खेती और पशुपालन गतिविधियों को सुचारू रूप से जारी रखें।' : 'Continue routine farm and livestock management as scheduled.');
     }
   } else if (pLower.includes('student')) {
-    badge = lang === 'ta' ? '🎓 மாணவர் கல்வி உளவு' : (lang === 'hi' ? '🎓 छात्र शैक्षणिक दृष्टिकोण' : '🎓 Student Perspective');
-    opinion = lang === 'ta' ? `கல்விசார் குறிப்பு: "${topicSnippet}" போட்டித் தேர்வுகள் மற்றும் நடப்பு நிகழ்வுகளுக்கு முக்கிய தலைப்பாகும்.` : (lang === 'hi' ? `करेंट अफेयर्स बिंदु: "${topicSnippet}" प्रतियोगी परीक्षाओं और सामान्य अध्ययन के लिए उपयोगी है।` : `Academic Relevance: "${topicSnippet}" is a valuable case study for current affairs and competitive exam prep.`);
-    keyTakeaway = lang === 'ta' ? 'தேர்வு குறிப்புகளில் இந்த நிகழ்வை குறித்துக் கொள்ளுங்கள்.' : (lang === 'hi' ? 'परीक्षा के दृष्टिकोण से मुख्य बिंदु नोट करें।' : 'Note key dates and geopolitical terms for exam prep.');
+    badge = lang === 'ta' ? '🎓 மாணவர் கல்வி உளவு' : (lang === 'hi' ? '🎓 छात्र शैक्षणिक दृष्टिकोण' : '🎓 Student Academic Intel');
+    if (isGeo || isPolicy) {
+      opinion = lang === 'ta'
+        ? `போட்டித் தேர்வு பகுப்பாய்வு: "${topicSnippet}" - யுபிஎஸ்சி, சர்வதேச உறவுகள் மற்றும் நடப்பு நிகழ்வுகள் தேர்வுகளுக்கு முக்கிய பாடம்.`
+        : (lang === 'hi'
+          ? `प्रतियोगी परीक्षा विश्लेषण: "${topicSnippet}" - यूपीएससी, अंतर्राष्ट्रीय संबंधों और सामान्य ज्ञान अध्ययन के लिए अति महत्वपूर्ण केस स्टडी।`
+          : `Exam & Case Study Relevance: "${topicSnippet}" - Highly relevant for UPSC, GRE, international relations essays, and current affairs tests.`);
+      keyTakeaway = lang === 'ta' ? 'முக்கிய தேதிகள், சர்வதேச அமைப்புகள் மற்றும் கொள்கை முடிவுகளை தேர்வு குறிப்பில் எழுதவும்.' : (lang === 'hi' ? 'अंतर्राष्ट्रीय संगठनों, तिथियों और नीतिगत बिंदुओं को अपने स्टडी नोट्स में दर्ज करें।' : 'Document treaty terms, dates, and participating nations for essay & interview prep.');
+    } else if (isEcon) {
+      opinion = lang === 'ta'
+        ? `கல்வி நிதி & வேலைவாய்ப்பு: "${topicSnippet}" - கல்லூரி கட்டணம், மாணவர் கடன் வட்டி விகிதம் மற்றும் நிறுவன வளாக வேலைவாய்ப்பில் தாக்கம்.`
+        : (lang === 'hi'
+          ? `छात्र वित्त व प्लेसमेंट: "${topicSnippet}" - छात्र ऋण ब्याज दरों, तकनीकी गैजेट की लागत और कैंपस हायरिंग पर प्रभाव।`
+          : `Education Finance & Career Outlook: "${topicSnippet}" - Impacts student loan interest rates, tech gadget pricing, and campus hiring trends.`);
+      keyTakeaway = lang === 'ta' ? 'மாணவர் கடன்களுக்கான வட்டி சலுகைகள் மற்றும் கல்வி உதவித்தொகைகளை பரிசீலிக்கவும்.' : (lang === 'hi' ? 'एज्यूकेशन लोन सब्सिडी और स्कॉलरशिप अवसरों की सक्रियता से जांच करें।' : 'Track central bank interest rates and apply for institutional merit scholarships early.');
+    } else {
+      opinion = lang === 'ta'
+        ? `பொது அறிவு பார்வை: "${topicSnippet}" - கல்வி விவாதங்கள் மற்றும் குழு விவாதங்களுக்கு பயனுள்ள உலகளாவிய செய்தி.`
+        : (lang === 'hi'
+          ? `सामान्य जागरूकता: "${topicSnippet}" - ग्रुप डिस्कशन और अकादमिक बहसों के लिए एक उपयोगी संदर्भ।`
+          : `General Knowledge Brief: "${topicSnippet}" - Broadens academic perspective for seminar discussions and essays.`);
+      keyTakeaway = lang === 'ta' ? 'நம்பகமான செய்தி ஆதாரங்களை ஒப்பிட்டு கருத்துக்களை உருவாக்கவும்.' : (lang === 'hi' ? 'तथ्यों की पुष्टि के लिए विश्वसनीय समाचार स्रोतों का संदर्भ लें।' : 'Cross-reference information with primary research papers before citing in assignments.');
+    }
   } else if (pLower.includes('business')) {
-    badge = lang === 'ta' ? '💼 நிறுவன வணிக உளவு' : (lang === 'hi' ? '💼 व्यापारिक जोखिम विश्लेषण' : '💼 Business Intel');
-    opinion = lang === 'ta' ? `வர்த்தக தாக்கம்: "${topicSnippet}" விநியோக சங்கிலி மற்றும் செயல்பாட்டு செலவை பாதிக்கலாம்.` : (lang === 'hi' ? `व्यापारिक प्रभाव: "${topicSnippet}" सप्लाई चेन और परिचालन लागत को प्रभावित कर सकता है।` : `Enterprise Impact: "${topicSnippet}" signals supply chain friction, freight surcharge risk, or input price shifts.`);
-    keyTakeaway = lang === 'ta' ? 'சரக்கு இருப்பை திட்டமிட்டு விநியோக வழிகளை சரிபார்க்கவும்.' : (lang === 'hi' ? 'इन्वेंट्री बफर रखें और सप्लायर अनुबंध जांचें।' : 'Buffer inventory and review vendor lead-times.');
+    badge = lang === 'ta' ? '💼 நிறுவன வணிக உளவு' : (lang === 'hi' ? '💼 व्यापारिक जोखिम विश्लेषण' : '💼 Enterprise Risk & Business Intel');
+    if (isGeo || isPolicy) {
+      opinion = lang === 'ta'
+        ? `புவிசார் இடர் பகுப்பாய்வு: "${topicSnippet}" - சர்வதேச வர்த்தக தடைகள், சுங்க வரி மாற்றங்கள் மற்றும் கார்ப்பரேட் கொள்கை தாக்கம்.`
+        : (lang === 'hi'
+          ? `भू-राजनीतिक जोखिम: "${topicSnippet}" - सीमा पार व्यापार प्रतिबंधों, टैरिफ दरों और कॉर्पोरेट अनुपालन पर असर।`
+          : `Geopolitical & Policy Risk: "${topicSnippet}" - Cross-border sanctions, tariff shifts, and compliance exposure for enterprise operations.`);
+      keyTakeaway = lang === 'ta' ? 'சட்ட ஆலோசகர்களுடன் நிறுவன இறக்குமதி/ஏற்றுமதி விதிகளை மறுஆய்வு செய்யுங்கள்.' : (lang === 'hi' ? 'विदेशी व्यापार नियमों और सप्लायर जोखिमों की कानूनी समीक्षा करें।' : 'Audit vendor compliance and explore alternative neutral-country sourcing channels.');
+    } else if (isEcon) {
+      opinion = lang === 'ta'
+        ? `கார்ப்பரேட் நிதி & சந்தை: "${topicSnippet}" - பணவீக்கம், வட்டி விகித மாற்றங்கள் மற்றும் நிறுவன பணி மூலதனம் மீதான அழுத்தம்.`
+        : (lang === 'hi'
+          ? `कॉर्पोरेट वित्त व बाजार: "${topicSnippet}" - मुद्रास्फीति, क्रेडिट लागत और कार्यशील पूंजी (Working Capital) पर प्रभाव।`
+          : `Fiscal & Working Capital Brief: "${topicSnippet}" - Currency fluctuations, debt refinancing costs, and gross margin margin compression.`);
+      keyTakeaway = lang === 'ta' ? 'வங்கி கடன் வரம்புகளை மறுசீரமைத்து, பணப்புழக்கம் மற்றும் சரக்கு இருப்பை மேம்படுத்துங்கள்.' : (lang === 'hi' ? 'बैंक क्रेडिट लाइन्स पर फिर से बातचीत करें और इन्वेंट्री कैश फ्लो को संतुलित रखें।' : 'Re-negotiate short-term credit facilities and buffer operating cash reserves.');
+    } else {
+      opinion = lang === 'ta'
+        ? `கார்ப்பரேட் மேக்ரோ சூழல்: "${topicSnippet}" - உடனடி செயல்பாட்டு இடர் இல்லை, நிறுவன நீண்டகால கொள்கை கண்காணிப்பு.`
+        : (lang === 'hi'
+          ? `कारोबारी माहौल: "${topicSnippet}" - तात्कालिक परिचालन जोखिम कम है, पर दूरगामी नीतियों पर नजर जरूरी है।`
+          : `Enterprise Macro Context: "${topicSnippet}" - Low immediate disruption risk; monitor standard industry policy trends.`);
+      keyTakeaway = lang === 'ta' ? 'நிறுவன நிலையான செயல்பாட்டு விதிமுறைகளை (SOP) தொடரவும்.' : (lang === 'hi' ? 'मानक व्यावसायिक प्रक्रियाओं (SOP) का पालन जारी रखें।' : 'Maintain standard operational continuity SOPs and quarterly business goals.');
+    }
   } else if (pLower.includes('analyst')) {
     badge = '🛡️ Strategic Intel Assessment';
-    opinion = `Strategic Telemetry: "${topicSnippet}" analyzed. Assessment indicates localized policy or geopolitical ripple vectors with monitored operational risk index.`;
-    keyTakeaway = 'Monitored dispatch; threat vectors evaluated for systemic stability.';
+    if (isGeo) {
+      opinion = `Strategic Telemetry: "${topicSnippet}" analyzed. High-order geopolitical ripple vectors detected across defense alliances, territorial buffer zones, and proxy force postures.`;
+      keyTakeaway = `Elevate threat monitoring matrix; map secondary proxy spillover zones and prepare executive briefing.`;
+    } else if (isEcon) {
+      opinion = `Macroeconomic Stability Telemetry: "${topicSnippet}" evaluated. Currency weaponization, central bank reserve maneuvers, and sovereign credit default swap (CDS) volatility identified.`;
+      keyTakeaway = `Model strategic commodity supply index and evaluate sovereign debt exposure risks.`;
+    } else {
+      opinion = `Operational Telemetry: "${topicSnippet}" logged into intelligence ledger. Assessment indicates localized policy movement within baseline risk thresholds.`;
+      keyTakeaway = `Monitored dispatch; maintain continuous automated sensor telemetry tracking.`;
+    }
   } else if (pLower.includes('accessibility')) {
     badge = lang === 'ta' ? '🔊 எளிய குரல் விளக்கம்' : (lang === 'hi' ? '🔊 सरल आवाज सलाह' : '🔊 Simple Voice Guidance');
     opinion = lang === 'ta' ? `செய்தி சுருக்கம்: "${topicSnippet}". இது ஒரு முக்கியமான தகவல்.` : (lang === 'hi' ? `समाचार सारांश: "${topicSnippet}"। यह एक जरूरी जानकारी है।` : `News Summary: "${topicSnippet}". Important update for awareness.`);
     keyTakeaway = lang === 'ta' ? 'பாதுகாப்பாக விழிப்புடன் இருங்கள்.' : (lang === 'hi' ? 'सतर्क और सुरक्षित रहें।' : 'Stay safe and informed.');
   } else {
     badge = lang === 'ta' ? '🏡 பொதுமக்கள் பார்வை' : (lang === 'hi' ? '🏡 नागरिक एआई राय' : '🏡 Everyday Citizen Advice');
-    opinion = lang === 'ta' ? `அன்றாட பார்வை: "${topicSnippet}" தகவல் குடும்ப செலவு அல்லது உள்ளூர் பயணத்தை பாதிக்கலாம்.` : (lang === 'hi' ? `नागरिक राय: "${topicSnippet}" आपकी दैनिक दिनचर्या या यात्रा को प्रभावित कर सकता है।` : `Citizen View: "${topicSnippet}" affects daily routine, local transit, or household budget decisions.`);
-    keyTakeaway = lang === 'ta' ? 'உள்ளூர் நேரலை தகவல்களை அறிந்து செயல்படுங்கள்.' : (lang === 'hi' ? 'स्थानीय अपडेट देखकर योजना बनाएं।' : 'Plan daily routine with verified local facts.');
+    if (isEcon) {
+      opinion = lang === 'ta' ? `குடும்ப வரவு செலவு: "${topicSnippet}" - சமையல் மளிகை, எல்பிஜி கேஸ், பெட்ரோல் விலை மற்றும் வீட்டு பட்ஜெட்டில் தாக்கம்.` : (lang === 'hi' ? `घरेलू बजट सलाह: "${topicSnippet}" - रसोई के राशन, रसोई गैस, पेट्रोल दरों और परिवार के खर्च पर प्रभाव।` : `Household Budget Impact: "${topicSnippet}" - May affect monthly grocery bills, LPG cylinder prices, fuel costs, or home loan EMIs.`);
+      keyTakeaway = lang === 'ta' ? 'மாதாந்திர குடும்ப செலவை திட்டமிட்டு, பெரிய தேவையில்லாத செலவுகளை தள்ளிப்போடுங்கள்.' : (lang === 'hi' ? 'मासिक घरेलू खर्चों की योजना बनाएं और अनावश्यक बड़े खर्चों को फिलहाल टालें।' : 'Plan monthly grocery purchases wisely and compare retail market prices before buying.');
+    } else {
+      opinion = lang === 'ta' ? `பொதுமக்கள் விழிப்புணர்வு: "${topicSnippet}" - சமூகம் மற்றும் அன்றாட வாழ்க்கையுடன் தொடர்புடைய செய்தி.` : (lang === 'hi' ? `नागरिक जागरूकता: "${topicSnippet}" - समाज और आम जनजीवन से जुड़ा महत्वपूर्ण घटनाक्रम।` : `Citizen Overview: "${topicSnippet}" - Relevant community update for general awareness and family safety.`);
+      keyTakeaway = lang === 'ta' ? 'உள்ளூர் நேரலை தகவல்களை அறிந்து செயல்படுங்கள்.' : (lang === 'hi' ? 'प्रमाणित समाचारों से अपडेट रहें और दैनिक दिनचर्या की सही योजना बनाएं।' : 'Stay updated with verified local news and plan daily routine with facts.');
+    }
   }
 
   return {
