@@ -36,6 +36,7 @@ import {
   triggerEmergencyOutreach, 
   playSimulatedVoiceCall 
 } from '../services/outreachService';
+import IncomingCallModal from './IncomingCallModal';
 
 export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Common Person', currentLocation = 'Global' }) {
   const [activeTab, setActiveTab] = useState('missedcall'); // 'missedcall', 'whatsapp', 'trigger', 'logs'
@@ -64,6 +65,15 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
   // Audio simulation state
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [currentSpeechText, setCurrentSpeechText] = useState('');
+
+  // Simulated Incoming Voice Call Modal state
+  const [incomingCallData, setIncomingCallData] = useState({
+    isOpen: false,
+    phoneNumber: '+91 98765 43210',
+    messageText: '',
+    persona: 'Farmer / Kisan',
+    location: 'India'
+  });
 
   // Preset options
   const PRESETS = [
@@ -117,6 +127,16 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
     }
   };
 
+  const triggerCallScreen = (phone, msgText, pType, locType) => {
+    setIncomingCallData({
+      isOpen: true,
+      phoneNumber: phone || missedPhone || '+91 98765 43210',
+      messageText: msgText || 'Heavy rain expected in your area tomorrow. Protect harvested crops in shed and stay indoors. Stay safe.',
+      persona: pType || missedPersona || 'Farmer / Kisan',
+      location: locType || missedLoc || 'India'
+    });
+  };
+
   const handleMissedCallRegister = async (e) => {
     e.preventDefault();
     playUiSound('click');
@@ -124,9 +144,18 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
     setFeedback(null);
     try {
       const res = await registerMissedCall(missedPhone, missedLoc, missedPersona);
-      setFeedback({ type: 'success', text: res.message || 'Registered button phone user successfully!' });
+      setFeedback({ type: 'success', text: res.message || 'Missed call received! Dialing automated voice call...' });
       playUiSound('toggle');
       await loadData();
+
+      // Trigger incoming phone call ringing screen!
+      const alertMsg = missedPersona.includes('Farmer')
+        ? `Heavy rain expected in ${missedLoc}. Cover harvested crops in shed and check field drainage. Stay safe.`
+        : missedPersona.includes('Student')
+        ? `Transit advisory for ${missedLoc}. Allow extra travel time for classes today. Stay safe.`
+        : `Important safety alert for ${missedLoc}. Please take necessary precautions and stay safe.`;
+
+      triggerCallScreen(missedPhone, alertMsg, missedPersona, missedLoc);
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || 'Registration failed' });
     } finally {
@@ -180,21 +209,8 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
 
   const handleTestVoiceCall = (text) => {
     playUiSound('click');
-    if (isPlayingAudio) {
-      window.speechSynthesis?.cancel();
-      setIsPlayingAudio(false);
-      setCurrentSpeechText('');
-      return;
-    }
-
     const textToSpeak = text || customMsg || 'Heavy rain expected in your area tomorrow. Protect harvested crops in shed and stay indoors. Stay safe.';
-    setCurrentSpeechText(textToSpeak);
-    setIsPlayingAudio(true);
-
-    playSimulatedVoiceCall(textToSpeak, () => {
-      setIsPlayingAudio(false);
-      setCurrentSpeechText('');
-    });
+    triggerCallScreen(missedPhone, textToSpeak, missedPersona, missedLoc);
   };
 
   if (!isOpen) return null;
@@ -772,6 +788,16 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
 
         </motion.div>
       </div>
+
+      {/* Simulated Incoming Voice Call Screen Overlay */}
+      <IncomingCallModal
+        isOpen={incomingCallData.isOpen}
+        onClose={() => setIncomingCallData(prev => ({ ...prev, isOpen: false }))}
+        phoneNumber={incomingCallData.phoneNumber}
+        messageText={incomingCallData.messageText}
+        persona={incomingCallData.persona}
+        location={incomingCallData.location}
+      />
     </AnimatePresence>
   );
 }
