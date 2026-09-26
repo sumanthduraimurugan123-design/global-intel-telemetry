@@ -73,6 +73,101 @@ function cleanDescription(desc, title) {
   return text;
 }
 
+function getDynamicPersonaInsight(title = '', description = '', persona = 'Casual user', language = 'en') {
+  const cleanTitle = (title || '').split(' - ')[0].trim();
+  const fullText = (title + ' ' + (description || '')).toLowerCase();
+  const lang = (language || 'en').toLowerCase();
+
+  const isAgri = /crop|farm|wheat|rice|mandi|paddy|soil|rain|flood|drought|monsoon|fertilizer|diesel|sugar|harvest|agri|kisan|grain|irrigation|cotton|livestock|vegetable|onion|potato|milk|land|loan|subsidy/i.test(fullText);
+  const isWeather = /weather|rain|flood|storm|cyclone|heatwave|drought|monsoon|snow|temperature|cloud|wind|disaster|typhoon/i.test(fullText);
+  const isEcon = /price|tax|market|inflation|cost|bank|rbi|rupee|dollar|economy|budget|trade|tariff|stock|share|loan|interest|gdp|finance|export|import/i.test(fullText);
+  const isGeo = /war|strike|missile|military|army|defense|border|treaty|sanction|russia|ukraine|israel|gaza|iran|china|us|trump|biden|putin|modi|minister|election|politic|protest|security|un|nato/i.test(fullText);
+  const isTech = /cyber|ai|hack|tech|chip|data|software|app|digital|cloud|google|apple|microsoft|openai|bot|internet|phone|network|battery/i.test(fullText);
+  const isTransit = /traffic|road|bridge|metro|bus|train|flight|airline|airport|port|freight|shipping|ship|canal|railway|highway/i.test(fullText);
+
+  const topicSnippet = cleanTitle.length > 55 ? cleanTitle.substring(0, 52) + '...' : cleanTitle;
+  const pLower = (persona || '').toLowerCase();
+
+  if (pLower.includes('farmer') || pLower.includes('kisan')) {
+    let opinion = '';
+    let keyTakeaway = '';
+    let badge = lang === 'ta' ? '🌾 உழவர் வேளாண் ஆலோசனை' : (lang === 'hi' ? '🌾 किसान कृषि सलाह' : '🌾 Kisan Agrarian Advisory');
+
+    if (isAgri || isWeather) {
+      opinion = lang === 'ta' 
+        ? `வேளாண் எச்சரிக்கை: "${topicSnippet}" விளைபொருட்கள் மற்றும் அறுவடை திட்டங்களை நேரடியாக பாதிக்கலாம்.`
+        : (lang === 'hi'
+          ? `कृषि अलर्ट: "${topicSnippet}" फसल कटाई और मंडी भाव को प्रभावित कर सकता है।`
+          : `Direct Agrarian Impact: "${topicSnippet}" may affect crop harvesting, soil moisture, or Mandi sales.`);
+      keyTakeaway = lang === 'ta' ? 'வயல் வடிகால் மற்றும் அறுவடை தானியங்களை பாதுகாக்கவும்.' : (lang === 'hi' ? 'खेतों की जल निकासी और कटी फसल सुरक्षित करें।' : 'Check field drainage and store harvested grain safely.');
+    } else if (isEcon) {
+      opinion = lang === 'ta' 
+        ? `சந்தை எச்சரிக்கை: "${topicSnippet}" உரம், டீசல் கட்டணம் மற்றும் உள்ளூர் மண்டி விலையில் மாற்றத்தை ஏற்படுத்தலாம்.`
+        : (lang === 'hi'
+          ? `बाजार अलर्ट: "${topicSnippet}" डीजल, खाद की लागत और मंडी दामों को प्रभावित कर सकता है।`
+          : `Input Cost Alert: "${topicSnippet}" could influence diesel prices, fertilizer rates, or regional crop valuation.`);
+      keyTakeaway = lang === 'ta' ? 'கொள்முதல் விலைகளை ஒப்பிட்டு விற்கவும்.' : (lang === 'hi' ? 'मंडी भाव और सरकारी खरीद केंद्रों की तुलना करें।' : 'Compare local Mandi rates before selling your produce.');
+    } else if (isGeo || isTransit) {
+      opinion = lang === 'ta'
+        ? `சரக்கு வழித்தடம்: "${topicSnippet}" சர்வதேச டீசல் மற்றும் உரம் இறக்குமதி செலவில் மறைமுக தாக்கம் தரலாம்.`
+        : (lang === 'hi'
+          ? `लॉजिस्टिक्स अपडेट: "${topicSnippet}" डीजल और आयातित खाद की आपूर्ति को प्रभावित कर सकता है।`
+          : `Supply Corridor Brief: "${topicSnippet}" affects international fuel transit and fertilizer import logistics.`);
+      keyTakeaway = lang === 'ta' ? 'டீசல் மற்றும் உரம் இருப்பை முன்கூட்டியே கவனியுங்கள்.' : (lang === 'hi' ? 'डीजल और उर्वरक आपूर्ति पर नजर रखें।' : 'Monitor regional fuel and fertilizer stock levels.');
+    } else if (isTech) {
+      opinion = lang === 'ta'
+        ? `டிஜிட்டல் எச்சரிக்கை: "${topicSnippet}" ஆன்லைன் விவசாய போலி குறுஞ்செய்திகளிடம் எச்சரிக்கையாக இருங்கள்.`
+        : (lang === 'hi'
+          ? `डिजिटल सुरक्षा: "${topicSnippet}" कृषि योजनाओं के नाम पर आने वाले फर्जी मैसेज से सावधान रहें।`
+          : `Digital Safety Brief: "${topicSnippet}" highlights the need to avoid agricultural subsidy phishing scams.`);
+      keyTakeaway = lang === 'ta' ? 'அரசு வேளாண் உதவி மையங்களை மட்டும் நம்புங்கள்.' : (lang === 'hi' ? 'केवल आधिकारिक किसान पोर्टल का उपयोग करें।' : 'Rely only on verified Kisan Kendra portals.');
+    } else {
+      opinion = lang === 'ta'
+        ? `பொது செய்தி: "${topicSnippet}" செய்தி உழவர் குடும்பங்களின் அன்றாட வாழ்கைக்கு மறைமுக தகவலாகும்.`
+        : (lang === 'hi'
+          ? `ग्रामीण सूचना: "${topicSnippet}" का कृषि कार्यों पर सीधा प्रभाव नहीं है, पर ग्रामीण जनजीवन से जुड़ा है।`
+          : `General Rural Overview: "${topicSnippet}" carries general rural interest and family context.`);
+      keyTakeaway = lang === 'ta' ? 'அன்றாட விவசாய பணிகளை தொடரவும்.' : (lang === 'hi' ? 'नियमित खेती-किसानी कार्य सुचारू रखें।' : 'Continue routine farm management as planned.');
+    }
+
+    return { badge, impactLevel: 'AGRICO', opinion, keyTakeaway };
+  }
+
+  if (pLower.includes('student')) {
+    let badge = lang === 'ta' ? '🎓 மாணவர் கல்வி உளவு' : (lang === 'hi' ? '🎓 छात्र शैक्षणिक दृष्टिकोण' : '🎓 Student Perspective');
+    let opinion = lang === 'ta' ? `கல்விசார் குறிப்பு: "${topicSnippet}" போட்டித் தேர்வுகள் மற்றும் நடப்பு நிகழ்வுகளுக்கு முக்கிய தலைப்பாகும்.` : (lang === 'hi' ? `करेंट अफेयर्स बिंदु: "${topicSnippet}" प्रतियोगी परीक्षाओं और सामान्य अध्ययन के लिए उपयोगी है।` : `Academic Relevance: "${topicSnippet}" is a valuable case study for current affairs and competitive exam prep.`);
+    let keyTakeaway = lang === 'ta' ? 'தேர்வு குறிப்புகளில் இந்த நிகழ்வை குறித்துக் கொள்ளுங்கள்.' : (lang === 'hi' ? 'परीक्षा के दृष्टिकोण से मुख्य बिंदु नोट करें।' : 'Note key dates and geopolitical terms for exam prep.');
+    return { badge, impactLevel: 'ACADEMIC', opinion, keyTakeaway };
+  }
+
+  if (pLower.includes('business')) {
+    let badge = lang === 'ta' ? '💼 நிறுவன வணிக உளவு' : (lang === 'hi' ? '💼 व्यापारिक जोखिम विश्लेषण' : '💼 Business Intel');
+    let opinion = lang === 'ta' ? `வர்த்தக தாக்கம்: "${topicSnippet}" விநியோக சங்கிலி மற்றும் செயல்பாட்டு செலவை பாதிக்கலாம்.` : (lang === 'hi' ? `व्यापारिक प्रभाव: "${topicSnippet}" सप्लाई चेन और परिचालन लागत को प्रभावित कर सकता है।` : `Enterprise Impact: "${topicSnippet}" signals supply chain friction, freight surcharge risk, or input price shifts.`);
+    let keyTakeaway = lang === 'ta' ? 'சரக்கு இருப்பை திட்டமிட்டு விநியோக வழிகளை சரிபார்க்கவும்.' : (lang === 'hi' ? 'इन्वेंट्री बफर रखें और सप्लायर अनुबंध जांचें।' : 'Buffer inventory and review vendor lead-times.');
+    return { badge, impactLevel: 'COMMERCIAL', opinion, keyTakeaway };
+  }
+
+  if (pLower.includes('analyst')) {
+    const badge = '🛡️ Strategic Intel Assessment';
+    const opinion = `Strategic Telemetry: "${topicSnippet}" analyzed. Assessment indicates localized policy or geopolitical ripple vectors with monitored operational risk index.`;
+    const keyTakeaway = 'Monitored dispatch; threat vectors evaluated for systemic stability.';
+    return { badge, impactLevel: 'ELEVATED', opinion, keyTakeaway };
+  }
+
+  if (pLower.includes('accessibility')) {
+    const badge = lang === 'ta' ? '🔊 எளிய குரல் விளக்கம்' : (lang === 'hi' ? '🔊 सरल आवाज सलाह' : '🔊 Simple Voice Guidance');
+    const opinion = lang === 'ta' ? `செய்தி சுருக்கம்: "${topicSnippet}". இது ஒரு முக்கியமான தகவல்.` : (lang === 'hi' ? `समाचार सारांश: "${topicSnippet}"। यह एक जरूरी जानकारी है।` : `News Summary: "${topicSnippet}". Important update for awareness.`);
+    const keyTakeaway = lang === 'ta' ? 'பாதுகாப்பாக விழிப்புடன் இருங்கள்.' : (lang === 'hi' ? 'सतर्क और सुरक्षित रहें।' : 'Stay safe and informed.');
+    return { badge, impactLevel: 'CLEAR', opinion, keyTakeaway };
+  }
+
+  const badge = lang === 'ta' ? '🏡 பொதுமக்கள் பார்வை' : (lang === 'hi' ? '🏡 नागरिक एআই राय' : '🏡 Everyday Citizen Advice');
+  const opinion = lang === 'ta' ? `அன்றாட பார்வை: "${topicSnippet}" தகவல் குடும்ப செலவு அல்லது உள்ளூர் பயணத்தை பாதிக்கலாம்.` : (lang === 'hi' ? `नागरिक राय: "${topicSnippet}" आपकी दैनिक दिनचर्या या यात्रा को प्रभावित कर सकता है।` : `Citizen View: "${topicSnippet}" affects daily routine, local transit, or household budget decisions.`);
+  const keyTakeaway = lang === 'ta' ? 'உள்ளூர் நேரலை தகவல்களை அறிந்து செயல்படுங்கள்.' : (lang === 'hi' ? 'स्थानीय अपडेट देखकर योजना बनाएं।' : 'Plan daily routine with verified local facts.');
+
+  return { badge, impactLevel: 'EVERYDAY', opinion, keyTakeaway };
+}
+
 export default function NewsPanel({ 
   news = [], 
   isLoading = false, 
@@ -249,6 +344,7 @@ export default function NewsPanel({
     const isOpinionActive = opinionLoadingId === cardId;
     const explanation = explanations[cardId];
     const opinion = opinions[cardId];
+    const activeOpinion = opinion || getDynamicPersonaInsight(item.title, item.description, persona, currentLanguage);
     const sentCfg = SENTIMENT_LABEL[item.sentiment] || SENTIMENT_LABEL['Neutral'];
     const isLocal = item.country_flag === '📍' || (item.country_name && item.country_name.includes('Local'));
 
@@ -297,18 +393,18 @@ export default function NewsPanel({
             </div>
           )}
 
-          {/* AI Opinion if loaded */}
-          {opinion && (
+          {/* Dynamic AI Opinion */}
+          {activeOpinion && (
             <div className="bg-slate-900/80 border-2 border-cyan-500 p-3 my-2 text-white font-sans text-sm">
-              <span className="font-mono text-xs text-cyan-400 font-bold block mb-1">🤖 AI OPINION:</span>
-              <p className="font-medium mb-1">{opinion.opinion}</p>
-              <p className="text-cyan-300 font-semibold">👉 {opinion.keyTakeaway}</p>
+              <span className="font-mono text-xs text-cyan-400 font-bold block mb-1">🤖 {activeOpinion.badge}:</span>
+              <p className="font-medium mb-1">{activeOpinion.opinion}</p>
+              <p className="text-cyan-300 font-semibold">👉 {activeOpinion.keyTakeaway}</p>
             </div>
           )}
 
           {(() => {
             const desc = cleanDescription(item.description, item.title);
-            if (!desc || explanation || opinion) return null;
+            if (!desc || explanation || activeOpinion) return null;
             return <p className="text-sm text-slate-300 leading-relaxed mb-3">{desc}</p>;
           })()}
 
@@ -417,19 +513,19 @@ export default function NewsPanel({
           )}
 
           {/* Strategic Assessment Box */}
-          {opinion && (
+          {activeOpinion && (
             <div className="mt-2.5 bg-slate-950 border-l-2 border-l-cyan-500 border-y border-r border-slate-800 p-2.5 font-mono text-[11px] text-slate-300">
               <div className="flex items-center justify-between text-cyan-400 font-semibold mb-1">
                 <span className="flex items-center gap-1">
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>STRATEGIC INTEL ASSESSMENT</span>
+                  <span>{activeOpinion.badge || 'STRATEGIC INTEL ASSESSMENT'}</span>
                 </span>
                 <span className="text-[9px] px-1.5 py-0.2 bg-cyan-950/60 border border-cyan-800">
-                  IMPACT: {opinion.impactLevel || 'ELEVATED'}
+                  IMPACT: {activeOpinion.impactLevel || 'ELEVATED'}
                 </span>
               </div>
-              <p className="text-slate-200 mb-1 font-sans text-xs leading-relaxed">{opinion.opinion}</p>
-              <p className="text-cyan-300 font-sans text-[11px]">⚡ Key Takeaway: {opinion.keyTakeaway}</p>
+              <p className="text-slate-200 mb-1 font-sans text-xs leading-relaxed">{activeOpinion.opinion}</p>
+              <p className="text-cyan-300 font-sans text-[11px]">⚡ Key Takeaway: {activeOpinion.keyTakeaway}</p>
             </div>
           )}
         </div>
@@ -470,14 +566,14 @@ export default function NewsPanel({
             return <p className="text-xs text-slate-400 font-sans leading-relaxed line-clamp-2 mb-2">{desc}</p>;
           })()}
 
-          {opinion && (
+          {activeOpinion && (
             <div className="bg-sky-950/30 border-l-2 border-l-sky-400 border-y border-r border-sky-800/40 p-2.5 my-2 text-xs font-sans">
               <div className="flex items-center gap-1.5 font-mono text-[10px] text-sky-400 font-bold mb-1">
                 <GraduationCap className="w-3.5 h-3.5" />
-                <span>{opinion.badge || '🎓 STUDENT PERSPECTIVE'}</span>
+                <span>{activeOpinion.badge}</span>
               </div>
-              <p className="text-white mb-1 leading-relaxed">{opinion.opinion}</p>
-              <p className="text-sky-300 font-medium text-[11px]">📚 {opinion.keyTakeaway}</p>
+              <p className="text-white mb-1 leading-relaxed">{activeOpinion.opinion}</p>
+              <p className="text-sky-300 font-medium text-[11px]">📚 {activeOpinion.keyTakeaway}</p>
             </div>
           )}
 
@@ -554,14 +650,14 @@ export default function NewsPanel({
             return <p className="text-sm text-slate-300 font-sans leading-relaxed line-clamp-2 mb-2">{desc}</p>;
           })()}
 
-          {opinion && (
+          {activeOpinion && (
             <div className="bg-emerald-950/30 border-l-2 border-l-emerald-400 border-y border-r border-emerald-800/40 p-3 my-2 text-sm font-sans">
               <div className="flex items-center gap-1.5 font-mono text-[10px] text-emerald-400 font-bold mb-1">
                 <Wheat className="w-3.5 h-3.5" />
-                <span>{opinion.badge || '🌾 KISAN ADVISORY'}</span>
+                <span>{activeOpinion.badge}</span>
               </div>
-              <p className="text-white mb-1.5 leading-relaxed">{opinion.opinion}</p>
-              <p className="text-emerald-300 font-medium text-xs">🚜 {opinion.keyTakeaway}</p>
+              <p className="text-white mb-1.5 leading-relaxed">{activeOpinion.opinion}</p>
+              <p className="text-emerald-300 font-medium text-xs">🚜 {activeOpinion.keyTakeaway}</p>
             </div>
           )}
 
@@ -657,19 +753,19 @@ export default function NewsPanel({
             </p>
           )}
 
-          {opinion && (
+          {activeOpinion && (
             <div className="mt-2.5 bg-slate-950 border-l-2 border-l-purple-400 border-y border-r border-slate-800 p-2.5 font-mono text-[11px] text-slate-300">
               <div className="flex items-center justify-between text-purple-400 font-semibold mb-1">
                 <span className="flex items-center gap-1">
                   <Briefcase className="w-3.5 h-3.5" />
-                  <span>BUSINESS IMPACT ASSESSMENT</span>
+                  <span>{activeOpinion.badge}</span>
                 </span>
                 <span className="text-[9px] px-1.5 py-0.2 bg-purple-950/60 border border-purple-800">
-                  RISK: {opinion.impactLevel || 'ELEVATED'}
+                  RISK: {activeOpinion.impactLevel || 'ELEVATED'}
                 </span>
               </div>
-              <p className="text-slate-200 mb-1 font-sans text-xs leading-relaxed">{opinion.opinion}</p>
-              <p className="text-purple-300 font-sans text-[11px]">💼 Key Takeaway: {opinion.keyTakeaway}</p>
+              <p className="text-slate-200 mb-1 font-sans text-xs leading-relaxed">{activeOpinion.opinion}</p>
+              <p className="text-purple-300 font-sans text-[11px]">💼 Key Takeaway: {activeOpinion.keyTakeaway}</p>
             </div>
           )}
         </div>
@@ -715,14 +811,14 @@ export default function NewsPanel({
             return <p className="text-sm text-slate-300 font-sans leading-relaxed line-clamp-2 mb-2">{desc}</p>;
           })()}
 
-          {opinion && (
+          {activeOpinion && (
             <div className="bg-slate-950 border-l-2 border-l-amber-400 border-y border-r border-amber-800/30 p-3 my-2 text-sm font-sans">
               <div className="flex items-center gap-1.5 font-mono text-[10px] text-amber-400 font-bold mb-1">
                 <Users className="w-3.5 h-3.5" />
-                <span>{opinion.badge || '👥 EVERYDAY PERSPECTIVE'}</span>
+                <span>{activeOpinion.badge}</span>
               </div>
-              <p className="text-white mb-1.5 leading-relaxed">{opinion.opinion}</p>
-              <p className="text-amber-300 font-medium text-xs">👉 {opinion.keyTakeaway}</p>
+              <p className="text-slate-200 mb-1 leading-relaxed">{activeOpinion.opinion}</p>
+              <p className="text-amber-300 font-medium text-xs">👉 {activeOpinion.keyTakeaway}</p>
             </div>
           )}
 

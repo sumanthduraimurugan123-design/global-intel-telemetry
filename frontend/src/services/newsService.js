@@ -214,48 +214,57 @@ export async function fetchPersonalizedOpinion(title, description, persona = 'Ca
     }
   }
 
-  // Fallback client-side opinion tailored to persona
-  const isTa = language === 'ta';
-  const isHi = language === 'hi';
+  // Dynamic headline-aware persona analysis
+  const cleanTitle = (title || '').split(' - ')[0].trim();
+  const fullText = (title + ' ' + (description || '')).toLowerCase();
+  const lang = (language || 'en').toLowerCase();
+
+  const isAgri = /crop|farm|wheat|rice|mandi|paddy|soil|rain|flood|drought|monsoon|fertilizer|diesel|sugar|harvest|agri|kisan|grain|irrigation|cotton|livestock|vegetable|onion|potato|milk|land|loan|subsidy/i.test(fullText);
+  const isWeather = /weather|rain|flood|storm|cyclone|heatwave|drought|monsoon|snow|temperature|cloud|wind|disaster|typhoon/i.test(fullText);
+  const isEcon = /price|tax|market|inflation|cost|bank|rbi|rupee|dollar|economy|budget|trade|tariff|stock|share|loan|interest|gdp|finance|export|import/i.test(fullText);
+  const isGeo = /war|strike|missile|military|army|defense|border|treaty|sanction|russia|ukraine|israel|gaza|iran|china|us|trump|biden|putin|modi|minister|election|politic|protest|security|un|nato/i.test(fullText);
+  const isTech = /cyber|ai|hack|tech|chip|data|software|app|digital|cloud|google|apple|microsoft|openai|bot|internet|phone|network|battery/i.test(fullText);
+  const isTransit = /traffic|road|bridge|metro|bus|train|flight|airline|airport|port|freight|shipping|ship|canal|railway|highway/i.test(fullText);
+
+  const topicSnippet = cleanTitle.length > 55 ? cleanTitle.substring(0, 52) + '...' : cleanTitle;
   const pLower = (persona || '').toLowerCase();
 
   let badge = 'Citizen AI Perspective';
-  let opinion = 'This development affects local routines, transit routes, or neighborhood activities.';
-  let keyTakeaway = 'Stay informed and plan your schedule accordingly.';
+  let opinion = `Headline Intel: "${topicSnippet}" - Relevant community update.`;
+  let keyTakeaway = 'Stay informed with verified news.';
 
-  if (pLower.includes('analyst')) {
-    badge = isTa ? 'மூலோபாய உளவு மதிப்பீடு' : (isHi ? 'रणनीतिक खुफिया आकलन' : 'Strategic Intel Assessment');
-    opinion = 'Intelligence telemetry indicates regional policy and civic transit implications. Local administrative impact expected.';
-    keyTakeaway = 'High monitoring priority; supply & transit latency possible.';
-  } else if (pLower.includes('farmer') || pLower.includes('kisan')) {
-    badge = isTa ? 'உழவர் வேளாண் வழிகாட்டல்' : (isHi ? 'किसान कृषि सलाह' : 'Kisan Agrarian Advisory');
-    opinion = isTa 
-      ? 'வானிலை, உரம் மற்றும் மண்டி கொள்முதல் விலையை கவனித்து பயிர் பாதுகாப்பை உறுதி செய்யவும்.' 
-      : (isHi ? 'मौसम, खाद और मंडी भाव पर नजर रखें और फसलों की सुरक्षा सुनिश्चित करें।' : 'Monitor weather changes, fertilizer availability, and Mandi rates to protect crops.');
-    keyTakeaway = isTa ? 'மழை மற்றும் உரம் விலையை கவனிக்கவும்.' : (isHi ? 'मौसम और मंडी भाव पर नजर रखें।' : 'Check field drainage and local Mandi prices.');
+  if (pLower.includes('farmer') || pLower.includes('kisan')) {
+    badge = lang === 'ta' ? '🌾 உழவர் வேளாண் ஆலோசனை' : (lang === 'hi' ? '🌾 किसान कृषि सलाह' : '🌾 Kisan Agrarian Advisory');
+    if (isAgri || isWeather) {
+      opinion = lang === 'ta' ? `வேளாண் எச்சரிக்கை: "${topicSnippet}" விளைபொருட்கள் மற்றும் அறுவடை திட்டங்களை நேரடியாக பாதிக்கலாம்.` : (lang === 'hi' ? `कृषि अलर्ट: "${topicSnippet}" फसल कटाई और मंडी भाव को प्रभावित कर सकता है।` : `Direct Agrarian Impact: "${topicSnippet}" may affect crop harvesting, soil moisture, or Mandi sales.`);
+      keyTakeaway = lang === 'ta' ? 'வயல் வடிகால் மற்றும் அறுவடை தானியங்களை பாதுகாக்கவும்.' : (lang === 'hi' ? 'खेतों की जल निकासी और कटी फसल सुरक्षित करें।' : 'Check field drainage and store harvested grain safely.');
+    } else if (isEcon) {
+      opinion = lang === 'ta' ? `சந்தை எச்சரிக்கை: "${topicSnippet}" உரம், டீசல் கட்டணம் மற்றும் உள்ளூர் மண்டி விலையில் மாற்றத்தை ஏற்படுத்தலாம்.` : (lang === 'hi' ? `बाजार अलर्ट: "${topicSnippet}" डीजल, खाद की लागत और मंडी दामों को प्रभावित कर सकता है।` : `Input Cost Alert: "${topicSnippet}" could influence diesel prices, fertilizer rates, or regional crop valuation.`);
+      keyTakeaway = lang === 'ta' ? 'கொள்முதல் விலைகளை ஒப்பிட்டு விற்கவும்.' : (lang === 'hi' ? 'मंडी भाव और सरकारी खरीद केंद्रों की तुलना करें।' : 'Compare local Mandi rates before selling your produce.');
+    } else {
+      opinion = lang === 'ta' ? `பொது செய்தி: "${topicSnippet}" செய்தி உழவர் குடும்பங்களின் அன்றாட வாழ்கைக்கு மறைமுக தகவலாகும்.` : (lang === 'hi' ? `ग्रामीण सूचना: "${topicSnippet}" का कृषि कार्यों पर सीधा प्रभाव नहीं है, पर ग्रामीण जनजीवन से जुड़ा है।` : `General Rural Overview: "${topicSnippet}" carries general rural interest and family context.`);
+      keyTakeaway = lang === 'ta' ? 'அன்றாட விவசாய பணிகளை தொடரவும்.' : (lang === 'hi' ? 'नियमित खेती-किसानी कार्य सुचारू रखें।' : 'Continue routine farm management as planned.');
+    }
   } else if (pLower.includes('student')) {
-    badge = isTa ? 'மாணவர் கல்வி ஆலோசனை' : (isHi ? 'छात्र शैक्षणिक सलाह' : 'Student Academic Brief');
-    opinion = isTa 
-      ? 'கல்லூரி பயணம், தேர்வுகள் அல்லது கணினி சாதன செலவுகளில் சிறு தாக்கம் ஏற்படலாம்.' 
-      : (isHi ? 'कॉलेज यात्रा, परीक्षाओं और डिजिटल डिवाइस पर असर हो सकता है।' : 'May affect college transit routes, exam commute, or gadget purchase budgets.');
-    keyTakeaway = isTa ? 'தேர்வுகளுக்கு முன்கூட்டியே செல்லவும்.' : (isHi ? 'परीक्षाओं के लिए समय से निकलें।' : 'Leave early for classes and backup digital notes.');
+    badge = lang === 'ta' ? '🎓 மாணவர் கல்வி உளவு' : (lang === 'hi' ? '🎓 छात्र शैक्षणिक दृष्टिकोण' : '🎓 Student Perspective');
+    opinion = lang === 'ta' ? `கல்விசார் குறிப்பு: "${topicSnippet}" போட்டித் தேர்வுகள் மற்றும் நடப்பு நிகழ்வுகளுக்கு முக்கிய தலைப்பாகும்.` : (lang === 'hi' ? `करेंट अफेयर्स बिंदु: "${topicSnippet}" प्रतियोगी परीक्षाओं और सामान्य अध्ययन के लिए उपयोगी है।` : `Academic Relevance: "${topicSnippet}" is a valuable case study for current affairs and competitive exam prep.`);
+    keyTakeaway = lang === 'ta' ? 'தேர்வு குறிப்புகளில் இந்த நிகழ்வை குறித்துக் கொள்ளுங்கள்.' : (lang === 'hi' ? 'परीक्षा के दृष्टिकोण से मुख्य बिंदु नोट करें।' : 'Note key dates and geopolitical terms for exam prep.');
   } else if (pLower.includes('business')) {
-    badge = isTa ? 'நிறுவன வர்த்தக உளவு' : (isHi ? 'व्यापारिक जोखिम विश्लेषण' : 'Enterprise Risk Brief');
-    opinion = isTa 
-      ? 'விநியோக சங்கிலி, சரக்கு போக்குவரத்து மற்றும் மூலப்பொருள் விலைகளில் மாற்றங்கள் ஏற்படலாம்.' 
-      : (isHi ? 'सप्लाई चेन, माल ढुलाई और कच्चे माल की लागत पर प्रभाव पड़ सकता है।' : 'Supply chain lead-times and component input pricing may experience friction.');
-    keyTakeaway = isTa ? 'சரக்கு இருப்பை முன்கூட்டியே திட்டமிடுங்கள்.' : (isHi ? 'इन्वेंट्री की अग्रिम योजना बनाएं।' : 'Buffer inventory and review vendor logistics.');
+    badge = lang === 'ta' ? '💼 நிறுவன வணிக உளவு' : (lang === 'hi' ? '💼 व्यापारिक जोखिम विश्लेषण' : '💼 Business Intel');
+    opinion = lang === 'ta' ? `வர்த்தக தாக்கம்: "${topicSnippet}" விநியோக சங்கிலி மற்றும் செயல்பாட்டு செலவை பாதிக்கலாம்.` : (lang === 'hi' ? `व्यापारिक प्रभाव: "${topicSnippet}" सप्लाई चेन और परिचालन लागत को प्रभावित कर सकता है।` : `Enterprise Impact: "${topicSnippet}" signals supply chain friction, freight surcharge risk, or input price shifts.`);
+    keyTakeaway = lang === 'ta' ? 'சரக்கு இருப்பை திட்டமிட்டு விநியோக வழிகளை சரிபார்க்கவும்.' : (lang === 'hi' ? 'इन्वेंट्री बफर रखें और सप्लायर अनुबंध जांचें।' : 'Buffer inventory and review vendor lead-times.');
+  } else if (pLower.includes('analyst')) {
+    badge = '🛡️ Strategic Intel Assessment';
+    opinion = `Strategic Telemetry: "${topicSnippet}" analyzed. Assessment indicates localized policy or geopolitical ripple vectors with monitored operational risk index.`;
+    keyTakeaway = 'Monitored dispatch; threat vectors evaluated for systemic stability.';
   } else if (pLower.includes('accessibility')) {
-    badge = isTa ? 'எளிய குரல் வழிகாட்டல்' : (isHi ? 'सरल आवाज सलाह' : 'Simple Voice Guidance');
-    opinion = isTa ? 'இது ஒரு முக்கியமான செய்தி. கவனமாக இருங்கள்.' : (isHi ? 'यह जरूरी खबर है। सुरक्षित रहें।' : 'This is an important update. Stay informed.');
-    keyTakeaway = isTa ? 'பாதுகாப்பாக இருங்கள்.' : (isHi ? 'सुरक्षित रहें।' : 'Stay safe and informed.');
+    badge = lang === 'ta' ? '🔊 எளிய குரல் விளக்கம்' : (lang === 'hi' ? '🔊 सरल आवाज सलाह' : '🔊 Simple Voice Guidance');
+    opinion = lang === 'ta' ? `செய்தி சுருக்கம்: "${topicSnippet}". இது ஒரு முக்கியமான தகவல்.` : (lang === 'hi' ? `समाचार सारांश: "${topicSnippet}"। यह एक जरूरी जानकारी है।` : `News Summary: "${topicSnippet}". Important update for awareness.`);
+    keyTakeaway = lang === 'ta' ? 'பாதுகாப்பாக விழிப்புடன் இருங்கள்.' : (lang === 'hi' ? 'सतर्क और सुरक्षित रहें।' : 'Stay safe and informed.');
   } else {
-    // Common Person
-    badge = isTa ? 'மக்களுக்கான பார்வை' : (isHi ? 'नागरिक एआई राय' : 'Everyday Citizen Advice');
-    opinion = isTa 
-      ? 'இந்தப் புதிய நிகழ்வு உங்கள் அன்றாட வாழ்க்கை, குடும்ப மளிகை செலவு மற்றும் பயணத்தை பாதிக்கலாம்.' 
-      : (isHi ? 'यह घटनाक्रम आपकी दैनिक दिनचर्या, राशन बजट और यात्रा को प्रभावित कर सकता है।' : 'This news may impact your weekly grocery budget, fuel expenses, or local transit.');
-    keyTakeaway = isTa ? 'குடும்ப செலவு மற்றும் பயணத்தை கவனியுங்கள்.' : (isHi ? 'घरेलू खर्च और यात्रा पर नजर रखें।' : 'Track local transit updates and weekly household budget.');
+    badge = lang === 'ta' ? '🏡 பொதுமக்கள் பார்வை' : (lang === 'hi' ? '🏡 नागरिक एआई राय' : '🏡 Everyday Citizen Advice');
+    opinion = lang === 'ta' ? `அன்றாட பார்வை: "${topicSnippet}" தகவல் குடும்ப செலவு அல்லது உள்ளூர் பயணத்தை பாதிக்கலாம்.` : (lang === 'hi' ? `नागरिक राय: "${topicSnippet}" आपकी दैनिक दिनचर्या या यात्रा को प्रभावित कर सकता है।` : `Citizen View: "${topicSnippet}" affects daily routine, local transit, or household budget decisions.`);
+    keyTakeaway = lang === 'ta' ? 'உள்ளூர் நேரலை தகவல்களை அறிந்து செயல்படுங்கள்.' : (lang === 'hi' ? 'स्थानीय अपडेट देखकर योजना बनाएं।' : 'Plan daily routine with verified local facts.');
   }
 
   return {
