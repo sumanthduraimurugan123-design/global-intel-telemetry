@@ -38,8 +38,16 @@ import {
   Sparkles, 
   X,
   Layers,
-  ChevronRight
+  ChevronRight,
+  UserCheck,
+  Database,
+  Radio,
+  Volume2,
+  Accessibility,
+  Dna,
+  Mic
 } from 'lucide-react';
+import { DecryptedText, BlurText, ShinyText, Dock, StarBorder, GridPattern, Magnet } from '../components/reactbits';
 
 const CHENNAI_NEIGHBORHOODS = [
   { id: 'all_chennai', label: 'Chennai Metro', loc: 'chennai', icon: '🏙️' },
@@ -449,10 +457,80 @@ export default function Dashboard() {
 
   const hasCriticalAlert = alerts.some(a => a.severity === 'CRITICAL');
 
+  // React Bits Interactive Magnification Dock Navigation Items
+  const dockItems = [
+    {
+      id: 'globe',
+      icon: <Globe2 className="w-5 h-5 text-cyan-300" />,
+      tooltip: selectedCountry === 'global' ? 'Planetary View Active' : 'Reset Global View',
+      onClick: () => handleSelectCountry('global'),
+      isActive: selectedCountry === 'global',
+    },
+    {
+      id: 'voice',
+      icon: <Mic className="w-5 h-5 text-pink-300" />,
+      tooltip: 'Voice AI Assistant',
+      onClick: () => setIsVoiceModalOpen(true),
+    },
+    {
+      id: 'radio',
+      icon: <Radio className="w-5 h-5 text-amber-300" />,
+      tooltip: radioState.isPlaying ? 'Radio Streaming Live' : 'Start Continuous Radio',
+      onClick: handleStartRadio,
+      isActive: radioState.isPlaying,
+      badge: news.length > 0 ? news.length : null,
+    },
+    {
+      id: 'impact',
+      icon: <Sparkles className="w-5 h-5 text-pink-400" />,
+      tooltip: 'Future Impact Simulator',
+      onClick: () => setIsFutureImpactModalOpen(true),
+    },
+    {
+      id: 'dna',
+      icon: <Dna className="w-5 h-5 text-purple-300" />,
+      tooltip: 'Global Impact DNA Strand',
+      onClick: () => document.getElementById('dna-feature-row')?.scrollIntoView({ behavior: 'smooth' }),
+    },
+    {
+      id: 'persona',
+      icon: <UserCheck className="w-5 h-5 text-emerald-300" />,
+      tooltip: `Persona: ${persona}`,
+      onClick: () => setIsPersonaModalOpen(true),
+    },
+    {
+      id: 'database',
+      icon: <Database className="w-5 h-5 text-cyan-400" />,
+      tooltip: 'Supabase Data Explorer',
+      onClick: () => setIsDbModalOpen(true),
+    },
+    {
+      id: 'gps',
+      icon: <Navigation className="w-5 h-5 text-cyan-300" />,
+      tooltip: `GPS Locate (${detectedLocationLabel})`,
+      onClick: handleDetectLocation,
+    },
+    {
+      id: 'sound',
+      icon: <Volume2 className="w-5 h-5 text-purple-400" />,
+      tooltip: isAudioAlertsEnabled ? 'Live Audio Alerts: ON' : 'Live Audio Alerts: OFF',
+      onClick: handleToggleAudioAlerts,
+      isActive: isAudioAlertsEnabled,
+    },
+    {
+      id: 'easy',
+      icon: <Accessibility className="w-5 h-5 text-yellow-300" />,
+      tooltip: 'Easy Voice Mode',
+      onClick: () => handleToggleEasyMode(true),
+      isActive: isEasyMode,
+    },
+  ];
+
   return (
     <div className="min-h-screen flex flex-col bg-[#030712] text-slate-100 relative overflow-x-hidden selection:bg-purple-500/30 selection:text-white">
       {/* 3D Spatial Animated Mesh & Contextual Dynamic Ambient Lighting */}
       <BackgroundMesh activeTopic={activeTopic} hasCriticalAlert={hasCriticalAlert} />
+      <GridPattern width={48} height={48} className="opacity-30" />
       
       {/* If Easy Mode is active, render full-screen EasyModeView */}
       {isEasyMode ? (
@@ -577,38 +655,62 @@ export default function Dashboard() {
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <span className="font-display text-xs font-bold text-white tracking-wide flex items-center gap-2">
                     <Layers className="w-4 h-4 text-purple-400" />
-                    <span className="gradient-text">Planetary Hierarchical Geo Navigation</span>
+                    <BlurText 
+                      text="Planetary Hierarchical Geo Navigation" 
+                      className="gradient-text font-bold" 
+                      delay={25}
+                    />
                   </span>
 
-                  {/* Active Breadcrumb Badge */}
+                  {/* Active Breadcrumb Badge with DecryptedText */}
                   <div className="flex items-center gap-1.5 font-mono text-[11px] bg-slate-950/80 border border-purple-500/30 px-3 py-1 rounded-full shadow-inner">
-                    <span className="text-cyan-300 font-bold uppercase">{selectedCountry}</span>
+                    <DecryptedText
+                      text={selectedCountry.toUpperCase()}
+                      speed={35}
+                      className="text-cyan-300 font-bold"
+                      encryptedClassName="text-cyan-500/60 font-mono"
+                    />
                     {selectedState && (
                       <>
                         <ChevronRight className="w-3 h-3 text-purple-400/50" />
-                        <span className="text-white font-semibold">{selectedState}</span>
+                        <DecryptedText
+                          text={selectedState.toUpperCase()}
+                          speed={35}
+                          className="text-white font-semibold"
+                          encryptedClassName="text-slate-400/60 font-mono"
+                        />
                       </>
                     )}
                     {selectedLocation && (
                       <>
                         <ChevronRight className="w-3 h-3 text-purple-400/50" />
-                        <span className="text-pink-400 font-bold">{selectedLocation}</span>
+                        <DecryptedText
+                          text={selectedLocation.toUpperCase()}
+                          speed={35}
+                          className="text-pink-400 font-bold"
+                          encryptedClassName="text-pink-500/60 font-mono"
+                        />
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* GPS Auto-Detect Button & Reset Button */}
+                {/* GPS Auto-Detect Button with StarBorder & Reset Button */}
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={handleDetectLocation}
-                    className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs rounded-lg shadow-md shadow-cyan-500/25 transition-all flex items-center gap-1.5 hover:scale-105 active:scale-95"
-                    title="Detect precise GPS neighborhood"
-                  >
-                    <Navigation className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
-                    <span>GPS Auto-Locate</span>
-                    <span className="text-[10px] text-cyan-200/80 font-mono">({detectedLocationLabel})</span>
-                  </button>
+                  <Magnet padding={20} magnetStrength={0.25}>
+                    <StarBorder
+                      color="#06B6D4"
+                      speed="4s"
+                      onClick={handleDetectLocation}
+                      className="cursor-pointer"
+                    >
+                      <div className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600/80 to-blue-600/80 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-cyan-500/25 transition-all flex items-center gap-1.5">
+                        <Navigation className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
+                        <ShinyText text="GPS Auto-Locate" speed={3} className="text-white font-bold" />
+                        <span className="text-[10px] text-cyan-200/80 font-mono">({detectedLocationLabel})</span>
+                      </div>
+                    </StarBorder>
+                  </Magnet>
 
                   {(selectedLocation || selectedState || selectedCountry !== 'global') && (
                     <button
@@ -777,7 +879,7 @@ export default function Dashboard() {
           </main>
 
           {/* Footer */}
-          <footer className="w-full border-t border-purple-500/15 py-3 px-6 bg-slate-950/80 backdrop-blur-xl">
+          <footer className="w-full border-t border-purple-500/15 py-3 px-6 bg-slate-950/80 backdrop-blur-xl mb-16">
             <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
               <span className="font-mono text-slate-500 text-xs flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping inline-block" />
@@ -792,6 +894,17 @@ export default function Dashboard() {
             </div>
           </footer>
         </>
+      )}
+
+      {/* React Bits Interactive Magnification Dock */}
+      {!isEasyMode && (
+        <div 
+          className={`fixed left-1/2 -translate-x-1/2 z-30 transition-all duration-300 pointer-events-auto ${
+            radioState.isPlaying || radioState.isPaused ? 'bottom-20' : 'bottom-4'
+          }`}
+        >
+          <Dock items={dockItems} />
+        </div>
       )}
 
       {/* Persistent Continuous News Radio Player Bar (Active in both views) */}

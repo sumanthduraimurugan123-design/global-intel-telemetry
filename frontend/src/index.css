@@ -253,3 +253,46 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(236, 72, 153, 0.6);
 }
+
+/* ==========================================================================
+   React Bits Specialized Animations & Shimmers
+   ========================================================================== */
+@keyframes shinyBadge {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shiny-badge {
+  animation: shinyBadge 3.5s linear infinite;
+}
+
+@keyframes starSpin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-star-spin {
+  animation: starSpin 5s linear infinite;
+}
+
+@keyframes starSpinReverse {
+  0% {
+    transform: rotate(360deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-star-spin-reverse {
+  animation: starSpinReverse 7s linear infinite;
+}
+

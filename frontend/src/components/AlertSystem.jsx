@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { playUiSound } from '../services/soundSystem';
 import IntelligentEmptyState from './IntelligentEmptyState';
+import { DecryptedText, ShinyText, SpotlightCard } from './reactbits';
 
 export default function AlertSystem({ 
   alerts = [], 
@@ -155,14 +156,19 @@ export default function AlertSystem({
           }`}>
             <Bell className={`w-3.5 h-3.5 ${criticalCount > 0 ? 'text-rose-400 animate-bounce' : 'text-purple-300'}`} />
           </div>
-          <h2 className="font-display text-white text-sm font-bold tracking-tight">Active Telemetry Alerts</h2>
+          <DecryptedText
+            text="Active Telemetry Alerts"
+            speed={35}
+            className="font-display text-white text-sm font-bold tracking-tight"
+            encryptedClassName="font-display text-cyan-400 text-sm font-bold"
+          />
           <span className={`font-mono text-[10px] px-2 py-0.5 border rounded-full flex items-center gap-1.5 ${pBadge.color}`}>
             {pBadge.icon}
             <span>{pBadge.label}</span>
           </span>
           {criticalCount > 0 && (
             <span className="font-mono text-[10px] text-rose-300 border border-rose-500/60 bg-rose-500/25 px-2.5 py-0.5 rounded-full font-bold animate-pulse shadow-sm shadow-rose-500/30">
-              {criticalCount} CRITICAL
+              <ShinyText text={`${criticalCount} CRITICAL`} speed={2.5} className="text-rose-200" />
             </span>
           )}
         </div>
@@ -171,7 +177,7 @@ export default function AlertSystem({
         </span>
       </div>
 
-      {/* Alert rows with Framer Motion slide-in */}
+      {/* Alert rows with Framer Motion slide-in & React Bits SpotlightCard */}
       <div className="flex-1 overflow-y-auto divide-y divide-purple-500/10 max-h-[420px] p-2 space-y-2.5">
         {processedAlerts.length === 0 ? (
           <div className="py-8">
@@ -186,6 +192,9 @@ export default function AlertSystem({
           <AnimatePresence initial={false}>
             {processedAlerts.map((alert, index) => {
               const cfg = getSeverityConfig(alert.severity);
+              const isCrit = alert.severity?.toUpperCase() === 'CRITICAL';
+              const isHigh = alert.severity?.toUpperCase() === 'HIGH';
+
               return (
                 <motion.div
                   key={alert.id || `alert-${alert._origIdx || index}`}
@@ -194,53 +203,58 @@ export default function AlertSystem({
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   layout
-                  className={`p-3.5 rounded-xl border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110 relative group`}
                 >
-                  <div className="flex items-center gap-2 mb-1.5">
-                    {cfg.icon}
-                    <span className={`font-mono text-[10px] border px-2 py-0.5 rounded-md tracking-wider ${cfg.badge}`}>
-                      {alert.severity}
-                    </span>
-                    <button
-                      onClick={() => {
-                        playUiSound('click');
-                        onSelectCountry && onSelectCountry(alert.country);
-                      }}
-                      className="font-mono text-[10px] text-cyan-300 hover:text-cyan-200 hover:underline capitalize ml-auto flex items-center gap-1 font-medium"
-                    >
-                      <span>📍 {alert.country || 'Global'}</span>
-                    </button>
-                    {alert.created_at && (
-                      <span className="font-mono text-[10px] text-slate-400 tabular-nums">
-                        {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  <SpotlightCard
+                    spotlightColor={isCrit ? 'rgba(244, 63, 94, 0.28)' : isHigh ? 'rgba(245, 158, 11, 0.22)' : 'rgba(6, 182, 212, 0.18)'}
+                    borderColor={isCrit ? 'rgba(244, 63, 94, 0.5)' : isHigh ? 'rgba(245, 158, 11, 0.4)' : 'rgba(6, 182, 212, 0.35)'}
+                    className={`p-3.5 rounded-xl border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110 relative group`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {cfg.icon}
+                      <span className={`font-mono text-[10px] border px-2 py-0.5 rounded-md tracking-wider ${cfg.badge}`}>
+                        {alert.severity}
                       </span>
-                    )}
-                  </div>
-
-                  <p className="font-sans text-xs text-slate-100 font-medium leading-relaxed">
-                    {alert.message}
-                  </p>
-
-                  {/* Persona-Adaptive Advice Tag */}
-                  {alert._adviceTag && (
-                    <div className="mt-2.5 text-[11px] font-sans px-3 py-1.5 bg-slate-900/90 border border-purple-500/30 text-purple-200 flex items-center gap-2 rounded-lg shadow-inner">
-                      <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
-                      <span className="leading-snug font-medium">{alert._adviceTag}</span>
+                      <button
+                        onClick={() => {
+                          playUiSound('click');
+                          onSelectCountry && onSelectCountry(alert.country);
+                        }}
+                        className="font-mono text-[10px] text-cyan-300 hover:text-cyan-200 hover:underline capitalize ml-auto flex items-center gap-1 font-medium"
+                      >
+                        <span>📍 {alert.country || 'Global'}</span>
+                      </button>
+                      {alert.created_at && (
+                        <span className="font-mono text-[10px] text-slate-400 tabular-nums">
+                          {new Date(alert.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      )}
                     </div>
-                  )}
 
-                  {alert.source_url && (
-                    <a
-                      href={alert.source_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 mt-2 font-mono text-[10px] text-slate-400 hover:text-pink-300 transition-colors"
-                      onClick={() => playUiSound('click')}
-                    >
-                      <span>Verified Source Wire</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  )}
+                    <p className="font-sans text-xs text-slate-100 font-medium leading-relaxed">
+                      {alert.message}
+                    </p>
+
+                    {/* Persona-Adaptive Advice Tag */}
+                    {alert._adviceTag && (
+                      <div className="mt-2.5 text-[11px] font-sans px-3 py-1.5 bg-slate-900/90 border border-purple-500/30 text-purple-200 flex items-center gap-2 rounded-lg shadow-inner">
+                        <Sparkles className="w-3.5 h-3.5 text-pink-400 shrink-0" />
+                        <span className="leading-snug font-medium">{alert._adviceTag}</span>
+                      </div>
+                    )}
+
+                    {alert.source_url && (
+                      <a
+                        href={alert.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 mt-2 font-mono text-[10px] text-slate-400 hover:text-pink-300 transition-colors"
+                        onClick={() => playUiSound('click')}
+                      >
+                        <span>Verified Source Wire</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
+                  </SpotlightCard>
                 </motion.div>
               );
             })}

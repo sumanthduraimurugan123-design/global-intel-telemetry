@@ -1,8 +1,7 @@
 import React from 'react';
 import { Sparkles, ArrowUpRight, Activity, ShieldCheck, Database, Newspaper, Zap } from 'lucide-react';
 import { calculatePersonalImpact } from '../services/impactEngine';
-import TiltCard from './TiltCard';
-import AnimatedCounter from './AnimatedCounter';
+import { SpotlightCard, CountUp, DecryptedText, ShinyText } from './reactbits';
 
 export default function TelemetryStats({ 
   selectedCountry = 'global', 
@@ -49,10 +48,11 @@ export default function TelemetryStats({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 my-3 spatial-perspective">
       
-      {/* 1. PERSONAL IMPACT CARD */}
-      <TiltCard 
-        glowVariant={isHighImpact ? 'risk' : isModerateImpact ? 'purple' : 'growth'}
-        className="p-4 flex flex-col gap-2 relative group cursor-pointer"
+      {/* 1. PERSONAL IMPACT CARD with React Bits SpotlightCard */}
+      <SpotlightCard 
+        spotlightColor={isHighImpact ? 'rgba(244, 63, 94, 0.28)' : isModerateImpact ? 'rgba(245, 158, 11, 0.25)' : 'rgba(168, 85, 247, 0.22)'}
+        borderColor={isHighImpact ? 'rgba(244, 63, 94, 0.55)' : isModerateImpact ? 'rgba(245, 158, 11, 0.45)' : 'rgba(168, 85, 247, 0.45)'}
+        className="p-4 flex flex-col gap-2 relative group cursor-pointer shadow-xl"
         onClick={onOpenImpactModal}
       >
         <div className="flex items-center justify-between z-10">
@@ -64,21 +64,25 @@ export default function TelemetryStats({
             }`}>
               <Sparkles className="w-3 h-3" />
             </div>
-            <span className="font-mono text-[11px] text-purple-300 font-semibold tracking-wider uppercase">
-              Personal Impact
-            </span>
+            <DecryptedText
+              text="PERSONAL IMPACT"
+              speed={40}
+              className="font-mono text-[11px] text-purple-300 font-semibold tracking-wider uppercase"
+              encryptedClassName="font-mono text-[11px] text-purple-400/70"
+            />
           </div>
           {onOpenImpactModal && (
             <div className="font-mono text-[10px] text-pink-400 hover:text-pink-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
-              <span>AI View</span>
-              <ArrowUpRight className="w-2.5 h-2.5" />
+              <ShinyText text="AI View" speed={3} />
+              <ArrowUpRight className="w-2.5 h-2.5 text-pink-300" />
             </div>
           )}
         </div>
 
         <div className="flex items-baseline gap-2 z-10">
-          <AnimatedCounter
-            value={impact.overallScore}
+          <CountUp
+            to={impact.overallScore}
+            duration={1.2}
             className={`font-mono text-3xl font-extrabold tracking-tight ${
               isHighImpact ? 'text-rose-400' : isModerateImpact ? 'text-amber-400' : 'text-emerald-400'
             }`}
@@ -113,12 +117,13 @@ export default function TelemetryStats({
           <span className="truncate">Vector: <strong className="text-slate-300 font-medium">{impact.primaryVector.name}</strong></span>
           <span className="text-purple-300 font-semibold shrink-0 ml-1">{impact.primaryVector.score}% load</span>
         </div>
-      </TiltCard>
+      </SpotlightCard>
 
-      {/* 2. HOW THIS AFFECTS YOU CARD */}
-      <TiltCard 
-        glowVariant="purple"
-        className="p-4 flex flex-col gap-2 relative group cursor-pointer"
+      {/* 2. HOW THIS AFFECTS YOU CARD with React Bits SpotlightCard */}
+      <SpotlightCard 
+        spotlightColor="rgba(236, 72, 153, 0.22)"
+        borderColor="rgba(236, 72, 153, 0.45)"
+        className="p-4 flex flex-col gap-2 relative group cursor-pointer shadow-xl"
         onClick={onOpenImpactModal}
       >
         <div className="flex items-center justify-between z-10">
@@ -126,9 +131,12 @@ export default function TelemetryStats({
             <div className="w-5 h-5 rounded-md bg-pink-500/20 flex items-center justify-center border border-pink-500/30">
               <Zap className="w-3 h-3 text-pink-400" />
             </div>
-            <span className="font-mono text-[11px] text-pink-300 font-semibold tracking-wider uppercase">
-              Affects You
-            </span>
+            <DecryptedText
+              text="AFFECTS YOU"
+              speed={40}
+              className="font-mono text-[11px] text-pink-300 font-semibold tracking-wider uppercase"
+              encryptedClassName="font-mono text-[11px] text-pink-400/70"
+            />
           </div>
           <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-slate-800/90 text-slate-300 border border-slate-700/80">
             {impact.profile.icon} {impact.profile.label}
@@ -151,32 +159,37 @@ export default function TelemetryStats({
             </span>
           )}
         </div>
-      </TiltCard>
+      </SpotlightCard>
 
-      {/* 3. DISPATCHES TELEMETRY STREAM */}
-      <TiltCard 
-        glowVariant="economy"
-        className="p-4 flex flex-col gap-2 relative group"
+      {/* 3. DISPATCHES TELEMETRY STREAM with React Bits SpotlightCard */}
+      <SpotlightCard 
+        spotlightColor="rgba(6, 182, 212, 0.22)"
+        borderColor="rgba(6, 182, 212, 0.45)"
+        className="p-4 flex flex-col gap-2 relative group shadow-xl"
       >
         <div className="flex items-center justify-between z-10">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded-md bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
               <Newspaper className="w-3 h-3 text-cyan-400" />
             </div>
-            <span className="font-mono text-[11px] text-cyan-300 font-semibold tracking-wider uppercase">
-              Live Dispatches
-            </span>
+            <DecryptedText
+              text="LIVE DISPATCHES"
+              speed={40}
+              className="font-mono text-[11px] text-cyan-300 font-semibold tracking-wider uppercase"
+              encryptedClassName="font-mono text-[11px] text-cyan-400/70"
+            />
           </div>
           <span className="flex items-center gap-1 text-[10px] font-mono text-cyan-400">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            REALTIME
+            <ShinyText text="REALTIME" speed={3} className="text-cyan-300 font-bold" />
           </span>
         </div>
 
         <div className="flex items-baseline gap-2 z-10">
-          <AnimatedCounter 
-            value={totalNews} 
-            className="font-mono text-3xl font-extrabold tracking-tight text-white" 
+          <CountUp
+            to={totalNews}
+            duration={1.2}
+            className="font-mono text-3xl font-extrabold tracking-tight text-white"
           />
           <span className="font-mono text-xs text-slate-400">stories parsed</span>
         </div>
@@ -191,32 +204,37 @@ export default function TelemetryStats({
         <div className="font-mono text-[10px] text-slate-400 z-10">
           {distinctSources > 0 ? `${distinctSources} verified global feeds` : 'Awaiting data streams'}
         </div>
-      </TiltCard>
+      </SpotlightCard>
 
-      {/* 4. PERSISTENCE & SYSTEM INTEGRITY */}
-      <TiltCard 
-        glowVariant="growth"
-        className="p-4 flex flex-col gap-2 relative group"
+      {/* 4. PERSISTENCE & SYSTEM INTEGRITY with React Bits SpotlightCard */}
+      <SpotlightCard 
+        spotlightColor="rgba(16, 185, 129, 0.22)"
+        borderColor="rgba(16, 185, 129, 0.45)"
+        className="p-4 flex flex-col gap-2 relative group shadow-xl"
       >
         <div className="flex items-center justify-between z-10">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
               <Database className="w-3 h-3 text-emerald-400" />
             </div>
-            <span className="font-mono text-[11px] text-emerald-300 font-semibold tracking-wider uppercase">
-              Persistence Engine
-            </span>
+            <DecryptedText
+              text="PERSISTENCE ENGINE"
+              speed={40}
+              className="font-mono text-[11px] text-emerald-300 font-semibold tracking-wider uppercase"
+              encryptedClassName="font-mono text-[11px] text-emerald-400/70"
+            />
           </div>
           <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
             <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            SYNCED
+            <ShinyText text="SYNCED" speed={3.5} className="text-emerald-300 font-bold" />
           </span>
         </div>
 
         <div className="flex items-baseline gap-2 z-10">
-          <AnimatedCounter 
-            value={4} 
-            className="font-mono text-3xl font-extrabold tracking-tight text-white" 
+          <CountUp
+            to={4}
+            duration={1.0}
+            className="font-mono text-3xl font-extrabold tracking-tight text-white"
           />
           <span className="font-mono text-xs text-slate-400">tables active</span>
         </div>
@@ -228,7 +246,7 @@ export default function TelemetryStats({
         <div className="font-mono text-[10px] text-slate-400 truncate z-10">
           users · news · alerts · logs
         </div>
-      </TiltCard>
+      </SpotlightCard>
 
     </div>
   );

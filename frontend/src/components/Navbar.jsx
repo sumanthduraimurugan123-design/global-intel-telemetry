@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
 import { playUiSound, isSoundMuted, toggleSoundMute } from '../services/soundSystem';
+import { DecryptedText, ShinyText, RotatingText, Magnet, StarBorder } from './reactbits';
 
 export default function Navbar({ 
   selectedCountry, 
@@ -71,7 +72,7 @@ export default function Navbar({
 
       <div className="max-w-7xl mx-auto px-4 lg:px-6 py-2.5 flex items-center justify-between gap-4">
 
-        {/* Left: Brand / Title */}
+        {/* Left: Brand / Title with React Bits DecryptedText & ShinyText */}
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-600 via-pink-600 to-cyan-500 p-[1px] shadow-lg shadow-purple-500/30">
             <div className="w-full h-full bg-slate-950 rounded-[11px] flex items-center justify-center">
@@ -80,16 +81,32 @@ export default function Navbar({
           </div>
           <div>
             <h1 className="font-display text-white font-bold text-base tracking-tight leading-none flex items-center gap-2">
-              <span className="gradient-text">Global Intelligence</span>
+              <DecryptedText
+                text="Global Intelligence"
+                speed={35}
+                className="gradient-text font-bold"
+                encryptedClassName="text-cyan-400/80 font-mono"
+                animateOn="hover"
+              />
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono tracking-wider font-bold shadow-sm shadow-purple-500/10">
-                AI WIRE
+                <ShinyText text="AI WIRE" speed={3} />
               </span>
             </h1>
             <div className="font-mono text-[10px] text-slate-400 mt-0.5 tracking-wider flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span className="text-slate-300 font-medium">LIVE TELEMETRY v3.0</span>
+              <ShinyText text="LIVE TELEMETRY v3.0" speed={4} className="text-slate-300 font-medium" />
               <span className="text-slate-600">·</span>
-              <span className="text-cyan-400/90 font-semibold">SPATIAL AI</span>
+              <RotatingText
+                texts={[
+                  'SPATIAL AI SENSORS',
+                  'GEOPOLITICAL RADAR',
+                  'AUTONOMOUS AGENTS',
+                  'PLANETARY TELEMETRY'
+                ]}
+                rotationInterval={3600}
+                className="text-cyan-400/90 font-semibold"
+                itemClassName="text-cyan-300"
+              />
             </div>
           </div>
         </div>
@@ -132,27 +149,33 @@ export default function Navbar({
             )}
           </button>
 
-          {/* 🎤 Voice Access Button */}
-          <button
-            onClick={() => { playUiSound('click'); onOpenVoiceModal(); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-md shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all duration-200"
-            title="Voice Access: speak to navigate news"
-            aria-label="Open Voice Assistant"
-          >
-            <Mic className="w-3.5 h-3.5 animate-pulse text-pink-200" />
-            <span className="hidden sm:inline font-semibold">Voice AI</span>
-          </button>
+          {/* 🎤 Voice Access Button with Magnet */}
+          <Magnet padding={25} magnetStrength={0.2}>
+            <button
+              onClick={() => { playUiSound('click'); onOpenVoiceModal(); }}
+              className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-md shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all duration-200"
+              title="Voice Access: speak to navigate news"
+              aria-label="Open Voice Assistant"
+            >
+              <Mic className="w-3.5 h-3.5 animate-pulse text-pink-200" />
+              <span className="hidden sm:inline font-semibold">Voice AI</span>
+            </button>
+          </Magnet>
 
-          {/* 🔮 Future Impact Simulator Button */}
-          <button
-            onClick={() => { playUiSound('click'); onOpenFutureImpactModal(); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-900/40 to-pink-900/40 text-pink-300 border border-pink-500/40 hover:border-pink-400 rounded-lg shadow-md hover:shadow-pink-500/20 hover:scale-105 active:scale-95 transition-all duration-200 backdrop-blur-sm"
-            title="Simulate Future Impact based on real-time news"
-            aria-label="Simulate Future Impact"
-          >
-            <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
-            <span className="hidden md:inline font-semibold">Future Impact</span>
-          </button>
+          {/* 🔮 Future Impact Simulator Button with React Bits StarBorder */}
+          <Magnet padding={25} magnetStrength={0.2}>
+            <StarBorder
+              color="#EC4899"
+              speed="5s"
+              onClick={() => { playUiSound('click'); onOpenFutureImpactModal(); }}
+              className="cursor-pointer"
+            >
+              <div className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs text-pink-200 hover:text-white transition-colors">
+                <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+                <span className="hidden md:inline font-semibold">Future Impact</span>
+              </div>
+            </StarBorder>
+          </Magnet>
 
           {/* 🧬 Global Impact DNA Side Panel Trigger */}
           <button
