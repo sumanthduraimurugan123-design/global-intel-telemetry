@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useEffect, useRef, useState } from 'react';
 import { 
   AlertTriangle, 
   Flame, 
@@ -11,12 +11,14 @@ import {
   Users,
   LineChart,
   Sparkles,
-  Bell
+  Bell,
+  PhoneCall,
+  MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playUiSound } from '../services/soundSystem';
 import IntelligentEmptyState from './IntelligentEmptyState';
-// Removed React Bits to improve performance. Using Framer Motion directly.
+import OutreachSystem from './OutreachSystem';
 
 export default function AlertSystem({ 
   alerts = [], 
@@ -25,6 +27,7 @@ export default function AlertSystem({
   persona = 'Common person'
 }) {
   const prevAlertCountRef = useRef(alerts.length);
+  const [isOutreachOpen, setIsOutreachOpen] = useState(false);
 
   // Play subtle alert tone if new alerts arrive
   useEffect(() => {
@@ -174,10 +177,29 @@ export default function AlertSystem({
             </span>
           )}
         </div>
-        <span className="font-mono text-[11px] text-purple-300 font-semibold px-2.5 py-0.5 rounded-lg bg-purple-950/40 border border-purple-500/30 tabular-nums">
-          {alerts.length} live
-        </span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              playUiSound('click');
+              setIsOutreachOpen(true);
+            }}
+            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-300 hover:border-emerald-400 font-mono text-[10px] font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-500/10 transition-all hover:scale-105"
+          >
+            <PhoneCall className="w-3 h-3 text-emerald-400 animate-pulse" />
+            <span>📢 Outreach (IVR / WA)</span>
+          </button>
+          <span className="font-mono text-[11px] text-purple-300 font-semibold px-2.5 py-0.5 rounded-lg bg-purple-950/40 border border-purple-500/30 tabular-nums">
+            {alerts.length} live
+          </span>
+        </div>
       </div>
+
+      <OutreachSystem
+        isOpen={isOutreachOpen}
+        onClose={() => setIsOutreachOpen(false)}
+        currentPersona={persona}
+        currentLocation={selectedCountry || 'Global'}
+      />
 
       {/* Alert rows with Framer Motion slide-in & React Bits SpotlightCard */}
       <div className="flex-1 overflow-y-auto divide-y divide-purple-500/10 max-h-[420px] p-2 space-y-2.5">

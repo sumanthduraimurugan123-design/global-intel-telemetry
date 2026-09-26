@@ -1,4 +1,5 @@
 import { supabase, isSupabaseConfigured } from './supabaseClient.js';
+import { dispatchOutreachAlert } from './outreachService.js';
 
 // Keywords mapped to severity levels
 const CRITICAL_KEYWORDS = ['war', 'missile', 'nuclear', 'invasion', 'airstrike', 'earthquake', 'tsunami', 'terrorist', 'martial law'];
@@ -65,6 +66,13 @@ export function addCachedAlert(alert) {
 export async function persistAlert(alert) {
   if (!alert) return null;
   addCachedAlert(alert);
+
+  // Auto-trigger outreach system for Button Phone (Voice Call) & Smartphone (WhatsApp) users
+  if (alert.severity === 'CRITICAL' || alert.severity === 'HIGH') {
+    dispatchOutreachAlert(alert).catch(err => {
+      console.error('⚠️ [Outreach Auto-Dispatch Error]:', err.message);
+    });
+  }
 
   if (isSupabaseConfigured && supabase) {
     try {

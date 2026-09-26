@@ -18,6 +18,7 @@ import { logTelemetryAction } from '../services/supabaseClient';
 import BackgroundMesh from '../components/BackgroundMesh';
 import GlobalImpactDna from '../components/GlobalImpactDna';
 import CinematicRegionPanel from '../components/CinematicRegionPanel';
+import OutreachSystem from '../components/OutreachSystem';
 import { playUiSound } from '../services/soundSystem';
 import { 
   globalRadioEngine, 
@@ -107,6 +108,7 @@ export default function Dashboard() {
 
   // Future Impact Simulator Modal State
   const [isFutureImpactModalOpen, setIsFutureImpactModalOpen] = useState(false);
+  const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
 
   // Cinematic Focus Mode State
   const [isCinematicFocus, setIsCinematicFocus] = useState(false);
@@ -572,6 +574,7 @@ export default function Dashboard() {
             onToggleEasyMode={handleToggleEasyMode}
             isEasyMode={isEasyMode}
             onOpenFutureImpactModal={() => setIsFutureImpactModalOpen(true)}
+            onOpenOutreachModal={() => setIsOutreachModalOpen(true)}
           />
 
           {/* Accessibility & Voice Controls Bar */}
@@ -1005,6 +1008,14 @@ export default function Dashboard() {
         onClose={() => setIsFutureImpactModalOpen(false)}
         currentLocation={selectedLocation || selectedState || selectedCountry}
         currentPersona={persona}
+      />
+
+      {/* User Outreach System Modal (Missed Call & WhatsApp Alerts) */}
+      <OutreachSystem
+        isOpen={isOutreachModalOpen}
+        onClose={() => setIsOutreachModalOpen(false)}
+        currentPersona={persona}
+        currentLocation={selectedLocation || selectedCountry || 'Global'}
       />
 
       {/* Cinematic Focus Mode Fullscreen Immersive View */}

@@ -5,6 +5,7 @@ import newsRoutes from './routes/newsRoutes.js';
 import alertsRoutes from './routes/alertsRoutes.js';
 import logsRoutes from './routes/logsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
+import outreachRoutes from './routes/outreachRoutes.js';
 import { isSupabaseConfigured } from './services/supabaseClient.js';
 import { fetchLiveNews } from './services/newsService.js';
 import { getFutureImpactSimulation } from './services/futureImpactSimulator.js';
@@ -39,6 +40,9 @@ app.use('/logs', logsRoutes);
 
 app.use('/api/users', usersRoutes);
 app.use('/users', usersRoutes);
+
+app.use('/api/outreach', outreachRoutes);
+app.use('/outreach', outreachRoutes);
 
 // Dedicated Future Impact Simulator Endpoint
 const handleFutureImpact = async (req, res) => {

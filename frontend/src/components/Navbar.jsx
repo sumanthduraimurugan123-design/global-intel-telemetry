@@ -31,7 +31,8 @@ export default function Navbar({
   onToggleEasyMode,
   isEasyMode = false,
   onOpenFutureImpactModal,
-  onOpenDnaSidePanel
+  onOpenDnaSidePanel,
+  onOpenOutreachModal
 }) {
   const [utcTime, setUtcTime] = useState('');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -247,6 +248,16 @@ export default function Navbar({
           >
             <span>🎛️</span>
             <span className="hidden lg:inline">{isEasyMode ? 'Exit Easy' : 'Easy Mode'}</span>
+          </button>
+
+          {/* 📢 User Outreach Button (Button Phone & WhatsApp) */}
+          <button
+            onClick={() => { playUiSound('click'); onOpenOutreachModal && onOpenOutreachModal(); }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs text-emerald-300 hover:text-emerald-200 border border-emerald-500/40 hover:border-emerald-400 transition-all bg-emerald-950/40 hover:bg-emerald-900/40 rounded-lg active:scale-95 shadow-sm shadow-emerald-500/10"
+            title="User Outreach System (Button Phone IVR & WhatsApp Alerts)"
+          >
+            <span>📢</span>
+            <span className="hidden sm:inline font-semibold">Phone Alerts</span>
           </button>
 
           {/* 👤 Persona Button */}
