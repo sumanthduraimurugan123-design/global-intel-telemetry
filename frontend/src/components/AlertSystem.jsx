@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { playUiSound } from '../services/soundSystem';
 import IntelligentEmptyState from './IntelligentEmptyState';
-import { DecryptedText, ShinyText, SpotlightCard } from './reactbits';
+// Removed React Bits to improve performance. Using Framer Motion directly.
 
 export default function AlertSystem({ 
   alerts = [], 
@@ -156,19 +156,21 @@ export default function AlertSystem({
           }`}>
             <Bell className={`w-3.5 h-3.5 ${criticalCount > 0 ? 'text-rose-400 animate-bounce' : 'text-purple-300'}`} />
           </div>
-          <DecryptedText
-            text="Active Telemetry Alerts"
-            speed={35}
+          <motion.span
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             className="font-display text-white text-sm font-bold tracking-tight"
-            encryptedClassName="font-display text-cyan-400 text-sm font-bold"
-          />
+          >
+            Active Telemetry Alerts
+          </motion.span>
           <span className={`font-mono text-[10px] px-2 py-0.5 border rounded-full flex items-center gap-1.5 ${pBadge.color}`}>
             {pBadge.icon}
             <span>{pBadge.label}</span>
           </span>
           {criticalCount > 0 && (
-            <span className="font-mono text-[10px] text-rose-300 border border-rose-500/60 bg-rose-500/25 px-2.5 py-0.5 rounded-full font-bold animate-pulse shadow-sm shadow-rose-500/30">
-              <ShinyText text={`${criticalCount} CRITICAL`} speed={2.5} className="text-rose-200" />
+            <span className="font-mono text-[10px] text-rose-300 border border-rose-500/60 bg-rose-500/25 px-2.5 py-0.5 rounded-full font-bold animate-pulse shadow-sm shadow-rose-500/30 relative overflow-hidden group">
+              <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+              <span className="text-rose-200">{criticalCount} CRITICAL</span>
             </span>
           )}
         </div>
@@ -204,10 +206,8 @@ export default function AlertSystem({
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                   layout
                 >
-                  <SpotlightCard
-                    spotlightColor={isCrit ? 'rgba(244, 63, 94, 0.28)' : isHigh ? 'rgba(245, 158, 11, 0.22)' : 'rgba(6, 182, 212, 0.18)'}
-                    borderColor={isCrit ? 'rgba(244, 63, 94, 0.5)' : isHigh ? 'rgba(245, 158, 11, 0.4)' : 'rgba(6, 182, 212, 0.35)'}
-                    className={`p-3.5 rounded-xl border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110 relative group`}
+                  <div
+                    className={`p-3.5 rounded-xl border-l-4 ${cfg.bar} ${cfg.glow} transition-all duration-200 hover:translate-x-1 hover:brightness-110 relative group bg-slate-900/40`}
                   >
                     <div className="flex items-center gap-2 mb-1.5">
                       {cfg.icon}
@@ -254,7 +254,7 @@ export default function AlertSystem({
                         <ExternalLink className="w-2.5 h-2.5" />
                       </a>
                     )}
-                  </SpotlightCard>
+                  </div>
                 </motion.div>
               );
             })}

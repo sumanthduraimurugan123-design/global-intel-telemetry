@@ -296,3 +296,8 @@
   animation: starSpinReverse 7s linear infinite;
 }
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}

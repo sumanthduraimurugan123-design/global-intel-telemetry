@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, ArrowUpRight, Activity, ShieldCheck, Database, Newspaper, Zap } from 'lucide-react';
 import { calculatePersonalImpact } from '../services/impactEngine';
-import { SpotlightCard, CountUp, DecryptedText, ShinyText } from './reactbits';
+import { motion } from 'framer-motion';
 
 export default function TelemetryStats({ 
   selectedCountry = 'global', 
@@ -48,11 +48,9 @@ export default function TelemetryStats({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 my-3 spatial-perspective">
       
-      {/* 1. PERSONAL IMPACT CARD with React Bits SpotlightCard */}
-      <SpotlightCard 
-        spotlightColor={isHighImpact ? 'rgba(244, 63, 94, 0.28)' : isModerateImpact ? 'rgba(245, 158, 11, 0.25)' : 'rgba(168, 85, 247, 0.22)'}
-        borderColor={isHighImpact ? 'rgba(244, 63, 94, 0.55)' : isModerateImpact ? 'rgba(245, 158, 11, 0.45)' : 'rgba(168, 85, 247, 0.45)'}
-        className="p-4 flex flex-col gap-2 relative group cursor-pointer shadow-xl"
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="p-4 flex flex-col gap-2 relative group cursor-pointer shadow-xl rounded-xl border-l-4 border-l-purple-500 bg-slate-900/60 backdrop-blur-md border border-white/5 transition-all"
         onClick={onOpenImpactModal}
       >
         <div className="flex items-center justify-between z-10">
@@ -64,29 +62,27 @@ export default function TelemetryStats({
             }`}>
               <Sparkles className="w-3 h-3" />
             </div>
-            <DecryptedText
-              text="PERSONAL IMPACT"
-              speed={40}
-              className="font-mono text-[11px] text-purple-300 font-semibold tracking-wider uppercase"
-              encryptedClassName="font-mono text-[11px] text-purple-400/70"
-            />
+            <span className="font-mono text-[11px] text-purple-300 font-semibold tracking-wider uppercase">
+              PERSONAL IMPACT
+            </span>
           </div>
           {onOpenImpactModal && (
             <div className="font-mono text-[10px] text-pink-400 hover:text-pink-300 flex items-center gap-1 transition-colors px-1.5 py-0.5 rounded bg-pink-500/10 border border-pink-500/20">
-              <ShinyText text="AI View" speed={3} />
+              <span className="font-bold relative overflow-hidden group">
+                <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+                AI View
+              </span>
               <ArrowUpRight className="w-2.5 h-2.5 text-pink-300" />
             </div>
           )}
         </div>
 
         <div className="flex items-baseline gap-2 z-10">
-          <CountUp
-            to={impact.overallScore}
-            duration={1.2}
+          <span
             className={`font-mono text-3xl font-extrabold tracking-tight ${
               isHighImpact ? 'text-rose-400' : isModerateImpact ? 'text-amber-400' : 'text-emerald-400'
             }`}
-          />
+          >{impact.overallScore}</span>
           <span className="font-mono text-xs text-slate-400">/ 100</span>
           <span className={`font-mono text-[10px] px-2 py-0.5 rounded-full border ml-auto font-medium ${
             isHighImpact 
@@ -117,13 +113,12 @@ export default function TelemetryStats({
           <span className="truncate">Vector: <strong className="text-slate-300 font-medium">{impact.primaryVector.name}</strong></span>
           <span className="text-purple-300 font-semibold shrink-0 ml-1">{impact.primaryVector.score}% load</span>
         </div>
-      </SpotlightCard>
+      </motion.div>
 
-      {/* 2. HOW THIS AFFECTS YOU CARD with React Bits SpotlightCard */}
-      <SpotlightCard 
-        spotlightColor="rgba(236, 72, 153, 0.22)"
-        borderColor="rgba(236, 72, 153, 0.45)"
-        className="p-4 flex flex-col gap-2 relative group cursor-pointer shadow-xl"
+      {/* 2. HOW THIS AFFECTS YOU CARD */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="p-4 flex flex-col gap-2 relative group cursor-pointer shadow-xl rounded-xl border-l-4 border-l-pink-500 bg-slate-900/60 backdrop-blur-md border border-white/5 transition-all"
         onClick={onOpenImpactModal}
       >
         <div className="flex items-center justify-between z-10">
@@ -131,12 +126,9 @@ export default function TelemetryStats({
             <div className="w-5 h-5 rounded-md bg-pink-500/20 flex items-center justify-center border border-pink-500/30">
               <Zap className="w-3 h-3 text-pink-400" />
             </div>
-            <DecryptedText
-              text="AFFECTS YOU"
-              speed={40}
-              className="font-mono text-[11px] text-pink-300 font-semibold tracking-wider uppercase"
-              encryptedClassName="font-mono text-[11px] text-pink-400/70"
-            />
+            <span className="font-mono text-[11px] text-pink-300 font-semibold tracking-wider uppercase">
+              AFFECTS YOU
+            </span>
           </div>
           <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-slate-800/90 text-slate-300 border border-slate-700/80">
             {impact.profile.icon} {impact.profile.label}
@@ -159,38 +151,35 @@ export default function TelemetryStats({
             </span>
           )}
         </div>
-      </SpotlightCard>
+      </motion.div>
 
-      {/* 3. DISPATCHES TELEMETRY STREAM with React Bits SpotlightCard */}
-      <SpotlightCard 
-        spotlightColor="rgba(6, 182, 212, 0.22)"
-        borderColor="rgba(6, 182, 212, 0.45)"
-        className="p-4 flex flex-col gap-2 relative group shadow-xl"
+      {/* 3. DISPATCHES TELEMETRY STREAM */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="p-4 flex flex-col gap-2 relative group shadow-xl rounded-xl border-l-4 border-l-cyan-500 bg-slate-900/60 backdrop-blur-md border border-white/5 transition-all"
       >
         <div className="flex items-center justify-between z-10">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded-md bg-cyan-500/20 flex items-center justify-center border border-cyan-500/30">
               <Newspaper className="w-3 h-3 text-cyan-400" />
             </div>
-            <DecryptedText
-              text="LIVE DISPATCHES"
-              speed={40}
-              className="font-mono text-[11px] text-cyan-300 font-semibold tracking-wider uppercase"
-              encryptedClassName="font-mono text-[11px] text-cyan-400/70"
-            />
+            <span className="font-mono text-[11px] text-cyan-300 font-semibold tracking-wider uppercase">
+              LIVE DISPATCHES
+            </span>
           </div>
           <span className="flex items-center gap-1 text-[10px] font-mono text-cyan-400">
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-            <ShinyText text="REALTIME" speed={3} className="text-cyan-300 font-bold" />
+            <span className="text-cyan-300 font-bold relative overflow-hidden group">
+              <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+              REALTIME
+            </span>
           </span>
         </div>
 
         <div className="flex items-baseline gap-2 z-10">
-          <CountUp
-            to={totalNews}
-            duration={1.2}
+          <span
             className="font-mono text-3xl font-extrabold tracking-tight text-white"
-          />
+          >{totalNews}</span>
           <span className="font-mono text-xs text-slate-400">stories parsed</span>
         </div>
 
@@ -204,38 +193,35 @@ export default function TelemetryStats({
         <div className="font-mono text-[10px] text-slate-400 z-10">
           {distinctSources > 0 ? `${distinctSources} verified global feeds` : 'Awaiting data streams'}
         </div>
-      </SpotlightCard>
+      </motion.div>
 
-      {/* 4. PERSISTENCE & SYSTEM INTEGRITY with React Bits SpotlightCard */}
-      <SpotlightCard 
-        spotlightColor="rgba(16, 185, 129, 0.22)"
-        borderColor="rgba(16, 185, 129, 0.45)"
-        className="p-4 flex flex-col gap-2 relative group shadow-xl"
+      {/* 4. PERSISTENCE & SYSTEM INTEGRITY */}
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="p-4 flex flex-col gap-2 relative group shadow-xl rounded-xl border-l-4 border-l-emerald-500 bg-slate-900/60 backdrop-blur-md border border-white/5 transition-all"
       >
         <div className="flex items-center justify-between z-10">
           <div className="flex items-center gap-1.5">
             <div className="w-5 h-5 rounded-md bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30">
               <Database className="w-3 h-3 text-emerald-400" />
             </div>
-            <DecryptedText
-              text="PERSISTENCE ENGINE"
-              speed={40}
-              className="font-mono text-[11px] text-emerald-300 font-semibold tracking-wider uppercase"
-              encryptedClassName="font-mono text-[11px] text-emerald-400/70"
-            />
+            <span className="font-mono text-[11px] text-emerald-300 font-semibold tracking-wider uppercase">
+              PERSISTENCE ENGINE
+            </span>
           </div>
           <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
             <ShieldCheck className="w-3 h-3 text-emerald-400" />
-            <ShinyText text="SYNCED" speed={3.5} className="text-emerald-300 font-bold" />
+            <span className="text-emerald-300 font-bold relative overflow-hidden group">
+              <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+              SYNCED
+            </span>
           </span>
         </div>
 
         <div className="flex items-baseline gap-2 z-10">
-          <CountUp
-            to={4}
-            duration={1.0}
+          <span
             className="font-mono text-3xl font-extrabold tracking-tight text-white"
-          />
+          >4</span>
           <span className="font-mono text-xs text-slate-400">tables active</span>
         </div>
 
@@ -246,7 +232,7 @@ export default function TelemetryStats({
         <div className="font-mono text-[10px] text-slate-400 truncate z-10">
           users · news · alerts · logs
         </div>
-      </SpotlightCard>
+      </motion.div>
 
     </div>
   );

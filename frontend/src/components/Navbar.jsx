@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
 import { playUiSound, isSoundMuted, toggleSoundMute } from '../services/soundSystem';
-import { DecryptedText, ShinyText, RotatingText, Magnet, StarBorder } from './reactbits';
+import { motion } from 'framer-motion';
 
 export default function Navbar({ 
   selectedCountry, 
@@ -81,32 +81,30 @@ export default function Navbar({
           </div>
           <div>
             <h1 className="font-display text-white font-bold text-base tracking-tight leading-none flex items-center gap-2">
-              <DecryptedText
-                text="Global Intelligence"
-                speed={35}
-                className="gradient-text font-bold"
-                encryptedClassName="text-cyan-400/80 font-mono"
-                animateOn="hover"
-              />
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono tracking-wider font-bold shadow-sm shadow-purple-500/10">
-                <ShinyText text="AI WIRE" speed={3} />
+              <motion.span 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-bold"
+              >
+                Global Intelligence
+              </motion.span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-mono tracking-wider font-bold shadow-sm shadow-purple-500/10 relative overflow-hidden group">
+                <span className="absolute inset-0 w-full h-full -translate-x-full bg-gradient-to-r from-transparent via-white/40 to-transparent group-hover:animate-[shimmer_1.5s_infinite]" />
+                AI WIRE
               </span>
             </h1>
             <div className="font-mono text-[10px] text-slate-400 mt-0.5 tracking-wider flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <ShinyText text="LIVE TELEMETRY v3.0" speed={4} className="text-slate-300 font-medium" />
+              <span className="text-slate-300 font-medium">LIVE TELEMETRY v3.0</span>
               <span className="text-slate-600">·</span>
-              <RotatingText
-                texts={[
-                  'SPATIAL AI SENSORS',
-                  'GEOPOLITICAL RADAR',
-                  'AUTONOMOUS AGENTS',
-                  'PLANETARY TELEMETRY'
-                ]}
-                rotationInterval={3600}
+              <motion.span
+                initial={{ opacity: 0.8 }}
+                animate={{ opacity: [0.8, 1, 0.8] }}
+                transition={{ duration: 2, repeat: Infinity }}
                 className="text-cyan-400/90 font-semibold"
-                itemClassName="text-cyan-300"
-              />
+              >
+                PLANETARY TELEMETRY
+              </motion.span>
             </div>
           </div>
         </div>
@@ -150,32 +148,30 @@ export default function Navbar({
           </button>
 
           {/* 🎤 Voice Access Button with Magnet */}
-          <Magnet padding={25} magnetStrength={0.2}>
-            <button
-              onClick={() => { playUiSound('click'); onOpenVoiceModal(); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-md shadow-purple-500/30 hover:shadow-purple-500/50 hover:scale-105 active:scale-95 transition-all duration-200"
-              title="Voice Access: speak to navigate news"
-              aria-label="Open Voice Assistant"
-            >
-              <Mic className="w-3.5 h-3.5 animate-pulse text-pink-200" />
-              <span className="hidden sm:inline font-semibold">Voice AI</span>
-            </button>
-          </Magnet>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { playUiSound('click'); onOpenVoiceModal(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-md shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-200"
+            title="Voice Access: speak to navigate news"
+            aria-label="Open Voice Assistant"
+          >
+            <Mic className="w-3.5 h-3.5 animate-pulse text-pink-200" />
+            <span className="hidden sm:inline font-semibold">Voice AI</span>
+          </motion.button>
 
           {/* 🔮 Future Impact Simulator Button with React Bits StarBorder */}
-          <Magnet padding={25} magnetStrength={0.2}>
-            <StarBorder
-              color="#EC4899"
-              speed="5s"
-              onClick={() => { playUiSound('click'); onOpenFutureImpactModal(); }}
-              className="cursor-pointer"
-            >
-              <div className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs text-pink-200 hover:text-white transition-colors">
-                <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
-                <span className="hidden md:inline font-semibold">Future Impact</span>
-              </div>
-            </StarBorder>
-          </Magnet>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { playUiSound('click'); onOpenFutureImpactModal(); }}
+            className="cursor-pointer relative overflow-hidden group p-[1px] rounded-lg bg-gradient-to-r from-pink-500/50 to-purple-500/50 hover:from-pink-500 hover:to-purple-500 transition-colors shadow-sm shadow-pink-500/20"
+          >
+            <div className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs text-pink-200 hover:text-white transition-colors bg-slate-900 rounded-lg">
+              <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
+              <span className="hidden md:inline font-semibold">Future Impact</span>
+            </div>
+          </motion.button>
 
           {/* 🧬 Global Impact DNA Side Panel Trigger */}
           <button

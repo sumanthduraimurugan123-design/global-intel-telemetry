@@ -47,7 +47,7 @@ import {
   Dna,
   Mic
 } from 'lucide-react';
-import { DecryptedText, BlurText, ShinyText, Dock, StarBorder, GridPattern, Magnet } from '../components/reactbits';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CHENNAI_NEIGHBORHOODS = [
   { id: 'all_chennai', label: 'Chennai Metro', loc: 'chennai', icon: '🏙️' },
@@ -530,7 +530,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex flex-col bg-[#030712] text-slate-100 relative overflow-x-hidden selection:bg-purple-500/30 selection:text-white">
       {/* 3D Spatial Animated Mesh & Contextual Dynamic Ambient Lighting */}
       <BackgroundMesh activeTopic={activeTopic} hasCriticalAlert={hasCriticalAlert} />
-      <GridPattern width={48} height={48} className="opacity-30" />
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none opacity-30" />
       
       {/* If Easy Mode is active, render full-screen EasyModeView */}
       {isEasyMode ? (
@@ -655,41 +655,28 @@ export default function Dashboard() {
                   <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
                   <span className="font-display text-xs font-bold text-white tracking-wide flex items-center gap-2">
                     <Layers className="w-4 h-4 text-purple-400" />
-                    <BlurText 
-                      text="Planetary Hierarchical Geo Navigation" 
-                      className="gradient-text font-bold" 
-                      delay={25}
-                    />
+                    <motion.span 
+                      initial={{ opacity: 0, y: 5 }} 
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 font-bold"
+                    >
+                      Planetary Hierarchical Geo Navigation
+                    </motion.span>
                   </span>
 
                   {/* Active Breadcrumb Badge with DecryptedText */}
                   <div className="flex items-center gap-1.5 font-mono text-[11px] bg-slate-950/80 border border-purple-500/30 px-3 py-1 rounded-full shadow-inner">
-                    <DecryptedText
-                      text={selectedCountry.toUpperCase()}
-                      speed={35}
-                      className="text-cyan-300 font-bold"
-                      encryptedClassName="text-cyan-500/60 font-mono"
-                    />
+                    <span className="text-cyan-300 font-bold">{selectedCountry.toUpperCase()}</span>
                     {selectedState && (
                       <>
                         <ChevronRight className="w-3 h-3 text-purple-400/50" />
-                        <DecryptedText
-                          text={selectedState.toUpperCase()}
-                          speed={35}
-                          className="text-white font-semibold"
-                          encryptedClassName="text-slate-400/60 font-mono"
-                        />
+                        <span className="text-white font-semibold">{selectedState.toUpperCase()}</span>
                       </>
                     )}
                     {selectedLocation && (
                       <>
                         <ChevronRight className="w-3 h-3 text-purple-400/50" />
-                        <DecryptedText
-                          text={selectedLocation.toUpperCase()}
-                          speed={35}
-                          className="text-pink-400 font-bold"
-                          encryptedClassName="text-pink-500/60 font-mono"
-                        />
+                        <span className="text-pink-400 font-bold">{selectedLocation.toUpperCase()}</span>
                       </>
                     )}
                   </div>
@@ -697,20 +684,18 @@ export default function Dashboard() {
 
                 {/* GPS Auto-Detect Button with StarBorder & Reset Button */}
                 <div className="flex items-center gap-2">
-                  <Magnet padding={20} magnetStrength={0.25}>
-                    <StarBorder
-                      color="#06B6D4"
-                      speed="4s"
-                      onClick={handleDetectLocation}
-                      className="cursor-pointer"
-                    >
-                      <div className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600/80 to-blue-600/80 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs rounded-xl shadow-md shadow-cyan-500/25 transition-all flex items-center gap-1.5">
-                        <Navigation className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
-                        <ShinyText text="GPS Auto-Locate" speed={3} className="text-white font-bold" />
-                        <span className="text-[10px] text-cyan-200/80 font-mono">({detectedLocationLabel})</span>
-                      </div>
-                    </StarBorder>
-                  </Magnet>
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleDetectLocation}
+                    className="cursor-pointer relative overflow-hidden group rounded-xl p-[1px] bg-gradient-to-r from-cyan-500 to-blue-500 shadow-md shadow-cyan-500/25"
+                  >
+                    <div className="px-3.5 py-1.5 bg-slate-900 group-hover:bg-slate-800 text-white font-semibold text-xs rounded-xl transition-all flex items-center gap-1.5 h-full w-full">
+                      <Navigation className="w-3.5 h-3.5 text-cyan-200 animate-pulse" />
+                      <span className="text-white font-bold group-hover:text-cyan-200 transition-colors">GPS Auto-Locate</span>
+                      <span className="text-[10px] text-cyan-200/80 font-mono">({detectedLocationLabel})</span>
+                    </div>
+                  </motion.button>
 
                   {(selectedLocation || selectedState || selectedCountry !== 'global') && (
                     <button
@@ -903,7 +888,29 @@ export default function Dashboard() {
             radioState.isPlaying || radioState.isPaused ? 'bottom-20' : 'bottom-4'
           }`}
         >
-          <Dock items={dockItems} />
+          <motion.div 
+            initial={{ y: 50, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 p-3 bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl"
+          >
+            {dockItems.map((item, idx) => (
+              <motion.button
+                key={item.id}
+                whileHover={{ scale: 1.1, y: -4 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={item.onClick}
+                className={`relative p-3 rounded-xl transition-colors ${item.isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                title={item.tooltip}
+              >
+                {item.icon}
+                {item.badge && (
+                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-slate-900">
+                    {item.badge}
+                  </span>
+                )}
+              </motion.button>
+            ))}
+          </motion.div>
         </div>
       )}
 
