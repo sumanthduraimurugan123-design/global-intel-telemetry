@@ -20,3 +20,4 @@ Thumbs.db
 # Archives
 *.zip
 .vercel
+.env*

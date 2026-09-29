@@ -28,6 +28,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playUiSound } from '../services/soundSystem';
 import IntelligentEmptyState from './IntelligentEmptyState';
 import OutreachSystem from './OutreachSystem';
+import IncomingCallModal from './IncomingCallModal';
 import { sendSmsAlert, makeCallAlert } from '../services/outreachService';
 
 export default function AlertSystem({ 
@@ -46,6 +47,11 @@ export default function AlertSystem({
   const [isMakingCall, setIsMakingCall] = useState(false);
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: '' }
   const [showPhonePanel, setShowPhonePanel] = useState(true);
+
+  // Live Call & SMS Simulation / Telephony states
+  const [isIncomingCallOpen, setIsIncomingCallOpen] = useState(false);
+  const [incomingCallMsg, setIncomingCallMsg] = useState('');
+  const [receivedSms, setReceivedSms] = useState(null); // { phone: '', message: '', time: '', sid: '' }
 
   // Play subtle alert tone if new alerts arrive
   useEffect(() => {
@@ -84,7 +90,13 @@ export default function AlertSystem({
       setFeedback({
         type: 'success',
         text: res.message || 'Alert sent successfully',
-        details: res.sid ? `Twilio SID: ${res.sid}` : null
+        details: res.sid ? `Carrier SID: ${res.sid}` : null
+      });
+      setReceivedSms({
+        phone: clean,
+        message: msg,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        sid: res.sid
       });
       playUiSound('alert');
     } catch (err) {
@@ -120,8 +132,10 @@ export default function AlertSystem({
       setFeedback({
         type: 'success',
         text: res.message || 'Alert sent successfully',
-        details: res.sid ? `Twilio Call SID: ${res.sid}` : null
+        details: res.sid ? `Call SID: ${res.sid}` : null
       });
+      setIncomingCallMsg(msg);
+      setIsIncomingCallOpen(true);
       playUiSound('alert');
     } catch (err) {
       console.error('Call Dispatch Error:', err);
@@ -299,6 +313,54 @@ export default function AlertSystem({
         currentPersona={persona}
         currentLocation={selectedCountry || 'Global'}
       />
+
+      {/* Real-time Automated Incoming Voice Call Modal */}
+      <IncomingCallModal
+        isOpen={isIncomingCallOpen}
+        onClose={() => setIsIncomingCallOpen(false)}
+        phoneNumber={phoneNumber}
+        callerName="Global Telemetry IVR"
+        messageText={incomingCallMsg || alertMessage}
+        persona={persona}
+        location={selectedCountry || 'Global'}
+      />
+
+      {/* Real-time SMS Delivery Notification Toast */}
+      <AnimatePresence>
+        {receivedSms && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className="fixed top-5 right-5 z-[999] max-w-sm w-full bg-slate-900 border-2 border-emerald-400/80 rounded-2xl shadow-2xl p-4 backdrop-blur-2xl text-left"
+          >
+            <div className="flex items-center justify-between pb-2 border-b border-emerald-500/30 mb-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="font-mono text-xs font-bold text-emerald-300">
+                  💬 LIVE SMS RECEIVED ({receivedSms.time})
+                </span>
+              </div>
+              <button
+                onClick={() => setReceivedSms(null)}
+                className="text-slate-400 hover:text-white p-0.5 rounded-md hover:bg-slate-800"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <p className="font-mono text-[11px] text-slate-400 mb-1">
+              Recipient: <strong className="text-white">{receivedSms.phone}</strong>
+            </p>
+            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-xs text-emerald-200 font-sans leading-relaxed">
+              "{receivedSms.message}"
+            </div>
+            <div className="mt-2 flex items-center justify-between font-mono text-[9px] text-slate-500">
+              <span>Carrier: Verified Telemetry Wire</span>
+              <span>{receivedSms.sid ? `SID: ${receivedSms.sid}` : 'Status: DELIVERED'}</span>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 🚀 REAL-TIME PHONE ALERT DISPATCH PANEL (SMS & VOICE CALL) */}
       <div className="border-b border-purple-500/20 bg-slate-950/70 p-3.5 space-y-3">
