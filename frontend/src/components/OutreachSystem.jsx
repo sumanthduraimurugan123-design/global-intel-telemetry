@@ -34,7 +34,9 @@ import {
   fetchSubscribers, 
   fetchDispatchLogs, 
   triggerEmergencyOutreach, 
-  playSimulatedVoiceCall 
+  playSimulatedVoiceCall,
+  sendSmsAlert,
+  makeCallAlert
 } from '../services/outreachService';
 import IncomingCallModal from './IncomingCallModal';
 
@@ -55,6 +57,12 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
   const [broadcastLoc, setBroadcastLoc] = useState('India');
   const [broadcastPersona, setBroadcastPersona] = useState('Farmer / Kisan');
   const [customMsg, setCustomMsg] = useState('Heavy rain expected in your area tomorrow. Protect harvested crops in shed and stay indoors.');
+
+  // Real Telecom Dispatch states
+  const [directPhone, setDirectPhone] = useState('+919876543210');
+  const [directMsg, setDirectMsg] = useState('Heavy rain expected in your area. Stay safe.');
+  const [isDirectSmsSending, setIsDirectSmsSending] = useState(false);
+  const [isDirectCallSending, setIsDirectCallSending] = useState(false);
 
   // Data States
   const [subscribersData, setSubscribersData] = useState({ total: 0, buttonPhones: 0, smartphones: 0, subscribers: [] });
@@ -213,6 +221,50 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
     triggerCallScreen(missedPhone, textToSpeak, missedPersona, missedLoc);
   };
 
+  const handleDirectSms = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    playUiSound('click');
+    setFeedback(null);
+    const clean = directPhone.replace(/[\s\-\(\)]/g, '').trim();
+    if (!clean.startsWith('+') || clean.length < 8) {
+      setFeedback({ type: 'error', text: 'Please enter a valid international phone number starting with + (e.g. +91XXXXXXXXXX)' });
+      return;
+    }
+    setIsDirectSmsSending(true);
+    try {
+      const res = await sendSmsAlert(clean, directMsg);
+      setFeedback({ type: 'success', text: res.message || 'Alert sent successfully' });
+      playUiSound('alert');
+      await loadData();
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || 'Failed to send SMS' });
+    } finally {
+      setIsDirectSmsSending(false);
+    }
+  };
+
+  const handleDirectCall = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    playUiSound('click');
+    setFeedback(null);
+    const clean = directPhone.replace(/[\s\-\(\)]/g, '').trim();
+    if (!clean.startsWith('+') || clean.length < 8) {
+      setFeedback({ type: 'error', text: 'Please enter a valid international phone number starting with + (e.g. +91XXXXXXXXXX)' });
+      return;
+    }
+    setIsDirectCallSending(true);
+    try {
+      const res = await makeCallAlert(clean, directMsg);
+      setFeedback({ type: 'success', text: res.message || 'Alert sent successfully' });
+      playUiSound('alert');
+      await loadData();
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || 'Failed to place voice call' });
+    } finally {
+      setIsDirectCallSending(false);
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -367,19 +419,110 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
           {/* Main Body */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6">
 
-            {/* TAB 1: MISSED CALL (BUTTON PHONE) */}
+            {/* TAB 1: MISSED CALL (BUTTON PHONE) & REAL TELEPHONY DISPATCH */}
             {activeTab === 'missedcall' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Form Card */}
-                <div className="glass-card-luxe p-5 rounded-2xl border border-emerald-500/30 bg-slate-900/60 space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
-                    <PhoneMissed className="w-4 h-4" />
-                    <h3>Simulate Missed Call Registration</h3>
+              <div className="space-y-6">
+                {/* 🔴 LIVE REAL-TIME TELECOM DISPATCH (SMS & VOICE CALL) */}
+                <div className="glass-card-luxe p-5 rounded-2xl border border-emerald-500/40 bg-gradient-to-r from-slate-900/90 to-slate-950/90 shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-500/20 pb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
+                      <h3 className="text-white font-bold text-sm tracking-wide flex items-center gap-2 font-display">
+                        <Smartphone className="w-4 h-4 text-emerald-400" />
+                        <span>Live Phone Alert Transmission (Real SMS & Voice Call)</span>
+                      </h3>
+                    </div>
+                    <span className="font-mono text-[10px] text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full font-semibold">
+                      Connected to /send-sms & /make-call
+                    </span>
                   </div>
 
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    Button phone users can simply dial our virtual toll-free number <span className="font-mono text-emerald-300 font-bold">+1-800-UGI-ALERTS</span> or give a missed call. The number is automatically registered for automated IVR voice calls in simple language.
+                  <p className="text-xs text-slate-300">
+                    Enter any phone number in international format to dispatch an instant live SMS or trigger an automated voice phone call using real communication carrier APIs.
                   </p>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1 font-mono">
+                        Phone Number (International Format, e.g., +91XXXXXXXXXX):
+                      </label>
+                      <input
+                        type="tel"
+                        value={directPhone}
+                        onChange={(e) => setDirectPhone(e.target.value)}
+                        placeholder="+91XXXXXXXXXX"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-xl px-3 py-2 text-white font-mono text-xs outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-400 text-[11px] mb-1 font-mono">
+                        Alert Message Payload:
+                      </label>
+                      <input
+                        type="text"
+                        value={directMsg}
+                        onChange={(e) => setDirectMsg(e.target.value)}
+                        placeholder="Heavy rain expected in your area. Stay safe."
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-xl px-3 py-2 text-white text-xs outline-none font-sans"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preset Buttons */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-mono text-slate-400">Presets:</span>
+                    <button
+                      type="button"
+                      onClick={() => setDirectMsg('Heavy rain expected in your area. Stay safe.')}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 border border-slate-700 hover:border-emerald-400 text-emerald-300"
+                    >
+                      🌧️ Weather Alert
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDirectMsg('Alert. Fuel prices may increase. Plan accordingly.')}
+                      className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 border border-slate-700 hover:border-amber-400 text-amber-300"
+                    >
+                      ⛽ Fuel Prices
+                    </button>
+                  </div>
+
+                  {/* Two Buttons: "Send SMS" and "Call Alert" */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                    <button
+                      type="button"
+                      onClick={handleDirectSms}
+                      disabled={isDirectSmsSending || isDirectCallSending}
+                      className="py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 font-mono text-xs active:scale-95 disabled:opacity-50"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{isDirectSmsSending ? 'Transmitting SMS...' : 'Send SMS'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleDirectCall}
+                      disabled={isDirectSmsSending || isDirectCallSending}
+                      className="py-2.5 px-4 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 font-mono text-xs active:scale-95 disabled:opacity-50"
+                    >
+                      <PhoneCall className="w-3.5 h-3.5 animate-pulse" />
+                      <span>{isDirectCallSending ? 'Triggering Call...' : 'Call Alert'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Form Card */}
+                  <div className="glass-card-luxe p-5 rounded-2xl border border-emerald-500/30 bg-slate-900/60 space-y-4">
+                    <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                      <PhoneMissed className="w-4 h-4" />
+                      <h3>Simulate Missed Call Registration</h3>
+                    </div>
+
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Button phone users can simply dial our virtual toll-free number <span className="font-mono text-emerald-300 font-bold">+1-800-UGI-ALERTS</span> or give a missed call. The number is automatically registered for automated IVR voice calls in simple language.
+                    </p>
 
                   <form onSubmit={handleMissedCallRegister} className="space-y-3 font-sans text-xs">
                     <div>
@@ -484,6 +627,7 @@ export default function OutreachSystem({ isOpen, onClose, currentPersona = 'Comm
                   </button>
                 </div>
               </div>
+            </div>
             )}
 
             {/* TAB 2: WHATSAPP SYSTEM */}

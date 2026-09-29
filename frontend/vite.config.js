@@ -11,6 +11,14 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:5000',
         changeOrigin: true
+      },
+      '/send-sms': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
+      },
+      '/make-call': {
+        target: 'http://localhost:5000',
+        changeOrigin: true
       }
     }
   }

@@ -6,7 +6,9 @@ import alertsRoutes from './routes/alertsRoutes.js';
 import logsRoutes from './routes/logsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
 import outreachRoutes from './routes/outreachRoutes.js';
+import telecomRoutes from './routes/telecomRoutes.js';
 import { isSupabaseConfigured } from './services/supabaseClient.js';
+import { isTwilioConfigured } from './services/telecomService.js';
 import { fetchLiveNews } from './services/newsService.js';
 import { getFutureImpactSimulation } from './services/futureImpactSimulator.js';
 
@@ -43,6 +45,10 @@ app.use('/users', usersRoutes);
 
 app.use('/api/outreach', outreachRoutes);
 app.use('/outreach', outreachRoutes);
+
+// Real Telephony Endpoints (/send-sms and /make-call)
+app.use('/api', telecomRoutes);
+app.use('/', telecomRoutes);
 
 // Dedicated Future Impact Simulator Endpoint
 const handleFutureImpact = async (req, res) => {
@@ -116,6 +122,7 @@ if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   🗄️  Supabase Status:   ${isSupabaseConfigured ? 'CONNECTED ✅' : 'PENDING CONFIG (.env) ⚠️'}
   📡 Real News Engine:  ACTIVE (Google News Live & Global Feeds)
   🚨 Alert Engine:      ACTIVE (Real-time Keyword & Risk Scanner)
+  📲 Telecom Engine:    ${isTwilioConfigured() ? 'ACTIVE (Twilio Real SMS & Calls) ✅' : 'PENDING CONFIG (.env) ⚠️'}
   =============================================================
     `);
 

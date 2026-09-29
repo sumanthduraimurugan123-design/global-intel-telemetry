@@ -201,3 +201,111 @@ export function playSimulatedVoiceCall(textToSpeak, onEndCallback) {
     window.speechSynthesis.speak(utterance);
   }, 1000);
 }
+
+/**
+ * Send real SMS alert via backend /send-sms API
+ */
+export async function sendSmsAlert(phone, message) {
+  const cleanPhone = phone?.trim();
+  const alertMsg = message?.trim() || 'Heavy rain expected in your area. Stay safe.';
+
+  // Try /send-sms first, fallback to /api/send-sms
+  const endpoints = [
+    `${API_BASE}/send-sms`,
+    `${API_BASE}/api/send-sms`,
+    'http://localhost:5000/send-sms'
+  ];
+
+  let lastError = null;
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone, to: cleanPhone, message: alertMsg })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        return data;
+      }
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      if (!res.ok) {
+        throw new Error(data.message || `Server returned status ${res.status}`);
+      }
+      return data;
+    } catch (err) {
+      lastError = err;
+      // If error is a network 404/connection, try next endpoint, otherwise stop and throw
+      if (err.message && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || new Error('Failed to connect to /send-sms endpoint');
+}
+
+/**
+ * Trigger automated real voice call via backend /make-call API
+ */
+export async function makeCallAlert(phone, message) {
+  const cleanPhone = phone?.trim();
+  const voiceMsg = message?.trim() || 'Alert. Fuel prices may increase. Plan accordingly.';
+
+  // Try /make-call first, fallback to /api/make-call
+  const endpoints = [
+    `${API_BASE}/make-call`,
+    `${API_BASE}/api/make-call`,
+    'http://localhost:5000/make-call'
+  ];
+
+  let lastError = null;
+
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone, to: cleanPhone, message: voiceMsg })
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        return data;
+      }
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      if (!res.ok) {
+        throw new Error(data.message || `Server returned status ${res.status}`);
+      }
+      return data;
+    } catch (err) {
+      lastError = err;
+      if (err.message && !err.message.includes('404') && !err.message.includes('Failed to fetch')) {
+        throw err;
+      }
+    }
+  }
+
+  throw lastError || new Error('Failed to connect to /make-call endpoint');
+}
+
+/**
+ * Check telecom status and Twilio configuration
+ */
+export async function checkTelecomStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/telecom/status`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (err) {
+    // fallback
+  }
+  return { configured: false };
+}
