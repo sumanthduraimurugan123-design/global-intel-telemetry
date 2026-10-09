@@ -9,7 +9,8 @@ import {
   Globe2, 
   Mic, 
   Volume1,
-  Dna
+  Compass,
+  MapPin
 } from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
 import { playUiSound, isSoundMuted, toggleSoundMute } from '../services/soundSystem';
@@ -32,7 +33,9 @@ export default function Navbar({
   isEasyMode = false,
   onOpenFutureImpactModal,
   onOpenDnaSidePanel,
-  onOpenOutreachModal
+  onOpenOutreachModal,
+  activePage = 'dashboard',
+  onNavigatePage
 }) {
   const [utcTime, setUtcTime] = useState('');
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
@@ -108,6 +111,32 @@ export default function Navbar({
               </motion.span>
             </div>
           </div>
+
+          {/* Navigation Mode Tabs */}
+          <div className="hidden lg:flex items-center gap-1 ml-2 p-1 rounded-xl bg-slate-900/90 border border-purple-500/20 backdrop-blur-md">
+            <button
+              onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('dashboard'); }}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                activePage !== 'world-explorer'
+                  ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Telemetry
+            </button>
+            <button
+              onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('world-explorer'); }}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activePage === 'world-explorer'
+                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/40 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 text-cyan-400" />
+              <span>World Explorer</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono">3D</span>
+            </button>
+          </div>
         </div>
 
         {/* Center: UTC Dateline + Sector */}
@@ -174,22 +203,24 @@ export default function Navbar({
             </div>
           </motion.button>
 
-          {/* 🧬 Global Impact DNA Side Panel Trigger */}
+          {/* 🌍 World Explorer AI Trigger */}
           <button
             onClick={() => {
               playUiSound('click');
-              if (onOpenDnaSidePanel) {
-                onOpenDnaSidePanel();
-              } else {
-                document.getElementById('global-impact-dna')?.scrollIntoView({ behavior: 'smooth' });
+              if (onNavigatePage) {
+                onNavigatePage(activePage === 'world-explorer' ? 'dashboard' : 'world-explorer');
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-cyan-950/60 via-purple-950/60 to-pink-950/60 text-cyan-200 border border-cyan-500/40 hover:border-cyan-300 rounded-lg shadow-md hover:shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all duration-200 backdrop-blur-sm"
-            title="Open Global Impact DNA 3-Strand Helix Model"
-            aria-label="Open Global Impact DNA"
+            className={`flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs rounded-lg shadow-md transition-all duration-200 border ${
+              activePage === 'world-explorer'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-cyan-400 shadow-cyan-500/30'
+                : 'bg-gradient-to-r from-cyan-950/60 via-purple-950/60 to-slate-900/80 text-cyan-200 border-cyan-500/40 hover:border-cyan-300 hover:scale-105 active:scale-95 shadow-cyan-500/20'
+            }`}
+            title="Switch between Telemetry Dashboard and World Explorer AI"
+            aria-label="World Explorer AI"
           >
-            <Dna className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
-            <span className="font-semibold hidden sm:inline">Global DNA</span>
+            <Compass className="w-3.5 h-3.5 text-cyan-300 animate-spin-slow" />
+            <span className="font-semibold hidden sm:inline">World Explorer</span>
             <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
           </button>
 

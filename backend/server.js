@@ -7,6 +7,7 @@ import logsRoutes from './routes/logsRoutes.js';
 import usersRoutes from './routes/usersRoutes.js';
 import outreachRoutes from './routes/outreachRoutes.js';
 import telecomRoutes from './routes/telecomRoutes.js';
+import explorerRoutes from './routes/explorerRoutes.js';
 import { isSupabaseConfigured } from './services/supabaseClient.js';
 import { isTwilioConfigured } from './services/telecomService.js';
 import { fetchLiveNews } from './services/newsService.js';
@@ -45,6 +46,9 @@ app.use('/users', usersRoutes);
 
 app.use('/api/outreach', outreachRoutes);
 app.use('/outreach', outreachRoutes);
+
+app.use('/api/explorer', explorerRoutes);
+app.use('/explorer', explorerRoutes);
 
 // Real Telephony Endpoints (/send-sms and /make-call)
 app.use('/api', telecomRoutes);

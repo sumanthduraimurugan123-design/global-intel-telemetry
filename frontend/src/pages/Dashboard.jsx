@@ -16,7 +16,6 @@ import { calculatePersonalImpact } from '../services/impactEngine';
 import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation, fetchGeoDirectory } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
 import BackgroundMesh from '../components/BackgroundMesh';
-import GlobalImpactDna from '../components/GlobalImpactDna';
 import CinematicRegionPanel from '../components/CinematicRegionPanel';
 import OutreachSystem from '../components/OutreachSystem';
 import { playUiSound } from '../services/soundSystem';
@@ -37,16 +36,15 @@ import {
   Globe2, 
   Compass, 
   Sparkles, 
-  X,
-  Layers,
-  ChevronRight,
-  UserCheck,
-  Database,
-  Radio,
-  Volume2,
-  Accessibility,
-  Dna,
-  Mic
+  X, 
+  Layers, 
+  ChevronRight, 
+  UserCheck, 
+  Database, 
+  Radio, 
+  Volume2, 
+  Accessibility, 
+  Mic 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -62,7 +60,7 @@ const CHENNAI_NEIGHBORHOODS = [
   { id: 'guindy', label: 'Guindy', loc: 'guindy', icon: '🏭' },
 ];
 
-export default function Dashboard() {
+export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) {
   // Core Hierarchical Geographic State
   const [selectedCountry, setSelectedCountry] = useState('global');
   const [selectedState, setSelectedState] = useState(null);
@@ -112,13 +110,6 @@ export default function Dashboard() {
 
   // Cinematic Focus Mode State
   const [isCinematicFocus, setIsCinematicFocus] = useState(false);
-
-  // Dynamic Global Impact DNA Biometrics
-  const criticalAlertsCount = alerts.filter(a => a.severity?.toUpperCase() === 'CRITICAL').length;
-  const dnaRiskScore = Math.min(95, Math.max(15, (alerts.length * 7) + (criticalAlertsCount * 16)));
-  const dnaActivityLevel = Math.min(100, Math.max(25, news.length * 4));
-  const climateNewsCount = news.filter(n => n.category === 'climate' || n.topic?.includes('climate')).length;
-  const dnaClimateScore = Math.min(90, Math.max(20, 30 + climateNewsCount * 12));
 
   // ESC Key listener to exit Cinematic Focus Mode
   useEffect(() => {
@@ -489,10 +480,10 @@ export default function Dashboard() {
       onClick: () => setIsFutureImpactModalOpen(true),
     },
     {
-      id: 'dna',
-      icon: <Dna className="w-5 h-5 text-purple-300" />,
-      tooltip: 'Global Impact DNA Strand',
-      onClick: () => document.getElementById('dna-feature-row')?.scrollIntoView({ behavior: 'smooth' }),
+      id: 'explorer',
+      icon: <Compass className="w-5 h-5 text-cyan-300 animate-spin-slow" />,
+      tooltip: 'World Explorer AI (3D Globe & Real Places)',
+      onClick: () => onNavigatePage && onNavigatePage('world-explorer'),
     },
     {
       id: 'persona',
@@ -575,6 +566,8 @@ export default function Dashboard() {
             isEasyMode={isEasyMode}
             onOpenFutureImpactModal={() => setIsFutureImpactModalOpen(true)}
             onOpenOutreachModal={() => setIsOutreachModalOpen(true)}
+            activePage={activePage}
+            onNavigatePage={onNavigatePage}
           />
 
           {/* Accessibility & Voice Controls Bar */}
@@ -595,6 +588,7 @@ export default function Dashboard() {
             onToggleEasyMode={handleToggleEasyMode}
             isEasyMode={isEasyMode}
             currentLanguage={currentLanguage}
+            onNavigatePage={onNavigatePage}
           />
 
           {/* Main Dashboard Grid */}
@@ -613,14 +607,31 @@ export default function Dashboard() {
               currentLanguage={currentLanguage}
             />
 
-            {/* Row 2: Global Impact DNA — Full-width, unmissable feature strip */}
-            <div id="dna-feature-row" className="w-full animate-fade-in">
-              <GlobalImpactDna
-                riskScore={dnaRiskScore}
-                activityLevel={dnaActivityLevel}
-                climateScore={dnaClimateScore}
-                compact={false}
-              />
+            {/* Row 2: World Explorer AI Quick Access Banner */}
+            <div className="w-full p-4 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-purple-950/40 to-slate-900/90 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl backdrop-blur-md animate-fade-in">
+              <div className="flex items-center gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-md shadow-cyan-500/10">
+                  <Compass className="w-5 h-5 animate-spin-slow" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-bold text-white tracking-wide">World Explorer AI</h3>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      3D EARTH & REAL PLACES
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-0.5">
+                    Interactive 3D Earth with real OpenStreetMap discovery for schools, hospitals, transit, malls & government offices.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => onNavigatePage && onNavigatePage('world-explorer')}
+                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 active:scale-95"
+              >
+                <span>Launch World Explorer</span>
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Row 3: 3D Planetary Smart Globe & Real-time Alert System */}
