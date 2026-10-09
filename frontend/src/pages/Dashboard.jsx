@@ -108,20 +108,6 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
   const [isFutureImpactModalOpen, setIsFutureImpactModalOpen] = useState(false);
   const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
 
-  // Cinematic Focus Mode State
-  const [isCinematicFocus, setIsCinematicFocus] = useState(false);
-
-  // ESC Key listener to exit Cinematic Focus Mode
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && isCinematicFocus) {
-        playUiSound('click');
-        setIsCinematicFocus(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isCinematicFocus]);
 
   // Visual Accessibility States
   const [isHighContrast, setIsHighContrast] = useState(false);
@@ -237,23 +223,13 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
   };
 
   // Handle Country/Location Selection from 3D Globe or Navigation
-  const handleSelectCountry = (countryId, activateFocus = true) => {
+  const handleSelectCountry = (countryId) => {
     setSelectedCountry(countryId);
     setSelectedState(null);
     setSelectedLocation(null);
     stopSpeaking();
     setIsSpeaking(false);
-    if (countryId && countryId !== 'global' && activateFocus) {
-      setIsCinematicFocus(true);
-    }
     loadTelemetryData(true, countryId, null, null);
-  };
-
-  const handleExitFocusMode = () => {
-    playUiSound('click');
-    setIsCinematicFocus(false);
-    setSelectedCountry('global');
-    loadTelemetryData(true, 'global', null, null);
   };
 
   // Handle State / Province Selection (e.g. Tamil Nadu, California, Texas, Bavaria)
@@ -644,8 +620,6 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
                   onSelectCountry={handleSelectCountry}
                   onOpenImpactModal={() => setIsImpactModalOpen(true)}
                   news={news}
-                  isFocusMode={isCinematicFocus}
-                  onToggleFocusMode={(nextVal) => setIsCinematicFocus(nextVal)}
                 />
               </div>
 
@@ -1029,70 +1003,6 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
         currentLocation={selectedLocation || selectedCountry || 'Global'}
       />
 
-      {/* Cinematic Focus Mode Fullscreen Immersive View */}
-      {isCinematicFocus && (
-        <div className="fixed inset-0 z-50 bg-[#02040a]/94 backdrop-blur-2xl p-4 sm:p-6 flex flex-col overflow-y-auto animate-fade-in">
-          {/* Cinematic Top Control Bar */}
-          <div className="flex items-center justify-between p-3.5 mb-4 rounded-2xl glass-card-luxe border border-pink-500/30 shadow-2xl shrink-0">
-            <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-pink-500 animate-ping" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-white tracking-widest uppercase">
-                    CINEMATIC FOCUS MODE
-                  </span>
-                  <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full border border-pink-500/50 bg-pink-500/20 text-pink-200 font-semibold">
-                    ORBITAL SPOTLIGHT
-                  </span>
-                </div>
-                <p className="font-sans text-[11px] text-slate-400">
-                  Target Territory: <strong className="text-cyan-300 uppercase">{selectedCountry}</strong> · Background dimmed · Regional stream locked
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2.5">
-              <button
-                onClick={handleExitFocusMode}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-sans text-xs font-semibold shadow-lg shadow-pink-500/25 transition-all flex items-center gap-2 hover:scale-105 active:scale-95"
-                title="Exit Cinematic Focus Mode (or press ESC)"
-              >
-                <X className="w-4 h-4" />
-                <span>Exit Focus Mode</span>
-                <kbd className="hidden sm:inline px-1.5 py-0.5 rounded bg-black/40 text-[10px] font-mono border border-white/20">ESC</kbd>
-              </button>
-            </div>
-          </div>
-
-          {/* Cinematic Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
-            {/* Expanded 3D Globe with Close Orbital Focus */}
-            <div className="lg:col-span-7 flex flex-col min-h-[480px]">
-              <Globe3D
-                selectedCountry={selectedCountry}
-                onSelectCountry={(cId) => handleSelectCountry(cId, false)}
-                onOpenImpactModal={() => setIsImpactModalOpen(true)}
-                news={news}
-                isFocusMode={true}
-                onToggleFocusMode={handleExitFocusMode}
-              />
-            </div>
-
-            {/* Regional Intelligence Data Panel */}
-            <div className="lg:col-span-5 flex flex-col">
-              <CinematicRegionPanel
-                selectedCountry={selectedCountry}
-                onSelectCountry={(cId) => handleSelectCountry(cId, false)}
-                onExitFocusMode={handleExitFocusMode}
-                news={news}
-                alerts={alerts}
-                currentLanguage={currentLanguage}
-                onOpenImpactModal={() => setIsImpactModalOpen(true)}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

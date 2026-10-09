@@ -303,9 +303,7 @@ export default function Globe3D({
   selectedCountry = 'global', 
   onSelectCountry,
   onOpenImpactModal,
-  news = [],
-  isFocusMode: externalFocusMode,
-  onToggleFocusMode
+  news = []
 }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -326,17 +324,6 @@ export default function Globe3D({
   const [showCyberCables, setShowCyberCables] = useState(true); // Undersea internet cables
   const [showHeatmaps, setShowHeatmaps] = useState(true); // Dynamic threat & impact rings
   const [autoRotate, setAutoRotate] = useState(true);
-  const [internalFocusMode, setInternalFocusMode] = useState(false);
-  const isFocusMode = externalFocusMode !== undefined ? externalFocusMode : internalFocusMode;
-
-  const handleToggleFocusMode = () => {
-    playUiSound('toggle');
-    if (onToggleFocusMode) {
-      onToggleFocusMode(!isFocusMode);
-    } else {
-      setInternalFocusMode(!isFocusMode);
-    }
-  };
 
   // Smart HUD State
   const [smartTarget, setSmartTarget] = useState(null); // Node or geo-coordinate targeted
@@ -893,7 +880,7 @@ export default function Globe3D({
   useEffect(() => {
     if (!selectedCountry) return;
     const target = GLOBAL_HOTSPOTS.find(h => h.id === selectedCountry.toLowerCase());
-    const zoomDist = isFocusMode ? 65 : 140;
+    const zoomDist = 140;
     if (target && cameraRef.current) {
       const pos = latLngToVector3(target.lat, target.lng, GLOBE_RADIUS, zoomDist);
       targetCamPos.current = pos;
@@ -904,41 +891,9 @@ export default function Globe3D({
     } else if (selectedCountry === 'global' && cameraRef.current) {
       targetCamPos.current = new THREE.Vector3(0, 35, 290);
     }
-  }, [selectedCountry, news, isFocusMode]);
+  }, [selectedCountry, news]);
 
-  // Focus Mode: Dim everything except selected region
-  useEffect(() => {
-    const isGlobal = !selectedCountry || selectedCountry === 'global';
-    const targetId = (selectedCountry || '').toLowerCase();
 
-    // Dim/highlight supply corridors
-    if (corridorsListRef.current) {
-      corridorsListRef.current.forEach(item => {
-        if (!item.mesh || !item.mesh.material) return;
-        if (isFocusMode && !isGlobal) {
-          const isConnected = item.from === targetId || item.to === targetId;
-          item.mesh.material.opacity = isConnected ? 0.95 : 0.04;
-        } else {
-          item.mesh.material.opacity = item.baseOpacity;
-        }
-      });
-    }
-
-    // Dim/highlight beacons
-    if (beaconMeshesRef.current) {
-      beaconMeshesRef.current.forEach(mesh => {
-        if (!mesh || !mesh.material) return;
-        const isMatch = mesh.userData?.id === targetId;
-        if (isFocusMode && !isGlobal) {
-          mesh.material.opacity = isMatch ? 1.0 : 0.06;
-          mesh.scale.setScalar(isMatch ? 1.6 : 0.55);
-        } else {
-          mesh.material.opacity = 1.0;
-          mesh.scale.setScalar(1.0);
-        }
-      });
-    }
-  }, [isFocusMode, selectedCountry]);
 
   // Toggle Auto-rotation
   const toggleAutoRotate = () => {
@@ -1004,19 +959,7 @@ export default function Globe3D({
           </button>
         </div>
 
-        {/* Focus Mode Spotlight Toggle */}
-        <button
-          onClick={handleToggleFocusMode}
-          className={`px-2.5 py-1.5 font-mono text-[10px] flex items-center gap-1.5 rounded-xl border transition-all shadow-md active:scale-95 ${
-            isFocusMode
-              ? 'bg-gradient-to-r from-pink-600 to-purple-600 text-white border-pink-400 shadow-pink-500/30'
-              : 'text-slate-300 border-purple-500/25 hover:border-purple-400 bg-slate-950/85 backdrop-blur-xl hover:text-white'
-          }`}
-          title="Focus Mode: Spotlight selected region and dim other territories"
-        >
-          <Target className={`w-3.5 h-3.5 ${isFocusMode ? 'text-pink-200 animate-spin-slow' : 'text-pink-400'}`} />
-          <span className="font-semibold">{isFocusMode ? 'Focused' : 'Focus Mode'}</span>
-        </button>
+
 
         {/* Smart Layer Toggles */}
         <div className="hidden sm:flex items-center bg-slate-950/85 backdrop-blur-xl border border-purple-500/25 rounded-xl font-mono text-[10px] overflow-hidden shadow-md">
