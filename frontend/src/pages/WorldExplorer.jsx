@@ -60,6 +60,7 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
   const [searchQuery, setSearchQuery] = useState('Hospitals in Chennai');
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchRadius, setSearchRadius] = useState(4000); // meters
+  const [zoomLevel, setZoomLevel] = useState(4); // 1: world, 2: continent, 3: country, 4: state, 5: city
 
   // Data & Selection State
   const [places, setPlaces] = useState([]);
@@ -72,15 +73,17 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
   const [viewMode, setViewMode] = useState('3d');
   const [isMobilePanelOpen, setIsMobilePanelOpen] = useState(true);
 
-  // Quick Preset Search Queries
+  // Quick Preset Search Queries (Worldwide & Local with red hospital markers)
   const PRESET_QUERIES = [
     { label: '🏥 Hospitals in Chennai', q: 'Hospitals in Chennai', category: 'healthcare' },
+    { label: '🏥 Hospitals in New York', q: 'Hospitals in New York', category: 'healthcare' },
+    { label: '🏥 Hospitals in London', q: 'Hospitals in London', category: 'healthcare' },
+    { label: '🏫 Universities in Boston', q: 'Universities in Boston', category: 'education' },
     { label: '🏛️ Govt offices in Velachery', q: 'Government offices in Velachery', category: 'government' },
-    { label: '🏫 Schools near me', q: 'Schools near me', category: 'education' },
-    { label: '🚏 Bus stops in Velachery', q: 'Bus stops in Velachery', category: 'transport' },
-    { label: '🛍️ Malls in Chennai', q: 'Malls in Chennai', category: 'shopping' },
-    { label: '💳 Banks in Chennai', q: 'Banks in Chennai', category: 'finance' },
-    { label: '🌳 Parks near me', q: 'Parks near me', category: 'leisure' }
+    { label: '🛍️ Shopping in Tokyo', q: 'Shopping in Tokyo', category: 'shopping' },
+    { label: '🚏 Transit in Paris', q: 'Transit in Paris', category: 'transport' },
+    { label: '💳 Banks in Singapore', q: 'Banks in Singapore', category: 'finance' },
+    { label: '🌳 Parks in Sydney', q: 'Parks in Sydney', category: 'leisure' }
   ];
 
   // Fetch Geographic Hierarchy on mount
@@ -818,6 +821,7 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
               }}
               focusedCoordinates={centerCoords}
               activeCategory={activeCategory}
+              zoomLevel={zoomLevel}
               className="w-full h-full min-h-[540px]"
             />
           )}
@@ -848,6 +852,7 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
                 }}
                 focusedCoordinates={centerCoords}
                 activeCategory={activeCategory}
+                zoomLevel={zoomLevel}
                 className="w-full h-full min-h-[480px]"
               />
               <OsmStreetViewer
