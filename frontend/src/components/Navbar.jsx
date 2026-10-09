@@ -11,7 +11,9 @@ import {
   Volume1,
   Compass,
   MapPin,
-  FileText
+  FileText,
+  Radio,
+  Building2
 } from 'lucide-react';
 import { isConfigured } from '../services/supabaseClient';
 import { playUiSound, isSoundMuted, toggleSoundMute } from '../services/soundSystem';
@@ -118,12 +120,35 @@ export default function Navbar({
             <button
               onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('dashboard'); }}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                activePage !== 'world-explorer'
+                activePage === 'dashboard' || activePage === undefined
                   ? 'bg-purple-600/30 text-purple-200 border border-purple-500/40 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
               Telemetry
+            </button>
+            <button
+              onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('event-radar'); }}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activePage === 'event-radar'
+                  ? 'bg-red-500/30 text-red-200 border border-red-400/40 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5 text-red-400" />
+              <span>Event Radar</span>
+              <span className="text-[9px] px-1 py-0.2 rounded bg-red-500/20 text-red-300 font-mono">LIVE</span>
+            </button>
+            <button
+              onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('city-intelligence'); }}
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                activePage === 'city-intelligence'
+                  ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span>City Twin</span>
             </button>
             <button
               onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('world-explorer'); }}

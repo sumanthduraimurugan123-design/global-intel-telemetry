@@ -1,0 +1,278 @@
+﻿import subprocess
+
+html_content = """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>L&T Techgium - Official Project Abstract Submission</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 16mm 18mm 16mm 18mm;
+  }
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    color: #0f172a;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    font-size: 10.5pt;
+  }
+  .header-badge-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .header-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #0f172a, #1e3a8a);
+    color: #ffffff;
+    font-size: 8.5pt;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 5px 12px;
+    border-radius: 4px;
+  }
+  .track-badge {
+    font-size: 8.5pt;
+    color: #2563eb;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .doc-title {
+    font-size: 17pt;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 4px 0;
+    line-height: 1.25;
+    letter-spacing: -0.2px;
+  }
+  .doc-subtitle {
+    font-size: 10pt;
+    color: #2563eb;
+    font-weight: 600;
+    margin: 0 0 14px 0;
+    letter-spacing: 0.3px;
+  }
+  .divider {
+    height: 3px;
+    background: linear-gradient(90deg, #2563eb, #38bdf8, #e2e8f0);
+    border: none;
+    margin-bottom: 16px;
+  }
+  .meta-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #2563eb;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    display: table;
+    width: 100%;
+  }
+  .meta-row {
+    display: table-row;
+  }
+  .meta-label {
+    display: table-cell;
+    padding: 4px 12px 4px 0;
+    font-weight: 700;
+    color: #475569;
+    font-size: 9pt;
+    width: 26%;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .meta-value {
+    display: table-cell;
+    padding: 4px 0;
+    font-weight: 600;
+    color: #0f172a;
+    font-size: 9.5pt;
+  }
+  .section-header {
+    border-bottom: 2px solid #0f172a;
+    padding-bottom: 5px;
+    margin-top: 14px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .section-title {
+    font-size: 12pt;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    float: left;
+    margin: 0;
+  }
+  .word-count-tag {
+    font-size: 8.5pt;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+    float: right;
+  }
+  .abstract-text {
+    font-size: 10.5pt;
+    line-height: 1.75;
+    text-align: justify;
+    color: #1e293b;
+    margin: 0 0 18px 0;
+    padding: 2px 0;
+  }
+  .feature-summary-title {
+    font-size: 9.5pt;
+    font-weight: 800;
+    color: #0f172a;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 16px 0 8px 0;
+  }
+  .feature-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    font-size: 8.5pt;
+  }
+  .feature-table th {
+    background: #0f172a;
+    color: #ffffff;
+    text-align: left;
+    padding: 6px 10px;
+    font-weight: 700;
+    font-size: 8pt;
+    text-transform: uppercase;
+  }
+  .feature-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #334155;
+  }
+  .feature-table tr:nth-child(even) {
+    background: #f8fafc;
+  }
+  .feature-table strong {
+    color: #0f172a;
+  }
+  .footer-note {
+    margin-top: 20px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 8pt;
+    color: #64748b;
+    overflow: hidden;
+  }
+  .footer-left { float: left; }
+  .footer-right { float: right; }
+</style>
+</head>
+<body>
+
+  <div class="header-badge-row">
+    <div class="header-badge">L&amp;T Techgium &bull; Project Registration Abstract</div>
+    <div class="track-badge">Domain: Smart Infrastructure &amp; Geospatial AI</div>
+  </div>
+
+  <h1 class="doc-title">EconoPulse AI: Autonomous Multi-Modal Global Intelligence &amp; Geospatial Digital-Twin Platform</h1>
+  <div class="doc-subtitle">Live Threat Telemetry, 3D Digital-Twin Globe, Zero-Fabrication OpenStreetMap Spatial Search &amp; Persona Impact Synthesis</div>
+  
+  <div class="divider"></div>
+
+  <div class="meta-box">
+    <div class="meta-row">
+      <div class="meta-label">Project Title:</div>
+      <div class="meta-value">EconoPulse AI &mdash; Real-Time Global Intelligence &amp; Geospatial Telemetry Platform</div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-label">Participant Name:</div>
+      <div class="meta-value">Sumanth Duraimurugan</div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-label">Register / Roll No:</div>
+      <div class="meta-value">25cu0310160</div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-label">Institution:</div>
+      <div class="meta-value">Hindustan Institute of Science and Technology (HITS)</div>
+    </div>
+    <div class="meta-row">
+      <div class="meta-label">Team Structure:</div>
+      <div class="meta-value">Individual Participant (Solo Entry)</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <h2 class="section-title">Project Abstract</h2>
+    <span class="word-count-tag">Exact Count: 185 words (within 150–200 limit)</span>
+  </div>
+
+  <p class="abstract-text">
+    Global crises, supply disruptions, and regional emergencies unfold rapidly, yet decision-makers and citizens struggle with delayed reporting, fragmented data streams, and lack of localized situational awareness. The aim of this project is to develop EconoPulse AI, an autonomous global intelligence and geospatial digital-twin platform that synthesizes live macro-level shocks with real-world local infrastructure discovery. Our proposed solution unifies real-time event telemetry with an interactive 3D Three.js digital-twin globe and a synchronized OpenStreetMap street-level viewer, enabling users to seamlessly transition from planetary threat monitoring to street-level inspection. Built with React, Node.js, Express, Three.js, Overpass API, Nominatim geocoding, and Google Gemini LLMs, the platform integrates category-coded spatial telemetry—featuring luminous red markers for healthcare facilities and distinct signatures for transit, academic, and civic centers—coupled with adaptive altitude zooming across global, state, and neighborhood scales. What makes this idea innovative is its zero-fabrication architecture, fusing verified geospatial data with AI-driven persona impact projections and voice navigation to translate macro crises into tailored personal guidance. The expected outcome is a unified intelligence dashboard that empowers users with rapid emergency navigation, proactive risk mitigation, and actionable geospatial awareness during worldwide disruptions.
+  </p>
+
+  <div class="feature-summary-title">Engineered System Capabilities &amp; Innovation Matrix</div>
+  <table class="feature-table">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Feature Module</th>
+        <th style="width: 45%;">Implementation &amp; Data Pipeline</th>
+        <th style="width: 30%;">User &amp; Operational Benefit</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>3D Digital-Twin Globe</strong></td>
+        <td>Three.js planetary sphere, smooth OrbitControls, and GPU-accelerated spatial coordinate projection.</td>
+        <td>Fluid worldwide exploration and spatial context of emerging global disruptions.</td>
+      </tr>
+      <tr>
+        <td><strong>Adaptive Regional Zoom</strong></td>
+        <td>Dynamic altitude scaling navigating across Global (275), Regional/State (145), and Local (120) views.</td>
+        <td>Instant zoom into exact geographic regions matching contextual search queries.</td>
+      </tr>
+      <tr>
+        <td><strong>Visual Category Telemetry</strong></td>
+        <td>Luminous red markers (#ef4444) for hospitals/healthcare, blue for colleges/schools, amber for transit.</td>
+        <td>Immediate visual triage and rapid emergency facility identification.</td>
+      </tr>
+      <tr>
+        <td><strong>Zero-Fabrication OSM Search</strong></td>
+        <td>Real-world Overpass API querying and Nominatim geocoding; strictly rejects synthetic coordinate hallucination.</td>
+        <td>100% trustworthy, ground-truth physical locations with verified GPS coordinates.</td>
+      </tr>
+      <tr>
+        <td><strong>AI Persona Impact Analysis</strong></td>
+        <td>Google Gemini LLM reasoning projecting macro financial, logistical, and personal operational risks.</td>
+        <td>Translates abstract global events into actionable, role-tailored guidance.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="footer-note">
+    <span class="footer-left">Candidate: Sumanth Duraimurugan &bull; Roll: 25cu0310160 &bull; Hindustan Institute of Science and Technology</span>
+    <span class="footer-right">Live Prototype: https://global-intel-telemetry.vercel.app</span>
+  </div>
+
+</body>
+</html>
+"""
+
+with open("c:/Users/Sumanth/OneDrive/Desktop/Global-Intel-Telemetry/abstract.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("Updated abstract.html generated successfully!")
