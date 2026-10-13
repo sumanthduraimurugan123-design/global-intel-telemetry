@@ -72,9 +72,9 @@ function processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact)
     };
   }
 
-  if (q.includes('who are you') || q.includes('what is your name') || q.includes('are you siri') || q.includes('what are you')) {
+  if (q.includes('who are you') || q.includes('what is your name') || q.includes('are you siri') || q.includes('are you ammukutty') || q.includes('ammukutty') || q.includes('what are you')) {
     return {
-      text: "I am Siri AI Telemetry Copilot, your voice and text planetary guide. I help you navigate the 3D Earth, monitor crisis alerts, inspect city digital twins, and project geopolitical impacts.",
+      text: "I am Ammukutty, your personal AI Telemetry Guide! I help you navigate the 3D Earth, monitor crisis alerts, inspect city digital twins, and project geopolitical impacts.",
       action: null
     };
   }
@@ -271,7 +271,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
     {
       id: 'welcome',
       sender: 'siri',
-      text: "Hey! I'm your Siri AI Planetary Guide. You can ask me anything about the platform, crisis events, 3D Earth, or tell me to navigate for you.",
+      text: "Hey! I'm Ammukutty, your AI Planetary Guide. You can ask me anything about the platform, crisis events, 3D Earth, or tell me to navigate for you.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       action: null
     }
@@ -484,9 +484,9 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
               </div>
             </div>
 
-            {/* Floating Siri Badge Pill */}
-            <div className="absolute -top-3 -left-12 px-2.5 py-0.5 rounded-full bg-slate-900/90 border border-purple-500/40 text-[10px] font-mono font-bold text-cyan-300 shadow-lg backdrop-blur-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
-              Ask Siri AI Guide
+            {/* Floating Ammukutty Badge Pill */}
+            <div className="absolute -top-3 -left-16 px-2.5 py-0.5 rounded-full bg-slate-900/90 border border-purple-500/40 text-[10px] font-mono font-bold text-cyan-300 shadow-lg backdrop-blur-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+              Ask Ammukutty
             </div>
           </motion.div>
         )}
@@ -516,7 +516,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
 
                 <div>
                   <h3 className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5 font-display">
-                    <span>Siri Telemetry Guide</span>
+                    <span>Ammukutty AI Guide</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   </h3>
                   <p className="text-[10px] text-slate-400 font-mono">
@@ -624,7 +624,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
                           {isSiri && (
                             <div className="flex items-center gap-1 text-[9px] font-mono text-cyan-300 mb-1 font-bold">
                               <Sparkles className="w-3 h-3 text-pink-400" />
-                              <span>SIRI GUIDE</span>
+                              <span>AMMUKUTTY</span>
                             </div>
                           )}
                           <p className="leading-relaxed whitespace-pre-line text-xs">{m.text}</p>
@@ -676,7 +676,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
                         ? 'bg-pink-500 text-white shadow-lg shadow-pink-500/40 animate-pulse'
                         : 'bg-slate-800 text-purple-300 hover:text-white hover:bg-purple-600/30 border border-purple-500/30'
                     }`}
-                    title={isListening ? "Listening... Click to stop" : "Speak to Siri (Microphone)"}
+                    title={isListening ? "Listening... Click to stop" : "Speak to Ammukutty (Microphone)"}
                   >
                     {isListening ? <MicOff className="w-4 h-4 text-white" /> : <Mic className="w-4 h-4" />}
                   </motion.button>
@@ -688,7 +688,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') handleUserMessage(inputText);
                     }}
-                    placeholder="Ask Siri or type a command..."
+                    placeholder="Ask Ammukutty or type a command..."
                     className="flex-1 bg-slate-950/80 border border-slate-700/80 focus:border-purple-500 focus:ring-1 focus:ring-purple-500/40 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none font-sans"
                   />
 
