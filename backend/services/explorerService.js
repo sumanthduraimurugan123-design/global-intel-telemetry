@@ -9,7 +9,7 @@
  * - 5-level geographic hierarchy navigation (World -> Country -> State -> City -> Neighbourhood)
  */
 
-import { resolveGeoHierarchy, getFullGeoDirectory, GLOBAL_COUNTRIES, INDIA_STATES, US_STATES, INTL_REGIONS, CHENNAI_MICRO_AREAS } from './geoHierarchy.js';
+import { resolveGeoHierarchy, getFullGeoDirectory, getHierarchyStructure, GLOBAL_COUNTRIES, INDIA_STATES, US_STATES, INTL_REGIONS, CHENNAI_MICRO_AREAS } from './geoHierarchy.js';
 
 // In-memory cache for fast repeated queries (10 min TTL)
 const searchCache = new Map();
@@ -564,38 +564,5 @@ export async function searchPlaces({ q = '', category, lat, lng, radius = 4000, 
   return response;
 }
 
-/**
- * Return 5-level geographic hierarchy tree for drill-down exploration
- * World -> Country -> State/Region -> City -> Neighbourhood
- */
-export function getHierarchyStructure() {
-  const full = getFullGeoDirectory();
+export { getHierarchyStructure };
 
-  return {
-    world: {
-      id: 'world',
-      name: 'Planetary Earth',
-      lat: 20.0,
-      lng: 0.0,
-      zoom: 1.5,
-      countriesCount: full.countries.length
-    },
-    countries: full.countries,
-    india: {
-      country: 'India',
-      flag: '🇮🇳',
-      lat: 20.5937,
-      lng: 78.9629,
-      states: full.indiaStates,
-      chennaiNeighbourhoods: full.chennaiAreas
-    },
-    us: {
-      country: 'United States',
-      flag: '🇺🇸',
-      lat: 37.0902,
-      lng: -95.7129,
-      states: full.usStates
-    },
-    intlRegions: full.intlRegions
-  };
-}

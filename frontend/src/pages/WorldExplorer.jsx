@@ -45,6 +45,7 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
   const [hierarchy, setHierarchy] = useState({
     country: 'india',
     countryName: 'India',
+    countryFlag: '🇮🇳',
     state: 'tamil nadu',
     stateName: 'Tamil Nadu',
     city: 'chennai',
@@ -208,6 +209,7 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
     setHierarchy({
       country: null,
       countryName: null,
+      countryFlag: null,
       state: null,
       stateName: null,
       city: null,
@@ -225,6 +227,7 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
     setHierarchy({
       country: country.id,
       countryName: country.name,
+      countryFlag: country.flag,
       state: null,
       stateName: null,
       city: null,
@@ -232,12 +235,13 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
       neighbourhood: null,
       neighbourhoodName: null
     });
-    handleSearch(`Key places in ${country.name}`, activeCategory, country);
+    handleSearch(`Key places in ${country.name}`, activeCategory, { lat: country.lat, lng: country.lng });
   };
 
   const handleDrillState = (state) => {
     playUiSound('click');
-    setCenterCoords({ lat: state.lat, lng: state.lng, label: `${state.name}, India` });
+    const countryLabel = hierarchy.countryName || 'World';
+    setCenterCoords({ lat: state.lat, lng: state.lng, label: `${state.name}, ${countryLabel}` });
     setHierarchy((prev) => ({
       ...prev,
       state: state.id,
@@ -247,21 +251,44 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
       neighbourhood: null,
       neighbourhoodName: null
     }));
-    handleSearch(`Hospitals in ${state.name}`, activeCategory, state);
+    handleSearch(`Hospitals in ${state.name}`, activeCategory, { lat: state.lat, lng: state.lng });
   };
 
   const handleDrillCity = (city) => {
     playUiSound('click');
-    const coords = { lat: 13.0827, lng: 80.2707, label: `${city}, Tamil Nadu` };
+    // Look up real coordinates from geoTree, major cities map, or fallback to state coords
+    let coords = null;
+    const cityKey = (typeof city === 'string' ? city : city.name).toLowerCase();
+    const cityName = typeof city === 'string' ? city : city.name;
+
+    // Try from geoTree regionsByCountry cities
+    if (geoTree?.regionsByCountry && hierarchy.country) {
+      const regions = geoTree.regionsByCountry[hierarchy.country] || [];
+      for (const region of regions) {
+        const found = (region.cities || []).find(c => c.name.toLowerCase() === cityKey);
+        if (found && found.lat && found.lng) {
+          coords = { lat: found.lat, lng: found.lng, label: `${cityName}, ${region.name}` };
+          break;
+        }
+      }
+    }
+
+    // Fallback: use state/region center offset
+    if (!coords) {
+      const stateLat = centerCoords?.lat || 13.0827;
+      const stateLng = centerCoords?.lng || 80.2707;
+      coords = { lat: stateLat, lng: stateLng, label: `${cityName}, ${hierarchy.stateName || ''}` };
+    }
+
     setCenterCoords(coords);
     setHierarchy((prev) => ({
       ...prev,
-      city: city.toLowerCase(),
-      cityName: city,
+      city: cityKey,
+      cityName,
       neighbourhood: null,
       neighbourhoodName: null
     }));
-    handleSearch(`Hospitals in ${city}`, activeCategory, coords);
+    handleSearch(`Hospitals in ${cityName}`, activeCategory, coords);
   };
 
   const handleDrillNeighbourhood = (neigh) => {
@@ -392,9 +419,13 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
             {/* Country Selector */}
             <div className="relative group">
               <button className="flex items-center gap-1 text-slate-200 hover:text-cyan-300 px-2 py-0.5 rounded hover:bg-slate-800 transition-colors">
-                <span>{hierarchy.countryName ? `🇮🇳 ${hierarchy.countryName}` : 'Select Country'}</span>
+                <span>
+                  {hierarchy.countryName
+                    ? `${hierarchy.countryFlag || geoTree?.countries?.find(c => c.id === hierarchy.country)?.flag || '🌍'} ${hierarchy.countryName}`
+                    : 'Select Country'}
+                </span>
               </button>
-              <div className="hidden group-hover:block absolute left-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 min-w-[150px]">
+              <div className="hidden group-hover:block absolute left-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 min-w-[180px] max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
                 {geoTree?.countries?.map((c) => (
                   <button
                     key={c.id}
@@ -410,41 +441,62 @@ export default function WorldExplorer({ onNavigateBack, onNavigatePage }) {
 
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
 
-            {/* State Selector */}
+            {/* State / Region Selector — adapts to selected country */}
             <div className="relative group">
               <button className="flex items-center gap-1 text-slate-200 hover:text-cyan-300 px-2 py-0.5 rounded hover:bg-slate-800 transition-colors">
-                <span>{hierarchy.stateName || 'State: Tamil Nadu'}</span>
+                <span>{hierarchy.stateName || (hierarchy.country ? `Region` : 'State / Region')}</span>
               </button>
-              <div className="hidden group-hover:block absolute left-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 min-w-[170px] max-h-60 overflow-y-auto">
-                {geoTree?.india?.states?.slice(0, 10).map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => handleDrillState(s)}
-                    className="w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
-                  >
-                    {s.name}
-                  </button>
-                ))}
+              <div className="hidden group-hover:block absolute left-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 min-w-[190px] max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+                {(() => {
+                  // Show regions for selected country, fallback to India states
+                  const countryId = hierarchy.country || 'india';
+                  const regions = geoTree?.regionsByCountry?.[countryId] ||
+                    geoTree?.india?.states ||
+                    [];
+                  return regions.map((s) => (
+                    <button
+                      key={s.id}
+                      onClick={() => handleDrillState(s)}
+                      className="w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
+                    >
+                      {s.name}
+                    </button>
+                  ));
+                })()}
               </div>
             </div>
 
             <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
 
-            {/* City Selector */}
+            {/* City Selector — adapts to selected state/region */}
             <div className="relative group">
               <button className="flex items-center gap-1 text-slate-200 hover:text-cyan-300 px-2 py-0.5 rounded hover:bg-slate-800 transition-colors">
-                <span>{hierarchy.cityName || 'City: Chennai'}</span>
+                <span>{hierarchy.cityName || (hierarchy.stateName ? `City` : 'City / Metro')}</span>
               </button>
-              <div className="hidden group-hover:block absolute left-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 min-w-[150px]">
-                {['Chennai', 'Coimbatore', 'Madurai', 'Bengaluru', 'Mumbai'].map((city) => (
-                  <button
-                    key={city}
-                    onClick={() => handleDrillCity(city)}
-                    className="w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
-                  >
-                    {city}
-                  </button>
-                ))}
+              <div className="hidden group-hover:block absolute left-0 top-full mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1 z-50 min-w-[170px] max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700">
+                {(() => {
+                  // Get cities for selected state, fallback to country capital region cities
+                  const countryId = hierarchy.country || 'india';
+                  const stateId = hierarchy.state;
+                  const regions = geoTree?.regionsByCountry?.[countryId] || geoTree?.india?.states || [];
+                  const selectedRegion = stateId ? regions.find(r => r.id === stateId) : regions[0];
+                  const cityList = selectedRegion?.cities || [];
+                  if (cityList.length === 0) return (
+                    <div className="px-3 py-2 text-xs text-slate-500">Select a region first</div>
+                  );
+                  return cityList.map((city) => {
+                    const cityName = typeof city === 'string' ? city : city.name;
+                    return (
+                      <button
+                        key={cityName}
+                        onClick={() => handleDrillCity(city)}
+                        className="w-full text-left px-3 py-1.5 text-xs text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
+                      >
+                        {cityName}
+                      </button>
+                    );
+                  });
+                })()}
               </div>
             </div>
 
