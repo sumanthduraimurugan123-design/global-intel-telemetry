@@ -24,59 +24,241 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { playEarcon } from '../services/voiceService';
 import { playUiSound } from '../services/soundSystem';
 
-// Knowledge base responses and intelligent intent routing
-const GUIDE_KNOWLEDGE = [
-  {
-    keywords: ['world explorer', 'explorer', 'osm', '3d earth', 'places', 'schools', 'hospitals', 'overpass'],
-    title: 'World Explorer 3D',
-    page: 'world-explorer',
-    response: "The World Explorer AI lets you explore all 195+ sovereign countries, drill down into states, cities, and discover real-world infrastructure (hospitals, schools, transit, and offices) using 3D Earth and live OpenStreetMap.",
-    actionLabel: "Launch World Explorer"
-  },
-  {
-    keywords: ['radar', 'event radar', 'live events', 'threat radar', 'signals'],
-    title: 'Live Event Radar',
-    page: 'event-radar',
-    response: "The Live Event Radar tracks real-time planetary events categorized into defense, climate, economy, cyber, and supply chain threats with live geolocated signals on a 3D Earth.",
-    actionLabel: "Open Event Radar"
-  },
-  {
-    keywords: ['city twin', 'city', 'digital twin', 'chennai', 'infrastructure', 'urban'],
-    title: 'City Intelligence Twin',
-    page: 'city-intelligence',
-    response: "The City Intelligence Twin monitors urban infrastructure telemetry, district-level safety, grid metrics, and emergency response assets in real time.",
-    actionLabel: "Explore City Twin"
-  },
-  {
-    keywords: ['telemetry', 'dashboard', 'globe', 'home', 'main page', 'overview'],
-    title: 'Planetary Telemetry Dashboard',
-    page: 'dashboard',
-    response: "The Telemetry Dashboard is your central mission control featuring the 3D Planetary Smart Globe, real-time threat alarms, multi-level geographic navigation, and persona matrix.",
-    actionLabel: "Go to Telemetry Dashboard"
-  },
-  {
-    keywords: ['alert', 'threat', 'warning', 'emergency', 'crisis', 'danger'],
-    title: 'Threat Detection Engine',
-    page: null,
-    response: "Our autonomous alert engine continuously ingests geopolitical feeds and classifies threats into CRITICAL, HIGH, MEDIUM, and LOW severity with acoustic earcons.",
-    actionLabel: null
-  },
-  {
-    keywords: ['future impact', 'simulator', 'impact', 'scenario'],
-    title: 'Future Impact Simulator',
-    page: null,
-    specialAction: 'future-impact',
-    response: "The Future Impact Simulator models the cascading economic, supply chain, and personal repercussions of global crises on your sector.",
-    actionLabel: "Open Impact Simulator"
-  },
-  {
-    keywords: ['how to use', 'help', 'guide', 'what can you do', 'features', 'who are you', 'siri'],
-    title: 'Siri Telemetry Assistant',
-    page: null,
-    response: "I am your floating Siri AI Copilot! I can navigate you across the platform (World Explorer, Event Radar, City Twin, Dashboard), explain crisis telemetry, read news briefings aloud, and answer your questions via voice or text.",
-    actionLabel: null
+// Clean text for speech synthesis so emojis and markdown symbols aren't pronounced awkwardly
+function cleanForSpeech(raw) {
+  if (!raw) return '';
+  return raw
+    .replace(/[#*_`~]/g, '')
+    .replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}🌐📡🏙️🚨🔮💡👋👉•✓❌]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Intelligent Conversational Siri NLP Engine
+ * Responds to greetings, platform features, navigation commands, geopolitical queries,
+ * and everyday conversational questions dynamically.
+ */
+function processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact) {
+  const q = (query || '').toLowerCase().trim();
+
+  // 1. GREETINGS & CASUAL INTERACTION
+  if (/^(hi|hello|hey|yo|sup|hola|vanakkam|namaste|greetings)(\s|$|[!.,?])/i.test(q)) {
+    return {
+      text: "Hello! 👋 Great to have you here. I'm your Planetary Telemetry AI Guide. I can take you to the 3D World Explorer, scan crisis alerts on the Event Radar, or walk you through the platform. What would you like to explore?",
+      action: {
+        type: 'navigate',
+        target: 'world-explorer',
+        label: 'Explore 3D Earth'
+      }
+    };
   }
-];
+
+  if (q.includes('good morning') || q.includes('good afternoon') || q.includes('good evening') || q.includes('good day')) {
+    return {
+      text: "Good day! ☀️ Planetary telemetry sensors and news feeds are live and updating across all 195+ countries. How can I assist your mission today?",
+      action: {
+        type: 'navigate',
+        target: 'dashboard',
+        label: 'View Mission Dashboard'
+      }
+    };
+  }
+
+  if (q.includes('how are you') || q.includes('how r u') || q.includes('how are you doing') || q.includes("how's it going")) {
+    return {
+      text: "I'm doing fantastic, thank you! ⚡ All global telemetry feeds, 3D globes, and alert listeners are operating smoothly. How can I guide you right now?",
+      action: null
+    };
+  }
+
+  if (q.includes('who are you') || q.includes('what is your name') || q.includes('are you siri') || q.includes('what are you')) {
+    return {
+      text: "I am Siri AI Telemetry Copilot, your voice and text planetary guide. I help you navigate the 3D Earth, monitor crisis alerts, inspect city digital twins, and project geopolitical impacts.",
+      action: null
+    };
+  }
+
+  if (q.includes('thank you') || q.includes('thanks') || q.includes('thx') || q.includes('appreciate it')) {
+    return {
+      text: "You're very welcome! Always here to assist. Just ask whenever you want to switch sectors or query intelligence.",
+      action: null
+    };
+  }
+
+  if (q.includes('bye') || q.includes('goodbye') || q.includes('see you') || q.includes('cya')) {
+    return {
+      text: "Goodbye! Stay safe and keep an eye on planetary telemetry. I'll stay right here floating at the corner whenever you need me.",
+      action: null
+    };
+  }
+
+  if (/^(cool|awesome|great|nice|wow|super|amazing|good)(\s|$|[!.,?])/i.test(q)) {
+    return {
+      text: "Awesome! Let me know if you'd like to test our 3D World Explorer, check the Live Event Radar, or inspect the City Twin.",
+      action: null
+    };
+  }
+
+  // 2. HELP & CAPABILITIES
+  if (q.includes('what can you do') || q.includes('features') || q.includes('capabilities') || q.includes('help') || q.includes('commands') || q.includes('guide me')) {
+    return {
+      text: "Here is what I can do for you:\n• 🌐 Launch 3D World Explorer: Explore 195+ countries, states, and OpenStreetMap amenities.\n• 📡 Open Live Event Radar: Track real-time defense, climate, and cyber events.\n• 🏙️ View City Intelligence Twin: Urban telemetry and infrastructure monitoring.\n• 🚨 Check Alerts: Real-time critical geopolitical warnings.\n• 🗣️ Voice Commands: Tap the mic icon anytime to speak to me naturally!",
+      action: {
+        type: 'navigate',
+        target: 'world-explorer',
+        label: 'Try World Explorer'
+      }
+    };
+  }
+
+  // 3. EXPLANATION OF TELEMETRY & PLATFORM
+  if (q.includes('what is telemetry') || q.includes('what does this app do') || q.includes('what is this platform') || q.includes('about this project') || q.includes('what is ugi')) {
+    return {
+      text: "Global Intel & Telemetry (UGI) is a planetary intelligence platform. It tracks real-time verified international news, autonomous crisis alarms, and 3D geospatial infrastructure across 195+ nations, providing actionable insight for analysts and citizens alike.",
+      action: {
+        type: 'navigate',
+        target: 'dashboard',
+        label: 'Open Dashboard'
+      }
+    };
+  }
+
+  // 4. WORLD EXPLORER & 3D EARTH NAVIGATION
+  if (q.includes('world explorer') || q.includes('explorer') || q.includes('osm') || q.includes('3d earth') || q.includes('globe') || q.includes('map') || q.includes('places') || q.includes('schools') || q.includes('hospitals') || q.includes('overpass')) {
+    return {
+      text: "The World Explorer AI lets you explore all 195+ sovereign nations in 3D. You can drill down into provinces, states, and cities, then query real-world OpenStreetMap amenities like hospitals, schools, transit stations, and banks with real coordinates.",
+      action: {
+        type: 'navigate',
+        target: 'world-explorer',
+        label: 'Launch World Explorer'
+      }
+    };
+  }
+
+  // 5. EVENT RADAR & THREAT TRACKER
+  if (q.includes('radar') || q.includes('event radar') || q.includes('live events') || q.includes('threat radar') || q.includes('signals') || q.includes('threat tracker')) {
+    return {
+      text: "The Live Event Radar tracks planetary events classified into Defense, Climate, Economy, Cyber, and Supply Chain risks with real-time geographic markers on an interactive 3D globe.",
+      action: {
+        type: 'navigate',
+        target: 'event-radar',
+        label: 'Open Event Radar'
+      }
+    };
+  }
+
+  // 6. CITY TWIN & CHENNAI
+  if (q.includes('city twin') || q.includes('city') || q.includes('digital twin') || q.includes('chennai') || q.includes('urban') || q.includes('grid metrics') || q.includes('velachery') || q.includes('t nagar')) {
+    return {
+      text: "The City Intelligence Twin monitors urban infrastructure telemetry, district-level safety indices, power grid status, and emergency response assets with micro-locality focus (such as Chennai, Velachery, T. Nagar).",
+      action: {
+        type: 'navigate',
+        target: 'city-intelligence',
+        label: 'Explore City Twin'
+      }
+    };
+  }
+
+  // 7. FUTURE IMPACT SIMULATOR
+  if (q.includes('future impact') || q.includes('simulator') || q.includes('simulate') || q.includes('consequences') || q.includes('projections')) {
+    return {
+      text: "The Future Impact Simulator models the cascading economic, supply chain, and personal repercussions of global crises on your sector and lifestyle.",
+      action: {
+        type: 'special',
+        handler: onOpenFutureImpact,
+        label: 'Open Impact Simulator'
+      }
+    };
+  }
+
+  // 8. ALERTS & CRISIS WARNINGS
+  if (q.includes('alert') || q.includes('threat') || q.includes('warning') || q.includes('emergency') || q.includes('crisis') || q.includes('danger') || q.includes('war') || q.includes('conflict')) {
+    return {
+      text: "Our autonomous alert engine continuously ingests geopolitical news feeds and classifies threats into CRITICAL, HIGH, MEDIUM, and LOW severity with acoustic earcons. You can see active alerts in the Dashboard or on the Event Radar.",
+      action: {
+        type: 'navigate',
+        target: 'event-radar',
+        label: 'Check Threat Radar'
+      }
+    };
+  }
+
+  // 9. WEATHER & CLIMATE
+  if (q.includes('weather') || q.includes('rain') || q.includes('cyclone') || q.includes('flood') || q.includes('storm') || q.includes('monsoon') || q.includes('climate')) {
+    return {
+      text: "Weather and climate threats (cyclones, monsoons, and extreme weather) are tracked live on the Event Radar with environmental category filters.",
+      action: {
+        type: 'navigate',
+        target: 'event-radar',
+        label: 'Filter Weather on Radar'
+      }
+    };
+  }
+
+  // 10. ECONOMY & FUEL
+  if (q.includes('economy') || q.includes('inflation') || q.includes('fuel') || q.includes('petrol') || q.includes('diesel') || q.includes('oil') || q.includes('jobs') || q.includes('layoffs')) {
+    return {
+      text: "Economic and energy telemetry tracks price shifts, inflation metrics, and job market trends. You can run simulations to see how fuel price shifts affect household and transit costs.",
+      action: {
+        type: 'special',
+        handler: onOpenFutureImpact,
+        label: 'Simulate Economic Impact'
+      }
+    };
+  }
+
+  // 11. SPECIFIC COUNTRIES
+  const countries = [
+    { name: 'India', keywords: ['india', 'delhi', 'mumbai', 'bangalore', 'tamil nadu'] },
+    { name: 'United States', keywords: ['us', 'usa', 'america', 'united states', 'new york', 'washington'] },
+    { name: 'Ukraine', keywords: ['ukraine', 'kyiv'] },
+    { name: 'Russia', keywords: ['russia', 'moscow'] },
+    { name: 'China', keywords: ['china', 'beijing'] },
+    { name: 'Taiwan', keywords: ['taiwan', 'taipei'] },
+    { name: 'Israel', keywords: ['israel', 'jerusalem', 'tel aviv'] },
+    { name: 'Iran', keywords: ['iran', 'tehran'] },
+    { name: 'United Kingdom', keywords: ['uk', 'united kingdom', 'london', 'britain'] },
+    { name: 'Germany', keywords: ['germany', 'berlin'] },
+    { name: 'France', keywords: ['france', 'paris'] },
+    { name: 'Japan', keywords: ['japan', 'tokyo'] }
+  ];
+
+  for (const c of countries) {
+    if (c.keywords.some(k => q.includes(k))) {
+      return {
+        text: `You asked about ${c.name}. You can explore ${c.name} in 3D on the World Explorer (drill down into states & cities) or inspect real-time news telemetry on the dashboard.`,
+        action: {
+          type: 'navigate',
+          target: 'world-explorer',
+          label: `Explore ${c.name} in 3D`
+        }
+      };
+    }
+  }
+
+  // 12. PERSONA & ACCESSIBILITY
+  if (q.includes('persona') || q.includes('analyst') || q.includes('accessibility') || q.includes('easy mode') || q.includes('large text') || q.includes('contrast')) {
+    return {
+      text: "The platform supports adaptive operational personas:\n• Analyst: Deep telemetry metrics, raw sentiment, and JSON logs.\n• Casual User: High-level planetary summary.\n• Accessibility Mode: High contrast, large text, and spoken voice briefings.",
+      action: {
+        type: 'navigate',
+        target: 'dashboard',
+        label: 'Switch Persona on Dashboard'
+      }
+    };
+  }
+
+  // 13. INTELLIGENT DYNAMIC CONTEXTUAL FALLBACK
+  return {
+    text: `I understand you're asking about "${query}". I can help you inspect live planetary intelligence on the 3D globe, launch the World Explorer, or view the Event Radar. Where would you like to go?`,
+    action: {
+      type: 'navigate',
+      target: activePage === 'world-explorer' ? 'event-radar' : 'world-explorer',
+      label: activePage === 'world-explorer' ? 'Check Event Radar' : 'Launch World Explorer'
+    }
+  };
+}
 
 export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage, onOpenFutureImpact }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,7 +271,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
     {
       id: 'welcome',
       sender: 'siri',
-      text: "Hey! I'm your Planetary Telemetry AI Guide. Ask me to navigate to World Explorer, inspect crisis events, or guide you through the platform.",
+      text: "Hey! I'm your Siri AI Planetary Guide. You can ask me anything about the platform, crisis events, 3D Earth, or tell me to navigate for you.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       action: null
     }
@@ -156,11 +338,13 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
     if (!speechEnabled || !synthRef.current) return;
     try {
       synthRef.current.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.05;
-      utterance.pitch = 1.1; // Siri-like friendly tone
+      const cleanText = cleanForSpeech(text);
+      if (!cleanText) return;
 
-      // Pick high-quality natural voice if available
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.1; // Friendly natural pitch
+
       const voices = synthRef.current.getVoices();
       const englishVoice = voices.find(v => (v.name.includes('Samantha') || v.name.includes('Google') || v.name.includes('Natural')) && v.lang.startsWith('en')) || voices.find(v => v.lang.startsWith('en'));
       if (englishVoice) {
@@ -223,60 +407,30 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
 
-    // Evaluate matching intent
-    let matched = null;
-    for (const item of GUIDE_KNOWLEDGE) {
-      if (item.keywords.some(kw => queryLower.includes(kw))) {
-        matched = item;
-        break;
-      }
-    }
-
     setTimeout(() => {
-      let botResponseText = "";
-      let botAction = null;
+      // Process query through smart NLP engine
+      const response = processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact);
 
-      if (matched) {
-        botResponseText = matched.response;
-        if (matched.page) {
-          botAction = {
-            type: 'navigate',
-            target: matched.page,
-            label: matched.actionLabel || `Go to ${matched.title}`
-          };
-          // Auto-navigate if command explicitly asks to go/open/launch
-          if (queryLower.startsWith('go to') || queryLower.startsWith('open') || queryLower.startsWith('switch to') || queryLower.startsWith('launch')) {
-            if (onNavigatePage) onNavigatePage(matched.page);
-            botResponseText += ` Navigating you to ${matched.title} now!`;
-          }
-        } else if (matched.specialAction === 'future-impact' && onOpenFutureImpact) {
-          botAction = {
-            type: 'special',
-            handler: onOpenFutureImpact,
-            label: matched.actionLabel
-          };
+      // Auto-navigate if command explicitly asks to go/open/switch
+      if (response.action && response.action.type === 'navigate') {
+        if (queryLower.startsWith('go to') || queryLower.startsWith('open') || queryLower.startsWith('switch to') || queryLower.startsWith('launch')) {
+          if (onNavigatePage) onNavigatePage(response.action.target);
+          response.text += `\nNavigating you there right now!`;
         }
-      } else {
-        botResponseText = `I processed "${query}". I can help you navigate to the 3D World Explorer, live Event Radar, City Intelligence Twin, or Telemetry Dashboard. What would you like to see?`;
-        botAction = {
-          type: 'navigate',
-          target: 'world-explorer',
-          label: 'Launch World Explorer'
-        };
       }
 
       const botMsg = {
         id: Date.now() + '-siri',
         sender: 'siri',
-        text: botResponseText,
+        text: response.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        action: botAction
+        action: response.action
       };
 
       setMessages(prev => [...prev, botMsg]);
       playEarcon('success');
-      speakText(botResponseText);
-    }, 450);
+      speakText(response.text);
+    }, 350);
   };
 
   const handleActionClick = (action) => {
@@ -290,11 +444,12 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
   };
 
   const quickChips = [
-    { label: '🌐 World Explorer', query: 'Show me World Explorer' },
-    { label: '📡 Event Radar', query: 'Open Event Radar' },
-    { label: '🏙️ City Twin', query: 'Take me to City Twin' },
-    { label: '🚨 Critical Alerts', query: 'What are the active crisis alerts?' },
-    { label: '💡 How to use', query: 'How do I use this platform?' },
+    { label: '👋 Say Hi', query: 'Hi' },
+    { label: '🌐 World Explorer', query: 'Open World Explorer' },
+    { label: '📡 Event Radar', query: 'Check Event Radar' },
+    { label: '🏙️ City Twin', query: 'Show City Intelligence Twin' },
+    { label: '🚨 Crisis Alerts', query: 'What are the critical alerts?' },
+    { label: '💡 What can you do?', query: 'What can you do?' },
   ];
 
   return (
@@ -342,11 +497,11 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
         {isOpen && (
           <motion.div
             initial={{ opacity: 0, scale: 0.85, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.85, y: 30 }}
             transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-            className={`w-[380px] max-w-[calc(100vw-2rem)] rounded-3xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden flex flex-col transition-all duration-200 ${
-              isMinimized ? 'h-16' : 'h-[520px]'
+            className={`w-[390px] max-w-[calc(100vw-2rem)] rounded-3xl bg-slate-950/95 backdrop-blur-2xl border border-purple-500/30 shadow-2xl shadow-purple-500/20 overflow-hidden flex flex-col transition-all duration-200 ${
+              isMinimized ? 'h-16' : 'h-[530px]'
             }`}
           >
             {/* Header with Siri Glowing Theme */}
