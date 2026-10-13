@@ -11,6 +11,7 @@ import RadioPlayerBar from '../components/RadioPlayerBar';
 import EasyModeView from '../components/EasyModeView';
 import PersonalImpactModal from '../components/PersonalImpactModal';
 import FutureImpactSimulatorModal from '../components/FutureImpactSimulatorModal';
+import BilateralIntelLens from '../components/BilateralIntelLens';
 import { calculatePersonalImpact } from '../services/impactEngine';
 import { fetchNewsStream, fetchActiveAlerts, fetchNewsExplanation, fetchGeoDirectory } from '../services/newsService';
 import { logTelemetryAction } from '../services/supabaseClient';
@@ -105,6 +106,7 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
 
   // Future Impact Simulator Modal State
   const [isFutureImpactModalOpen, setIsFutureImpactModalOpen] = useState(false);
+  const [isBilateralModalOpen, setIsBilateralModalOpen] = useState(false);
   const [isOutreachModalOpen, setIsOutreachModalOpen] = useState(false);
 
 
@@ -540,6 +542,7 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
             onToggleEasyMode={handleToggleEasyMode}
             isEasyMode={isEasyMode}
             onOpenFutureImpactModal={() => setIsFutureImpactModalOpen(true)}
+            onOpenBilateralLens={() => setIsBilateralModalOpen(true)}
             onOpenOutreachModal={() => setIsOutreachModalOpen(true)}
             activePage={activePage}
             onNavigatePage={onNavigatePage}
@@ -936,6 +939,13 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
         onClose={() => setIsOutreachModalOpen(false)}
         currentPersona={persona}
         currentLocation={selectedLocation || selectedCountry || 'Global'}
+      />
+
+      {/* Bilateral Strategic Intel Lens Modal */}
+      <BilateralIntelLens
+        isOpen={isBilateralModalOpen}
+        onClose={() => setIsBilateralModalOpen(false)}
+        onSelectCountryOnGlobe={handleSelectCountry}
       />
 
 

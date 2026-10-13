@@ -35,6 +35,7 @@ export default function Navbar({
   onToggleEasyMode,
   isEasyMode = false,
   onOpenFutureImpactModal,
+  onOpenBilateralLens,
   onOpenDnaSidePanel,
   onOpenOutreachModal,
   activePage = 'dashboard',
@@ -203,6 +204,18 @@ export default function Navbar({
               <Sparkles className="w-3.5 h-3.5 text-pink-400 animate-pulse" />
               <span className="hidden md:inline font-semibold">Future Impact</span>
             </div>
+          </motion.button>
+
+          {/* ⚖️ Bilateral Intel Lens Trigger */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => { playUiSound('click'); onOpenBilateralLens && onOpenBilateralLens(); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-950/80 to-cyan-950/80 border border-purple-500/40 text-purple-200 hover:text-white hover:border-purple-300 rounded-lg shadow-sm shadow-purple-500/20 transition-all duration-200 active:scale-95"
+            title="Bilateral Strategic Intel Lens (Country vs Country Comparative Matrix)"
+          >
+            <span>⚖️</span>
+            <span className="hidden sm:inline font-semibold">Bilateral Lens</span>
           </motion.button>
 
           {/* 🌐 Language Switcher Dropdown */}

@@ -23,6 +23,7 @@ import {
 import { HOTSPOT_PERSONAL_IMPACTS } from '../services/impactEngine';
 import { playEarcon, speakInLanguage } from '../services/voiceService';
 import { playUiSound } from '../services/soundSystem';
+import { SATELLITE_CATALOG, calculateSatellitePosition, getOrbitPathPoints } from '../services/satelliteService';
 
 // Smart Hotspot Sensor Nodes with rich personal impact intelligence
 const GLOBAL_HOTSPOTS = [
@@ -317,12 +318,16 @@ export default function Globe3D({
   const targetCamPos = useRef(null);
   const customPinRef = useRef(null);
   const corridorsListRef = useRef([]);
+  const satelliteMeshesRef = useRef([]);
+  const satelliteObjectsRef = useRef([]);
 
   // Smart Interactive Globe Modes & Layers
   const [globeMode, setGlobeMode] = useState('space'); // 'space' (Daylight Earth) or 'cyber' (Night Lights)
   const [showSupplyArcs, setShowSupplyArcs] = useState(true); // Flowing semiconductor/supply corridors
   const [showCyberCables, setShowCyberCables] = useState(true); // Undersea internet cables
   const [showHeatmaps, setShowHeatmaps] = useState(true); // Dynamic threat & impact rings
+  const [showSatellites, setShowSatellites] = useState(true); // Live Orbital Satellite Tracker
+  const [selectedSatellite, setSelectedSatellite] = useState(null); // Selected space telemetry target
   const [autoRotate, setAutoRotate] = useState(true);
 
   // Smart HUD State
@@ -628,7 +633,83 @@ export default function Globe3D({
     supplyPulsesRef.current = pulseObjects;
     corridorsListRef.current = corridorsList;
 
-    // 12. Smart Raycasting (Nodes & Click-Anywhere Surface)
+    // 12. Live Orbital Satellite Constellations & Tracks
+    const satMeshTargets = [];
+    const satTrackingList = [];
+
+    if (showSatellites) {
+      SATELLITE_CATALOG.forEach((sat, satIndex) => {
+        // Orbital trajectory trajectory ring
+        const orbitPoints = getOrbitPathPoints(sat, GLOBE_RADIUS, 90);
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(
+          orbitPoints.map(p => new THREE.Vector3(p.x, p.y, p.z))
+        );
+        const orbitMat = new THREE.LineBasicMaterial({
+          color: sat.accentHex,
+          transparent: true,
+          opacity: 0.35,
+          blending: THREE.AdditiveBlending
+        });
+        const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
+        scene.add(orbitLine);
+
+        // Satellite 3D vehicle model
+        const satGroup = new THREE.Group();
+
+        // Chassis body
+        const bodyGeo = new THREE.BoxGeometry(2.4, 1.4, 1.4);
+        const bodyMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const body = new THREE.Mesh(bodyGeo, bodyMat);
+        satGroup.add(body);
+
+        // Solar panels
+        const wingGeo = new THREE.PlaneGeometry(3.6, 1.4);
+        const wingMat = new THREE.MeshBasicMaterial({ 
+          color: sat.accentHex, 
+          side: THREE.DoubleSide 
+        });
+        const leftWing = new THREE.Mesh(wingGeo, wingMat);
+        leftWing.position.x = -3.2;
+        satGroup.add(leftWing);
+
+        const rightWing = new THREE.Mesh(wingGeo, wingMat);
+        rightWing.position.x = 3.2;
+        satGroup.add(rightWing);
+
+        // Signal beacon sphere
+        const beaconGeo = new THREE.SphereGeometry(1.8, 8, 8);
+        const beaconMat = new THREE.MeshBasicMaterial({
+          color: sat.accentHex,
+          transparent: true,
+          opacity: 0.9,
+          blending: THREE.AdditiveBlending
+        });
+        const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+        satGroup.add(beacon);
+
+        satGroup.userData = sat;
+        body.userData = sat;
+        beacon.userData = sat;
+
+        scene.add(satGroup);
+        satMeshTargets.push(satGroup);
+        satMeshTargets.push(body);
+        satMeshTargets.push(beacon);
+
+        satTrackingList.push({
+          sat,
+          meshGroup: satGroup,
+          orbitRadius: GLOBE_RADIUS,
+          speedFactor: (2 * Math.PI) / (sat.periodMin * 0.9),
+          baseOffset: satIndex * 1.05
+        });
+      });
+    }
+
+    satelliteMeshesRef.current = satMeshTargets;
+    satelliteObjectsRef.current = satTrackingList;
+
+    // 13. Smart Raycasting (Nodes, Satellites & Click-Anywhere Surface)
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -638,6 +719,20 @@ export default function Globe3D({
       mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
+
+      // 0. Check if clicked an orbital satellite
+      if (showSatellites && satelliteMeshesRef.current.length > 0) {
+        const satHits = raycaster.intersectObjects(satelliteMeshesRef.current);
+        if (satHits.length > 0) {
+          const clickedSat = satHits[0].object.userData;
+          if (clickedSat && clickedSat.id) {
+            playEarcon('click');
+            setSelectedSatellite(clickedSat);
+            setSmartTarget(null);
+            return;
+          }
+        }
+      }
 
       // 1. Check if clicked a hotspot beacon
       const beaconHits = raycaster.intersectObjects(beaconMeshesRef.current);
@@ -778,6 +873,17 @@ export default function Globe3D({
         item.mesh.position.copy(point);
       });
 
+      // Animate satellite orbital tracks around the planet
+      if (showSatellites && satelliteObjectsRef.current.length > 0) {
+        const t = performance.now() * 0.0003;
+        satelliteObjectsRef.current.forEach(item => {
+          const angle = (t * item.speedFactor) + item.baseOffset;
+          const { x, y, z } = calculateSatellitePosition(item.sat, angle, GLOBE_RADIUS);
+          item.meshGroup.position.set(x, y, z);
+          item.meshGroup.lookAt(0, 0, 0);
+        });
+      }
+
       renderer.render(scene, camera);
     };
     animate();
@@ -790,7 +896,7 @@ export default function Globe3D({
       renderer.dispose();
       if (container) container.innerHTML = '';
     };
-  }, [globeMode, showSupplyArcs, showCyberCables, showHeatmaps]);
+  }, [globeMode, showSupplyArcs, showCyberCables, showHeatmaps, showSatellites]);
 
   const newsMarkersRef = useRef([]);
 
@@ -983,6 +1089,16 @@ export default function Globe3D({
             <Cable className="w-3 h-3" />
             <span>Cyber Cables</span>
           </button>
+          <button
+            onClick={() => { playUiSound('click'); setShowSatellites(!showSatellites); }}
+            className={`px-2.5 py-1.5 flex items-center gap-1 border-l border-purple-500/25 transition-colors ${
+              showSatellites ? 'text-amber-300 bg-amber-950/50 font-semibold' : 'text-slate-400 hover:text-white'
+            }`}
+            title="Toggle Orbital Satellites (ISS, Sentinel, Starlink, GPS)"
+          >
+            <Radio className="w-3 h-3" />
+            <span>Satellites</span>
+          </button>
         </div>
       </div>
 
@@ -1104,27 +1220,101 @@ export default function Globe3D({
         </div>
       )}
 
-      {/* Bottom Hotspot Quick Selector Bar */}
-      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center gap-1 bg-slate-950/85 backdrop-blur-xl px-3 py-2 border-t border-purple-500/20 overflow-x-auto no-scrollbar">
-        <span className="font-mono text-[10px] text-purple-300 font-semibold mr-1 shrink-0">Smart Hubs:</span>
-        {GLOBAL_HOTSPOTS.map(h => (
-          <button
-            key={h.id}
-            onClick={() => {
-              playUiSound('click');
-              onSelectCountry(h.id);
-              setSmartTarget(h);
-            }}
-            className={`font-mono text-[10px] px-2.5 py-1 rounded-lg border transition-all shrink-0 flex items-center gap-1.5 active:scale-95 ${
-              selectedCountry.toLowerCase() === h.id
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold border-transparent shadow-md shadow-purple-500/30'
-                : 'text-slate-300 border-slate-800 bg-slate-900/60 hover:text-white hover:border-purple-500/40 hover:bg-slate-800/80'
-            }`}
-          >
-            <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: h.colorHex }} />
-            <span>{h.name}</span>
-          </button>
-        ))}
+      {/* SATELLITE SPACE TELEMETRY HUD CARD */}
+      {selectedSatellite && (
+        <div className="absolute top-14 right-3 sm:right-4 z-20 max-w-[340px] glass-card-luxe border border-amber-500/40 p-4 rounded-2xl shadow-2xl animate-in fade-in duration-200 pointer-events-auto">
+          <div className="flex items-center justify-between border-b border-amber-500/20 pb-2 mb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-base">{selectedSatellite.countryFlag}</span>
+              <div>
+                <span className="font-mono text-xs font-bold text-white tracking-wide block">
+                  {selectedSatellite.name}
+                </span>
+                <span className="font-mono text-[9px] text-slate-400">NORAD ID #{selectedSatellite.noradId}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedSatellite(null)}
+              className="p-1 rounded-lg text-slate-400 hover:text-white bg-slate-900/60"
+            >
+              <RotateCcw className="w-3 h-3" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 font-mono text-[10px] mb-2.5 bg-slate-900/90 p-2.5 rounded-xl border border-amber-500/20">
+            <div>
+              <span className="text-slate-400 block text-[9px]">ORBITAL ALTITUDE:</span>
+              <span className="text-cyan-300 font-bold">{selectedSatellite.altitudeKm.toLocaleString()} KM</span>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[9px]">ORBITAL VELOCITY:</span>
+              <span className="text-amber-300 font-bold">{selectedSatellite.speedKmH.toLocaleString()} KM/H</span>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[9px]">INCLINATION:</span>
+              <span className="text-white">{selectedSatellite.inclinationDeg}°</span>
+            </div>
+            <div>
+              <span className="text-slate-400 block text-[9px]">ORBIT PERIOD:</span>
+              <span className="text-pink-300">{selectedSatellite.periodMin} MIN</span>
+            </div>
+          </div>
+
+          <div className="text-[11px] text-slate-300 leading-relaxed font-sans mb-2.5 bg-slate-950/60 p-2 rounded-lg border border-slate-800">
+            {selectedSatellite.description}
+          </div>
+
+          <div className="flex items-center justify-between text-[9px] font-mono border-t border-slate-800 pt-2 text-slate-400">
+            <span>STATUS: <span className="text-emerald-400 font-bold">{selectedSatellite.status}</span></span>
+            <span className="text-amber-400">{selectedSatellite.type}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Selector Strip: Satellites & Hotspots */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between gap-2 bg-slate-950/90 backdrop-blur-xl px-3 py-2 border-t border-purple-500/20 overflow-x-auto no-scrollbar">
+        {/* Satellites Pass Strip */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="font-mono text-[10px] text-amber-300 font-bold mr-1 flex items-center gap-1">
+            <Radio className="w-3 h-3 text-amber-400 animate-pulse" />
+            <span>Orbit:</span>
+          </span>
+          {SATELLITE_CATALOG.map(sat => (
+            <button
+              key={sat.id}
+              onClick={() => {
+                playUiSound('click');
+                setSelectedSatellite(sat);
+              }}
+              className={`font-mono text-[10px] px-2 py-0.5 rounded-lg border transition-all shrink-0 flex items-center gap-1 active:scale-95 ${
+                selectedSatellite && selectedSatellite.id === sat.id
+                  ? 'bg-amber-500 text-slate-950 font-bold border-amber-400 shadow-md shadow-amber-500/30'
+                  : 'text-slate-300 border-slate-800 bg-slate-900/60 hover:text-white hover:border-amber-500/40'
+              }`}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sat.color }} />
+              <span>{sat.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Hotspots Quick Hubs */}
+        <div className="hidden lg:flex items-center gap-1 shrink-0 border-l border-slate-800 pl-2">
+          <span className="font-mono text-[10px] text-purple-300 font-semibold mr-1 shrink-0">Hubs:</span>
+          {GLOBAL_HOTSPOTS.slice(0, 5).map(h => (
+            <button
+              key={h.id}
+              onClick={() => {
+                playUiSound('click');
+                onSelectCountry(h.id);
+                setSmartTarget(h);
+              }}
+              className="font-mono text-[9px] px-2 py-0.5 rounded border border-slate-800 text-slate-400 hover:text-white hover:border-purple-500/40 transition-all shrink-0"
+            >
+              {h.name}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Three.js WebGL Canvas Mount */}

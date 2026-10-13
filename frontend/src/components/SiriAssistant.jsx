@@ -172,6 +172,30 @@ function processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact)
     };
   }
 
+  // 7b. LIVE SATELLITE ORBITAL TRACKER
+  if (q.includes('satellite') || q.includes('space') || q.includes('iss') || q.includes('starlink') || q.includes('gps') || q.includes('orbit')) {
+    return {
+      text: "Our 3D Planetary Globe tracks active orbital satellites in real time! You can observe live orbits, velocity, and altitude for the ISS, Sentinel-2A Earth Observation, GPS Block III, Starlink, Landsat-9, and GOES-16.",
+      action: {
+        type: 'navigate',
+        target: 'dashboard',
+        label: 'View Satellites on Globe'
+      }
+    };
+  }
+
+  // 7c. BILATERAL STRATEGIC INTEL LENS
+  if (q.includes('bilateral') || q.includes('compare countries') || q.includes('versus') || q.includes('rivalry') || q.includes('alliance') || q.includes('standoff') || q.includes('conflict matrix')) {
+    return {
+      text: "The Bilateral Strategic Intel Lens compares any two sovereign nations side-by-side across active crisis flashpoints, military & nuclear deterrence, trade dependencies, and treaty alliances.",
+      action: {
+        type: 'navigate',
+        target: 'dashboard',
+        label: 'Open Bilateral Lens'
+      }
+    };
+  }
+
   // 8. ALERTS & CRISIS WARNINGS
   if (q.includes('alert') || q.includes('threat') || q.includes('warning') || q.includes('emergency') || q.includes('crisis') || q.includes('danger') || q.includes('war') || q.includes('conflict')) {
     return {
