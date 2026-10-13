@@ -140,17 +140,6 @@ export default function Navbar({
               <span className="text-[9px] px-1 py-0.2 rounded bg-red-500/20 text-red-300 font-mono">LIVE</span>
             </button>
             <button
-              onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('city-intelligence'); }}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-                activePage === 'city-intelligence'
-                  ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>City Twin</span>
-            </button>
-            <button
               onClick={() => { playUiSound('switch'); onNavigatePage && onNavigatePage('world-explorer'); }}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
                 activePage === 'world-explorer'

@@ -95,7 +95,7 @@ function processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact)
 
   if (/^(cool|awesome|great|nice|wow|super|amazing|good)(\s|$|[!.,?])/i.test(q)) {
     return {
-      text: "Awesome! Let me know if you'd like to test our 3D World Explorer, check the Live Event Radar, or inspect the City Twin.",
+      text: "Awesome! Let me know if you'd like to test our 3D World Explorer, check the Live Event Radar, or inspect the Telemetry Dashboard.",
       action: null
     };
   }
@@ -103,7 +103,7 @@ function processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact)
   // 2. HELP & CAPABILITIES
   if (q.includes('what can you do') || q.includes('features') || q.includes('capabilities') || q.includes('help') || q.includes('commands') || q.includes('guide me')) {
     return {
-      text: "Here is what I can do for you:\n• 🌐 Launch 3D World Explorer: Explore 195+ countries, states, and OpenStreetMap amenities.\n• 📡 Open Live Event Radar: Track real-time defense, climate, and cyber events.\n• 🏙️ View City Intelligence Twin: Urban telemetry and infrastructure monitoring.\n• 🚨 Check Alerts: Real-time critical geopolitical warnings.\n• 🗣️ Voice Commands: Tap the mic icon anytime to speak to me naturally!",
+      text: "Here is what I can do for you:\n• 🌐 Launch 3D World Explorer: Explore 195+ countries, states, and OpenStreetMap amenities.\n• 📡 Open Live Event Radar: Track real-time defense, climate, and cyber events.\n• 🚨 Check Alerts: Real-time critical geopolitical warnings.\n• 🔮 Future Impact Simulator: AI projections on economic and regional trends.\n• 🗣️ Voice Commands: Tap the mic icon anytime to speak to me naturally!",
       action: {
         type: 'navigate',
         target: 'world-explorer',
@@ -148,14 +148,14 @@ function processSiriQuery(query, activePage, onNavigatePage, onOpenFutureImpact)
     };
   }
 
-  // 6. CITY TWIN & CHENNAI
-  if (q.includes('city twin') || q.includes('city') || q.includes('digital twin') || q.includes('chennai') || q.includes('urban') || q.includes('grid metrics') || q.includes('velachery') || q.includes('t nagar')) {
+  // 6. CHENNAI & LOCALITIES
+  if (q.includes('chennai') || q.includes('velachery') || q.includes('t nagar') || q.includes('anna nagar') || q.includes('adyar') || q.includes('tamil nadu')) {
     return {
-      text: "The City Intelligence Twin monitors urban infrastructure telemetry, district-level safety indices, power grid status, and emergency response assets with micro-locality focus (such as Chennai, Velachery, T. Nagar).",
+      text: "You can explore Chennai down to individual neighborhoods (Velachery, T. Nagar, Anna Nagar) and search local amenities (hospitals, schools, transit) directly in World Explorer 3D!",
       action: {
         type: 'navigate',
-        target: 'city-intelligence',
-        label: 'Explore City Twin'
+        target: 'world-explorer',
+        label: 'Explore Chennai in 3D'
       }
     };
   }
@@ -447,7 +447,7 @@ export default function SiriAssistant({ activePage = 'dashboard', onNavigatePage
     { label: '👋 Say Hi', query: 'Hi' },
     { label: '🌐 World Explorer', query: 'Open World Explorer' },
     { label: '📡 Event Radar', query: 'Check Event Radar' },
-    { label: '🏙️ City Twin', query: 'Show City Intelligence Twin' },
+    { label: '🔮 Future Impact', query: 'Future Impact Simulator' },
     { label: '🚨 Crisis Alerts', query: 'What are the critical alerts?' },
     { label: '💡 What can you do?', query: 'What can you do?' },
   ];
