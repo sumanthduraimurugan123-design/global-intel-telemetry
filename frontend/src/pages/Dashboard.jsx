@@ -7,7 +7,6 @@ import AlertSystem from '../components/AlertSystem';
 import TelemetryStats from '../components/TelemetryStats';
 import PersonaSelector from '../components/PersonaSelector';
 import LogsViewer from '../components/LogsViewer';
-import VoiceAssistantModal from '../components/VoiceAssistantModal';
 import RadioPlayerBar from '../components/RadioPlayerBar';
 import EasyModeView from '../components/EasyModeView';
 import PersonalImpactModal from '../components/PersonalImpactModal';
@@ -583,33 +582,6 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
               currentLanguage={currentLanguage}
             />
 
-            {/* Row 2: World Explorer AI Quick Access Banner */}
-            <div className="w-full p-4 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-purple-950/40 to-slate-900/90 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-4 shadow-xl backdrop-blur-md animate-fade-in">
-              <div className="flex items-center gap-3.5">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/20 border border-cyan-400/40 flex items-center justify-center text-cyan-300 shadow-md shadow-cyan-500/10">
-                  <Compass className="w-5 h-5 animate-spin-slow" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-white tracking-wide">World Explorer AI</h3>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                      3D EARTH & REAL PLACES
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 mt-0.5">
-                    Interactive 3D Earth with real OpenStreetMap discovery for schools, hospitals, transit, malls & government offices.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => onNavigatePage && onNavigatePage('world-explorer')}
-                className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-xl shadow-lg shadow-cyan-500/25 transition-all hover:scale-105 active:scale-95"
-              >
-                <span>Launch World Explorer</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-
             {/* Row 3: 3D Planetary Smart Globe & Real-time Alert System */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               
@@ -915,43 +887,6 @@ export default function Dashboard({ activePage = 'dashboard', onNavigatePage }) 
         onNext={() => globalRadioEngine.next()}
         onPrev={() => globalRadioEngine.prev()}
         onStop={() => globalRadioEngine.stop()}
-      />
-
-      {/* Voice Assistant Speech Recognition Dialog */}
-      <VoiceAssistantModal
-        isOpen={isVoiceModalOpen}
-        onClose={() => setIsVoiceModalOpen(false)}
-        currentLanguage={currentLanguage}
-        onSelectLanguage={setCurrentLanguage}
-        onLocationChange={(loc) => {
-          const locLower = (loc || '').toLowerCase().trim();
-          const chennaiAreas = ['velachery', 't nagar', 'tnagar', 'adyar', 'anna nagar', 'tambaram', 'mylapore', 'guindy', 'omr', 'chennai', 'madipakkam', 'porur', 'thiruvanmiyur'];
-          if (chennaiAreas.includes(locLower)) {
-            handleSelectLocation(locLower === 'tnagar' ? 't nagar' : locLower);
-          } else {
-            handleSelectCountry(locLower);
-          }
-        }}
-        onStartRadio={handleStartRadio}
-        onReadAlerts={handleReadAlerts}
-        onToggleEasyMode={handleToggleEasyMode}
-        onTriggerExplain={() => {
-          if (news.length > 0) {
-            fetchNewsExplanation(news[0].title, news[0].description, currentLanguage)
-              .then(data => speakInLanguage(data.simpleText, { language: currentLanguage }));
-          }
-        }}
-        onRepeat={() => {
-          if (radioState.isPlaying) {
-            globalRadioEngine.repeatCurrentStory();
-          } else if (news.length > 0) {
-            speakInLanguage(`${news[0].title}. ${news[0].description || ''}`, { language: currentLanguage });
-          }
-        }}
-        onSelectTopic={(cat) => {
-          setActiveTopic(cat);
-          loadTelemetryData(true);
-        }}
       />
 
       {/* Persona Selection Modal */}

@@ -162,19 +162,6 @@ export default function Navbar({
               <span>World Explorer</span>
               <span className="text-[9px] px-1 py-0.2 rounded bg-cyan-500/20 text-cyan-300 font-mono">3D</span>
             </button>
-
-            <a
-              href="/LT_Techgium_Abstract_Sumanth_Duraimurugan.pdf"
-              download="LT_Techgium_Abstract_Sumanth_Duraimurugan.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg text-amber-300 hover:text-white bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-all shadow-sm"
-              title="Download L&T Techgium Abstract (PDF)"
-            >
-              <FileText className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">L&amp;T Abstract</span>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold">PDF</span>
-            </a>
           </div>
         </div>
 
@@ -216,19 +203,6 @@ export default function Navbar({
             )}
           </button>
 
-          {/* 🎤 Voice Access Button with Magnet */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => { playUiSound('click'); onOpenVoiceModal(); }}
-            className="flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg shadow-md shadow-purple-500/30 hover:shadow-purple-500/50 transition-all duration-200"
-            title="Voice Access: speak to navigate news"
-            aria-label="Open Voice Assistant"
-          >
-            <Mic className="w-3.5 h-3.5 animate-pulse text-pink-200" />
-            <span className="hidden sm:inline font-semibold">Voice AI</span>
-          </motion.button>
-
           {/* 🔮 Future Impact Simulator Button with React Bits StarBorder */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -241,27 +215,6 @@ export default function Navbar({
               <span className="hidden md:inline font-semibold">Future Impact</span>
             </div>
           </motion.button>
-
-          {/* 🌍 World Explorer AI Trigger */}
-          <button
-            onClick={() => {
-              playUiSound('click');
-              if (onNavigatePage) {
-                onNavigatePage(activePage === 'world-explorer' ? 'dashboard' : 'world-explorer');
-              }
-            }}
-            className={`flex items-center gap-1.5 px-3 py-1.5 font-medium text-xs rounded-lg shadow-md transition-all duration-200 border ${
-              activePage === 'world-explorer'
-                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white border-cyan-400 shadow-cyan-500/30'
-                : 'bg-gradient-to-r from-cyan-950/60 via-purple-950/60 to-slate-900/80 text-cyan-200 border-cyan-500/40 hover:border-cyan-300 hover:scale-105 active:scale-95 shadow-cyan-500/20'
-            }`}
-            title="Switch between Telemetry Dashboard and World Explorer AI"
-            aria-label="World Explorer AI"
-          >
-            <Compass className="w-3.5 h-3.5 text-cyan-300 animate-spin-slow" />
-            <span className="font-semibold hidden sm:inline">World Explorer</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-          </button>
 
           {/* 🌐 Language Switcher Dropdown */}
           <div className="relative">

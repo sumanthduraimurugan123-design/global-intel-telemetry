@@ -3,6 +3,7 @@ import Dashboard from './pages/Dashboard';
 import WorldExplorer from './pages/WorldExplorer';
 import EventRadar from './pages/EventRadar';
 import CityIntelligence from './pages/CityIntelligence';
+import SiriAssistant from './components/SiriAssistant';
 
 function App() {
   const getInitialPage = () => {
@@ -40,7 +41,7 @@ function App() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-950">
+    <div className="w-full min-h-screen bg-slate-950 relative">
       {activePage === 'world-explorer' ? (
         <WorldExplorer
           onNavigateBack={() => handleNavigatePage('dashboard')}
@@ -62,6 +63,12 @@ function App() {
           onNavigatePage={handleNavigatePage}
         />
       )}
+
+      {/* Floating Siri AI Guide Chatbot */}
+      <SiriAssistant
+        activePage={activePage}
+        onNavigatePage={handleNavigatePage}
+      />
     </div>
   );
 }

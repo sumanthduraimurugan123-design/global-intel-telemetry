@@ -38,16 +38,6 @@ export default function AccessibilityToolbar({
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-mono text-[10px] text-slate-500 uppercase tracking-wider mr-1 hidden sm:inline">Voice & Intel:</span>
 
-          {/* Voice Assistant Trigger */}
-          <button
-            onClick={() => handleClick(onOpenVoiceModal)}
-            className={`${btnBase} bg-amber-400 text-slate-950 border-amber-400 font-bold shadow-md shadow-amber-400/20 hover:bg-amber-300`}
-            title="Speak voice command (Speech-to-text)"
-          >
-            <Mic className="w-3.5 h-3.5 animate-pulse text-slate-950" />
-            <span>Voice Assistant</span>
-          </button>
-
           {/* Radio Auto-Play Mode */}
           <button
             onClick={() => handleClick(onStartRadio)}
@@ -86,18 +76,6 @@ export default function AccessibilityToolbar({
           >
             {isSpeaking ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
             <span>{isSpeaking ? 'Stop Briefing' : 'Brief Aloud'}</span>
-          </button>
-
-          {/* 🌍 World Explorer AI Trigger */}
-          <button
-            onClick={() => handleClick(() => {
-              if (onNavigatePage) onNavigatePage('world-explorer');
-            })}
-            className={`${btnBase} bg-gradient-to-r from-purple-950/60 to-cyan-950/60 border-cyan-500/40 text-cyan-300 hover:text-white hover:border-cyan-300 font-semibold shadow-sm`}
-            title="Launch World Explorer AI 3D Globe & Real Places"
-          >
-            <Compass className="w-3.5 h-3.5 text-cyan-300 animate-spin-slow" />
-            <span>World Explorer</span>
           </button>
         </div>
 
